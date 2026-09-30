@@ -27,6 +27,8 @@ export interface ChallengeView {
   bestCode: string | null;
   isDaily: boolean;
   expected: number | null;
+  /** Topics in this challenge the learner hasn't met before. */
+  newTopics: string[];
 }
 
 export interface LibraryItem {
@@ -55,6 +57,11 @@ export interface FinishResult {
   minutes: number;
   hintsUsed: number;
   solution: string;
+  levelBefore: number;
+  levelAfter: number;
+  levelName: string;
+  streak: number;
+  firstSolveToday: boolean;
   result?: RunResult;
 }
 

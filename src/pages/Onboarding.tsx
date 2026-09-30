@@ -11,6 +11,14 @@ const OPTIONS: { key: Experience; title: string; body: string; level: number }[]
   { key: "pro", title: "TypeScript regular", body: "Bring on async patterns, conditional types and infer.", level: 5 },
 ];
 
+const PICK_LINE: Record<Experience, string> = {
+  new: "We'll start from the very beginning. I'll explain things as we go.",
+  "other-lang": "You know the ideas already. We'll put types on them.",
+  js: "Good, you know JS. Types are the fun new part.",
+  "some-ts": "Let's firm up generics and the tricky parts of the type system.",
+  pro: "Conditional types it is. Let's see what you've got.",
+};
+
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState("");
   const [exp, setExp] = useState<Experience | null>(null);
@@ -33,7 +41,13 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
               daily<span className="text-accent">.ts</span>
             </span>
             <div className="relative mt-2 rounded-2xl rounded-bl-sm border border-line bg-surface px-4 py-2.5 text-sm text-ink-2 shadow-sm">
-              Hi, I'm <b className="text-ink">Tess</b> 👋 Pangolins are covered in scales, and your code gets covered in types. Both are armour.
+              {exp ? (
+                PICK_LINE[exp]
+              ) : (
+                <>
+                  Hi, I'm <b className="text-ink">Tess</b>. Pangolins are covered in scales, and your code gets covered in types. Both are armour.
+                </>
+              )}
             </div>
           </div>
         </div>

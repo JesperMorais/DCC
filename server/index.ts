@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadChallenges, LEVELS, type Challenge } from "./challenges.ts";
-import { applyResult, dashboard, dailyChallenge, expectedScore, START_RATING } from "./engine.ts";
+import { applyResult, currentStreak, dashboard, dailyChallenge, expectedScore, levelForRating, newTopicsFor, START_RATING } from "./engine.ts";
 import { runChallenge } from "./runner/index.ts";
 import { HARNESS_DTS } from "./runner/harness.ts";
 import { load, reset, save, today, type Attempt, type Experience } from "./store.ts";
@@ -57,6 +57,7 @@ function challengeView(c: Challenge) {
     bestCode: best?.code ?? null,
     isDaily: data.dailies[today()] === c.id,
     expected: data.profile ? expectedScore(data.profile.rating, c.rating) : null,
+    newTopics: newTopicsFor(data, challenges, c),
   };
 }
 
@@ -170,6 +171,7 @@ app.post("/api/challenges/:id/run", async (c) => {
 
 function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: string) {
   const data = load();
+  const solvedTodayBefore = data.attempts.some((x) => x.status === "solved" && x.date === today());
   a.status = status;
   a.finishedAt = new Date().toISOString();
   a.code = code;
@@ -184,6 +186,11 @@ function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: s
     minutes: (Date.parse(a.finishedAt) - Date.parse(a.startedAt)) / 60_000,
     hintsUsed: a.hintsUsed,
     solution: ch.solution,
+    levelBefore: levelForRating(a.ratingBefore ?? data.profile!.rating).level,
+    levelAfter: levelForRating(data.profile!.rating).level,
+    levelName: levelForRating(data.profile!.rating).name,
+    streak: currentStreak(data),
+    firstSolveToday: status === "solved" && !solvedTodayBefore,
   };
 }
 

@@ -1,6 +1,6 @@
 import { Mascot, TessSays, type Mood } from "../components/Mascot";
 
-const MOODS: Mood[] = ["idle", "wave", "happy", "cheer", "think", "sleep", "sad"];
+const MOODS: Mood[] = ["idle", "wave", "happy", "cheer", "think", "read", "sleep", "curl", "sad"];
 
 export default function MascotGallery() {
   return (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Library } from "../api";
+import { TessLoading, TessSays } from "../components/Mascot";
 import { Icon, LevelPips, StatusDot, Tag } from "../ui";
 
 type Filter = "all" | "new" | "solved" | "open";
@@ -25,7 +26,7 @@ export default function LibraryPage() {
     });
   }, [lib, filter, q]);
 
-  if (!lib) return <div className="p-10 text-muted">Loading…</div>;
+  if (!lib) return <TessLoading label="Fetching the library…" />;
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8 sm:px-8">
@@ -98,7 +99,13 @@ export default function LibraryPage() {
             </section>
           );
         })}
-        {visible.length === 0 && <p className="py-10 text-center text-sm text-muted">Nothing matches.</p>}
+        {visible.length === 0 && (
+          <div className="flex justify-center py-10">
+            <TessSays mood="think" size={72}>
+              Nothing by that name. Try a topic instead, like <i>generics</i>.
+            </TessSays>
+          </div>
+        )}
       </div>
     </div>
   );

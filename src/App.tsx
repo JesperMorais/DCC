@@ -8,7 +8,9 @@ import MascotGallery from "./pages/MascotGallery";
 import Onboarding from "./pages/Onboarding";
 import SettingsPage from "./pages/Settings";
 import { setTheme, useTheme } from "./theme";
-import { Mascot } from "./components/Mascot";
+import { Mascot, TessLoading } from "./components/Mascot";
+import { sidebarStreakLine } from "./tess/lines";
+import { useTessVoice } from "./tess/prefs";
 import { Icon, type IconName } from "./ui";
 
 export default function App() {
@@ -28,17 +30,12 @@ export default function App() {
     refresh();
   }, [refresh, location.pathname]);
 
-  if (state === "loading")
-    return (
-      <div className="grid h-full place-items-center text-muted">
-        <Mascot mood="think" size={96} className="text-ink-2" />
-      </div>
-    );
+  if (state === "loading") return <TessLoading />;
   if (state === "error")
     return (
       <div className="grid h-full place-items-center text-center text-ink-2">
         <div className="flex flex-col items-center">
-          <Mascot mood="sleep" size={120} className="text-ink-2" />
+          <Mascot mood="sad" size={120} className="text-ink-2" />
           <p className="mt-3 font-semibold text-ink">Tess can't reach the local server.</p>
           <p className="mt-1 text-sm">
             Start it with <code className="font-mono">npm run dev</code> and reload.
@@ -68,6 +65,7 @@ export default function App() {
 
 function Sidebar({ state }: { state: Dashboard }) {
   const { theme } = useTheme();
+  const voice = useTessVoice();
   const items: { to: string; icon: IconName; label: string }[] = [
     { to: "/", icon: "dashboard", label: "Dashboard" },
     { to: "/library", icon: "library", label: "Library" },
@@ -108,7 +106,7 @@ function Sidebar({ state }: { state: Dashboard }) {
           <div className="mt-1 text-xl font-semibold tabular">
             {state.stats.streak} <span className="text-sm font-medium text-muted">{state.stats.streak === 1 ? "day" : "days"}</span>
           </div>
-          <p className="mt-1 text-xs text-muted">{state.stats.solvedToday ? "Done for today — nice." : "Solve one today to keep it going."}</p>
+          <p className="mt-1 text-xs text-muted">{voice === "off" ? (state.stats.solvedToday ? "Done for today." : "Solve one today to keep it going.") : sidebarStreakLine(state)}</p>
         </div>
         <button
           className="btn btn-ghost justify-center lg:justify-start"

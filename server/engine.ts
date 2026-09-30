@@ -144,7 +144,7 @@ export function topicStats(data: Data, challenges: Challenge[]) {
     .sort((a, b) => b.attempts - a.attempts || b.avgScore - a.avgScore);
 }
 
-function streaks(solvedDays: Set<string>) {
+export function streaks(solvedDays: Set<string>) {
   const dayStr = (offset: number) => today(new Date(Date.now() - offset * DAY));
   // Current streak counts back from today, or from yesterday if today isn't done yet.
   let start = solvedDays.has(dayStr(0)) ? 0 : 1;
@@ -242,6 +242,16 @@ export function dashboard(data: Data, challenges: Challenge[]) {
         isDaily: a.isDaily,
       })),
   };
+}
+
+/** Topics of a challenge the learner has never finished a challenge in. */
+export function newTopicsFor(data: Data, challenges: Challenge[], c: Challenge) {
+  const seen = new Set(topicStats(data, challenges).map((t) => t.topic));
+  return c.topics.filter((t) => !seen.has(t));
+}
+
+export function currentStreak(data: Data) {
+  return streaks(new Set(data.attempts.filter((a) => a.status === "solved").map((a) => a.date))).current;
 }
 
 export type Dashboard = ReturnType<typeof dashboard>;

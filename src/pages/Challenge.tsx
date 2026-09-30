@@ -3,7 +3,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type ChallengeView, type FinishResult, type RunResult } from "../api";
 import "../monaco"; // configures the bundled Monaco before <Editor> mounts
-import { Mascot } from "../components/Mascot";
+import { Mascot, TessLoading, TessRow } from "../components/Mascot";
+import { categorize, conceptCardCopy, conceptNudge, finishLine, finishTitle, runReaction, type Line } from "../tess/lines";
+import {
+  bumpNudge,
+  conceptMuted,
+  conceptOpened as readConceptOpened,
+  dismissConceptTip,
+  markConceptOpened,
+  nudgeCount,
+  reducedMotion,
+  useConceptTips,
+  useTessVoice,
+} from "../tess/prefs";
 import { useTheme } from "../theme";
 import { CodeBlock, fmtClock, fmtMinutes, Icon, LevelBadge, Markdown, Tag } from "../ui";
 
@@ -33,9 +45,39 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
   const [confirmGiveUp, setConfirmGiveUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<EditorInstance | null>(null);
+  const voice = useTessVoice();
+  const tipsOn = useConceptTips();
+
+  // Tess's per-attempt memory.
+  const [reaction, setReaction] = useState<Line | null>(null);
+  const [nudge, setNudge] = useState<string | null>(null);
+  const [hintAsk, setHintAsk] = useState(false);
+  const [conceptSeen, setConceptSeen] = useState(false);
+  const runs = useRef({ prevPassing: null as number | null, runNo: 0, fails: 0 });
 
   const active = view?.attempt ?? null;
   const reviewing = !!view && !active;
+
+  // Nudges only when tips are on, the concept hasn't been read, and we're under the per-attempt cap.
+  const canNudge = () =>
+    !!active && voice !== "off" && tipsOn && !readConceptOpened(active.id) && !conceptMuted(active.id) && nudgeCount(active.id) < 2;
+
+  // Reading the Concept tab for 3s counts as "opened".
+  useEffect(() => {
+    if (tab !== "concept" || !active) return;
+    const t = setTimeout(() => {
+      markConceptOpened(active.id);
+      setConceptSeen(true);
+      setNudge(null);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [tab, active]);
+
+  const openConcept = () => setTab("concept"); // leaves the editor cursor alone
+  const dismissNudge = () => {
+    if (active) dismissConceptTip(active.id);
+    setNudge(null);
+  };
 
   const load = useCallback(
     async (forceStart = false) => {
@@ -48,6 +90,10 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
         setView(v);
         setCode(v.attempt ? (readDraft(v.attempt.id) ?? v.starter) : (v.bestCode ?? v.starter));
         setTab("task");
+        setReaction(null);
+        setNudge(null);
+        setConceptSeen(!!v.attempt && readConceptOpened(v.attempt.id));
+        runs.current = { prevPassing: null, runNo: 0, fails: 0 };
       } catch (e) {
         setError((e as Error).message);
       }
@@ -74,11 +120,27 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
     if (!view || running) return;
     setRunning(true);
     try {
-      setResult(await api.run(view.id, code));
+      const r = await api.run(view.id, code);
+      const h = runs.current;
+      const cat = categorize(r, h.prevPassing);
+      setReaction(runReaction(r, cat, h.prevPassing, h.runNo));
+      h.prevPassing = r.tests.filter((t) => t.pass).length;
+      h.runNo++;
+      h.fails = r.passed ? 0 : h.fails + 1;
+      // Concept nudge (b): 2nd failing run in a row, or the 1st when the topic is new to you. Chatty mode only.
+      const threshold = view.newTopics.length ? 1 : 2;
+      const testFailure = cat === "failing" || cat === "progress";
+      if (!testFailure) setNudge(null);
+      if (testFailure && voice === "chatty" && h.fails >= threshold && !nudge && canNudge()) {
+        bumpNudge(active!.id);
+        setNudge(conceptNudge(active!.id));
+      }
+      if (r.passed) setNudge(null);
+      setResult(r);
     } finally {
       setRunning(false);
     }
-  }, [view, code, running]);
+  }, [view, code, running, voice, nudge, tipsOn, active]);
 
   const submit = useCallback(async () => {
     if (!view || !active) return;
@@ -105,8 +167,18 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
     onFinished();
   };
 
-  const hint = async () => {
+  const hint = async (skipAsk = false) => {
     if (!view) return;
+    // Concept nudge (c): offer the free lesson once, right before the first hint.
+    if (!skipAsk && !nudge && view.hints.length === 0 && canNudge()) {
+      bumpNudge(active!.id);
+      setNudge(null);
+      setHintAsk(true);
+      setTab("task");
+      return;
+    }
+    setHintAsk(false);
+    setNudge(null);
     const { hints } = await api.hint(view.id);
     setView({ ...view, hints, attempt: view.attempt && { ...view.attempt, hintsUsed: hints.length } });
     setTab("task");
@@ -151,7 +223,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
         {error} — <Link to="/" className="text-accent">back to dashboard</Link>
       </div>
     );
-  if (!view) return <div className="p-10 text-muted">Loading challenge…</div>;
+  if (!view) return <TessLoading />;
 
   return (
     <div className="flex h-full flex-col">
@@ -173,13 +245,20 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           {active && <Timer startedAt={active.startedAt} targetMin={Math.max(10, view.estMinutes)} />}
           {active && (
             <>
-              <button className="btn" onClick={hint} disabled={view.hints.length >= view.hintCount} title="Each hint trims your score a little">
-                <Icon name="bulb" size={15} />
-                <span className="hidden md:inline">Hint</span>
-                <span className="tabular text-muted">
-                  {view.hints.length}/{view.hintCount}
-                </span>
-              </button>
+              <div className="relative">
+                <button
+                  className="btn"
+                  onClick={() => hint()}
+                  disabled={view.hints.length >= view.hintCount}
+                  title={voice === "off" ? "Each hint trims your score a little" : "Tess's hints. Each one trims this attempt's score a little."}
+                >
+                  <Icon name="bulb" size={15} />
+                  <span className="hidden md:inline">Hint</span>
+                  <span className="tabular text-muted">
+                    {view.hints.length}/{view.hintCount}
+                  </span>
+                </button>
+              </div>
               <button className="btn btn-ghost hidden md:inline-flex" onClick={() => setConfirmGiveUp(true)}>
                 <Icon name="flag" size={15} /> Give up
               </button>
@@ -224,6 +303,9 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                 }`}
               >
                 <Icon name={icon} size={14} /> {label}
+                {k === "concept" && active && !conceptSeen && voice !== "off" && (
+                  <span className="size-1.5 rounded-full bg-accent" aria-label="not read yet" />
+                )}
               </button>
             ))}
           </div>
@@ -239,29 +321,36 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                     <Icon name="clock" size={12} /> ~{view.estMinutes} min
                   </span>
                 </div>
+                {view.newTopics.includes(view.topics[0]) && !conceptSeen && <ConceptCard view={view} onOpen={openConcept} tess={voice !== "off"} top />}
                 <Markdown source={view.prompt} />
                 {view.hints.length > 0 && (
                   <div className="mt-6 flex flex-col gap-2">
                     {view.hints.map((h, i) => (
-                      <div key={i} className="pop-in rounded-xl border border-line bg-warn-soft p-3.5">
-                        <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-warn">
-                          <Mascot mood="think" size={22} /> Tess's hint {i + 1}
+                      <div key={i} className="pop-in flex gap-2.5">
+                        {voice !== "off" && <Mascot mood="think" size={34} className="mt-1 shrink-0" />}
+                        <div className="min-w-0 flex-1 rounded-xl rounded-tl-sm border border-line border-l-accent/50 bg-surface-2 p-3.5 [border-left-width:3px]">
+                          <div className="mb-1 text-xs font-semibold text-accent-strong">
+                            {voice === "off" ? `Hint ${i + 1}` : `Tess · hint ${i + 1} of ${view.hintCount}`}
+                          </div>
+                          {voice !== "off" && i === view.hintCount - 1 && (
+                            <p className="mb-1 text-[13px] text-ink-2 italic">Last one. It's the biggest nudge I've got:</p>
+                          )}
+                          <Markdown source={h} className="!text-[13px]" />
                         </div>
-                        <Markdown source={h} className="!text-[13px]" />
                       </div>
                     ))}
                   </div>
                 )}
-                <button onClick={() => setTab("concept")} className="mt-6 flex w-full items-center gap-3 rounded-xl border border-line p-3.5 text-left hover:bg-surface-2">
-                  <span className="grid size-8 place-items-center rounded-lg bg-accent-soft text-accent">
-                    <Icon name="book" size={16} />
-                  </span>
-                  <span className="flex-1">
-                    <span className="block text-sm font-medium">New to this? Read the concept first</span>
-                    <span className="block text-xs text-muted">A 2-minute lesson on the idea this challenge practises — free, no score cost.</span>
-                  </span>
-                  <Icon name="chevron" size={16} className="text-muted" />
-                </button>
+                {hintAsk && (
+                  <HintAsk
+                    onConcept={() => {
+                      setHintAsk(false);
+                      openConcept();
+                    }}
+                    onHint={() => hint(true)}
+                  />
+                )}
+                {(!view.newTopics.includes(view.topics[0]) || conceptSeen) && <ConceptCard view={view} onOpen={openConcept} tess={voice !== "off"} />}
               </>
             )}
             {tab === "concept" && <Markdown source={view.learn} />}
@@ -314,7 +403,19 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
               />
             </div>
           }
-          bottom={<ResultsPanel result={result} running={running} mode={view.mode} onJump={jumpTo} canSubmit={canSubmit} onSubmit={submit} reviewing={reviewing} />}
+          bottom={
+            <ResultsPanel
+              result={result}
+              running={running}
+              mode={view.mode}
+              onJump={jumpTo}
+              canSubmit={canSubmit}
+              onSubmit={submit}
+              reviewing={reviewing}
+              reaction={voice === "off" || (voice === "quiet" && !result?.passed) ? null : reaction}
+              nudge={nudge ? { text: nudge, onOpen: openConcept, onDismiss: dismissNudge } : null}
+            />
+          }
         />
       </div>
 
@@ -325,6 +426,17 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
             This ends the attempt and counts as not solved, so your rating dips a little. That's fine — reading a good solution is learning
             too. This challenge comes back around in a week.
           </p>
+          {active && !readConceptOpened(active.id) && voice !== "off" && (
+            <button
+              className="mt-3 flex items-center gap-2 text-left text-sm text-accent hover:underline"
+              onClick={() => {
+                setConfirmGiveUp(false);
+                openConcept();
+              }}
+            >
+              <Mascot mood="read" size={32} /> Want to try the Concept lesson first? It's free.
+            </button>
+          )}
           <div className="mt-5 flex justify-end gap-2">
             <button className="btn" onClick={() => setConfirmGiveUp(false)}>
               Keep trying
@@ -339,6 +451,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
       {finish && (
         <FinishModal
           finish={finish}
+          conceptOpened={!!active && readConceptOpened(active.id)}
+          voice={voice}
           onClose={() => {
             setFinish(null);
             load();
@@ -346,6 +460,63 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           onDashboard={() => navigate("/")}
         />
       )}
+    </div>
+  );
+}
+
+/* ---------- Concept card (the free lesson) ---------- */
+function ConceptCard({ view, onOpen, tess, top = false }: { view: ChallengeView; onOpen: () => void; tess: boolean; top?: boolean }) {
+  const copy = conceptCardCopy(view);
+  return (
+    <button
+      onClick={onOpen}
+      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left hover:bg-surface-2 ${top ? "mb-5 border-accent/40 bg-accent-soft" : "mt-6 border-line"}`}
+    >
+      {tess ? (
+        <Mascot mood="read" size={44} className="shrink-0" />
+      ) : (
+        <span className="grid size-8 place-items-center rounded-lg bg-accent-soft text-accent">
+          <Icon name="book" size={16} />
+        </span>
+      )}
+      <span className="flex-1">
+        <span className="block text-sm font-medium text-ink">{copy.title}</span>
+        <span className="block text-xs text-muted">{copy.sub}</span>
+      </span>
+      <Icon name="chevron" size={16} className="text-muted" />
+    </button>
+  );
+}
+
+/** One-time "free option first?" before the first hint, inline in the task panel. Enter/Esc = just show the hint. */
+function HintAsk({ onConcept, onHint }: { onConcept: () => void; onHint: () => void }) {
+  const hintBtn = useRef<HTMLButtonElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    hintBtn.current?.focus({ preventScroll: true });
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onHint();
+      }
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onHint]);
+  return (
+    <div ref={ref} className="mt-6">
+      <TessRow mood="read" tone="accent">
+        <p>Want the free option first? The Concept lesson covers this. Hints cost a little score.</p>
+        <div className="mt-2 flex gap-1.5">
+          <button className="btn h-8 text-xs" onClick={onConcept}>
+            <Icon name="book" size={13} /> Read concept
+          </button>
+          <button ref={hintBtn} className="btn btn-primary h-8 text-xs" onClick={onHint}>
+            Show hint
+          </button>
+        </div>
+      </TessRow>
     </div>
   );
 }
@@ -422,7 +593,11 @@ function ResultsPanel({
   canSubmit,
   onSubmit,
   reviewing,
+  reaction,
+  nudge,
 }: {
+  reaction: Line | null;
+  nudge: { text: string; onOpen: () => void; onDismiss: () => void } | null;
   result: RunResult | null;
   running: boolean;
   mode: "runtime" | "types";
@@ -475,7 +650,7 @@ function ResultsPanel({
       <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${running ? "opacity-50" : ""}`}>
         {!result && (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-muted">
-            <Mascot mood={reviewing ? "sleep" : "idle"} size={72} className="text-ink-2" />
+            <Mascot mood="idle" size={72} className="text-ink-2" />
             {reviewing ? (
               "Reviewing a finished challenge. Hit “Practice again” for a fresh, unrated attempt."
             ) : (
@@ -503,16 +678,34 @@ function ResultsPanel({
 
         {result && tab === "results" && (
           <div className="flex flex-col gap-4">
-            {result.passed && canSubmit && (
-              <div className="pop-in flex items-center gap-3 rounded-xl border border-good/30 bg-good-soft p-3.5">
-                <Mascot mood="happy" size={44} className="shrink-0" />
-                <div className="flex-1 text-sm">
-                  <b className="text-good">Everything passes.</b> <span className="text-ink-2">Tidy it up if you like, then submit.</span>
-                </div>
-                <button className="btn btn-good" onClick={onSubmit}>
-                  Submit <span className="kbd hidden lg:inline">Ctrl ⇧ ↵</span>
-                </button>
-              </div>
+            {result.passed && canSubmit ? (
+              <TessRow
+                key={reaction?.text}
+                mood="happy"
+                tone="good"
+                actions={
+                  <button className="btn btn-good" onClick={onSubmit}>
+                    Submit <span className="kbd hidden lg:inline">Ctrl ⇧ ↵</span>
+                  </button>
+                }
+              >
+                <span className="text-sm">{reaction?.text ?? "Everything passes. Tidy up if you like, then submit."}</span>
+              </TessRow>
+            ) : (
+              (reaction || nudge) && (
+                // One Tess row: the reaction, plus the Concept suggestion as a second line when there is one.
+                <TessRow key={reaction?.text} mood={nudge ? "read" : reaction!.mood} tone={nudge ? "accent" : "neutral"} onDismiss={nudge?.onDismiss}>
+                  {reaction && <p>{reaction.text}</p>}
+                  {nudge && (
+                    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span>{nudge.text}</span>
+                      <button className="btn h-7 px-2 text-xs" onClick={nudge.onOpen}>
+                        <Icon name="book" size={12} /> Open Concept
+                      </button>
+                    </p>
+                  )}
+                </TessRow>
+              )
             )}
 
             {result.typeErrors.length > 0 && (
@@ -651,23 +844,37 @@ function Confetti() {
   );
 }
 
-function FinishModal({ finish, onClose, onDashboard }: { finish: FinishResult; onClose: () => void; onDashboard: () => void }) {
+function FinishModal({
+  finish,
+  onClose,
+  onDashboard,
+  conceptOpened,
+  voice,
+}: {
+  finish: FinishResult;
+  onClose: () => void;
+  onDashboard: () => void;
+  conceptOpened: boolean;
+  voice: "chatty" | "quiet" | "off";
+}) {
   const solved = finish.status === "solved";
   const delta = finish.ratingAfter - finish.ratingBefore;
+  const line = finishLine(finish, conceptOpened);
+  const confetti = line.confetti === "full" && !reducedMotion();
   return (
     <>
-      {solved && <Confetti />}
+      {confetti && <Confetti />}
       <Modal onClose={onClose} wide>
         <div className="flex items-start gap-4">
-          <Mascot mood={solved ? "happy" : "cheer"} size={96} className="-my-2 -ml-2 shrink-0 text-ink-2" />
+          <Mascot
+            mood={line.mood}
+            size={line.mood === "cheer" ? 120 : 96}
+            className={`-my-2 -ml-2 shrink-0 text-ink-2 ${line.confetti === "none" && solved ? "tess-hop" : ""}`}
+          />
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">{solved ? "Solved!" : "Here's how it's done"}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{finishTitle(finish)}</h2>
             <p className="mt-1 text-sm text-ink-2">
-              {solved
-                ? finish.hintsUsed === 0
-                  ? "No hints needed. That's the concept sticking."
-                  : "Nice work pushing through. Next time, see if you can get there with one hint fewer."
-                : "Read it line by line and compare it with where you got stuck. It'll come back around in a week."}
+              {voice === "off" ? (solved ? "Nice work." : "Here's a reference solution to compare against.") : line.text}
             </p>
           </div>
         </div>

@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Dashboard } from "../api";
 import { Heatmap, LevelProgress, RatingChart, TopicMastery } from "../components/charts";
 import { Mascot, TessSays, type Mood } from "../components/Mascot";
+import { greeting as tessGreeting } from "../tess/lines";
+import { read, useTessVoice, write } from "../tess/prefs";
 import { fmtMinutes, Icon, LevelBadge, relTime, StatusDot, Tag, type IconName } from "../ui";
 
 const greeting = () => {
@@ -29,7 +31,7 @@ export default function DashboardPage({ state }: { state: Dashboard }) {
       </header>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <DailyCard daily={daily} next={next} />
+        <DailyCard state={state} />
         <RatingCard stats={stats} level={level} />
       </div>
 
@@ -106,8 +108,14 @@ function StatTile({ icon, iconColor, label, value, sub }: { icon: IconName; icon
   );
 }
 
-function DailyCard({ daily, next }: { daily: Dashboard["daily"]; next: Dashboard["next"] }) {
+function DailyCard({ state }: { state: Dashboard }) {
+  const { daily, next } = state;
   const navigate = useNavigate();
+  const voice = useTessVoice();
+  const today = new Date().toLocaleDateString("sv-SE");
+  const [dismissed, setDismissed] = useState(() => read(`tess:greet-dismissed:${today}`) === "1");
+  const line = tessGreeting(state);
+  const showBubble = voice !== "off" && !dismissed;
   if (!daily)
     return (
       <div className="card p-6 lg:col-span-2">
@@ -123,17 +131,32 @@ function DailyCard({ daily, next }: { daily: Dashboard["daily"]; next: Dashboard
         className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full opacity-60 blur-3xl"
         style={{ background: "radial-gradient(circle, color-mix(in oklab, var(--accent) 30%, transparent), transparent 70%)" }}
       />
-      <Mascot
-        mood={TESS_MOOD[daily.status] ?? "wave"}
-        size={150}
-        className="pointer-events-none absolute right-5 bottom-2 hidden text-ink-2 sm:block"
-      />
+      <div className="absolute right-5 bottom-2 hidden flex-col items-end sm:flex">
+        {showBubble && (
+          <div className="pop-in relative mr-6 mb-1 max-w-[240px] rounded-2xl rounded-br-sm border border-line bg-surface-2 py-2 pr-7 pl-3 text-[13px] leading-snug text-ink-2 shadow-sm">
+            {line.text}
+            <button
+              onClick={() => {
+                write(`tess:greet-dismissed:${today}`, "1");
+                setDismissed(true);
+              }}
+              className="absolute top-1.5 right-1.5 rounded p-0.5 text-muted hover:text-ink"
+              aria-label="Hide Tess's message until tomorrow"
+              title="Hide until tomorrow"
+            >
+              <Icon name="x" size={12} />
+            </button>
+          </div>
+        )}
+        <Mascot mood={voice === "off" ? (TESS_MOOD[daily.status] ?? "wave") : line.mood} size={140} animated={voice === "chatty"} className="pointer-events-none text-ink-2" />
+      </div>
       <div className="relative flex h-full flex-col sm:pr-36">
         <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-accent uppercase">
           <Icon name="zap" size={14} /> Today's challenge
         </div>
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight">{daily.title}</h2>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <h2 className={`mt-3 text-2xl font-semibold tracking-tight ${showBubble ? "sm:pr-36" : ""}`}>{daily.title}</h2>
+        {voice !== "off" && <p className="mt-1 text-sm text-ink-2 sm:hidden">{line.text}</p>}
+        <div className={`mt-3 flex flex-wrap items-center gap-2 ${showBubble ? "sm:pr-36" : ""}`}>
           <LevelBadge level={daily.level} withName />
           {daily.mode === "types" && <Tag>type-level</Tag>}
           {daily.topics.map((t) => (
@@ -141,7 +164,7 @@ function DailyCard({ daily, next }: { daily: Dashboard["daily"]; next: Dashboard
           ))}
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-ink-2">
+        <div className={`mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-ink-2 ${showBubble ? "sm:pr-36" : ""}`}>
           <span className="inline-flex items-center gap-1.5">
             <Icon name="clock" size={15} /> ~{daily.estMinutes} min
           </span>
@@ -181,6 +204,16 @@ const TESS_MOOD: Record<string, Mood> = { "not-started": "wave", "in-progress": 
 
 function RatingCard({ stats, level }: { stats: Dashboard["stats"]; level: Dashboard["level"] }) {
   const d = stats.ratingDelta7d;
+  const voice = useTessVoice();
+  // Once per level: Tess congratulates you on the new level. The starting level doesn't count.
+  const [newLevel, setNewLevel] = useState(() => {
+    const seen = Number(read("tess:level-seen") ?? 0);
+    if (!seen) {
+      write("tess:level-seen", String(level.level));
+      return false;
+    }
+    return level.level > seen;
+  });
   return (
     <section className="card flex flex-col p-6">
       <div className="text-xs font-medium text-muted">Skill rating</div>
@@ -202,6 +235,22 @@ function RatingCard({ stats, level }: { stats: Dashboard["stats"]; level: Dashbo
         <div className="mt-2 h-2 rounded-full bg-accent-soft">
           <div className="h-2 rounded-full bg-accent transition-[width] duration-700" style={{ width: `${Math.max(3, level.progress * 100)}%` }} />
         </div>
+        {newLevel && voice !== "off" && (
+          <div className="pop-in mt-3 flex items-center gap-2 rounded-xl bg-accent-soft p-2 pr-3 text-[13px] text-ink">
+            <Mascot mood="cheer" size={40} className="shrink-0" />
+            <span className="flex-1">New level: {level.name}. Nice work.</span>
+            <button
+              className="text-muted hover:text-ink"
+              aria-label="Dismiss"
+              onClick={() => {
+                write("tess:level-seen", String(level.level));
+                setNewLevel(false);
+              }}
+            >
+              <Icon name="x" size={12} />
+            </button>
+          </div>
+        )}
         <p className="mt-3 text-xs leading-relaxed text-muted">
           Challenges are picked just above this number. Clean, fast solves push it up; hints and giving up pull it back.
         </p>

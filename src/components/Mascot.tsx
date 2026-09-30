@@ -1,8 +1,8 @@
 // Tess the pangolin: the daily.ts mascot. Scales = types: armour for your code.
 // Drawn as inline SVG so it scales crisply, themes cleanly and works offline.
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 
-export type Mood = "idle" | "wave" | "happy" | "think" | "sleep" | "sad" | "cheer";
+export type Mood = "idle" | "wave" | "happy" | "think" | "sleep" | "sad" | "cheer" | "read" | "curl";
 
 const C = {
   outline: "#15325a",
@@ -92,9 +92,23 @@ const BODY = "M80 64 C110 64 128 92 126 120 C124 144 106 155 80 155 C54 155 36 1
 const HOOD = "M45 60 C39 30 58 13 80 13 C102 13 121 30 115 60 C109 48 97 42 80 42 C63 42 51 48 45 60Z";
 const TAIL = "M108 132 C132 150 162 134 156 104 C153 88 138 80 128 88 C124 92 126 99 132 98 C140 97 145 104 142 114 C138 128 124 130 114 120Z";
 
-export function Mascot({ mood = "idle", size = 120, className = "", title }: { mood?: Mood; size?: number; className?: string; title?: string }) {
+export function Mascot({
+  mood = "idle",
+  size = 120,
+  className = "",
+  title,
+  animated = false,
+}: {
+  mood?: Mood;
+  size?: number;
+  className?: string;
+  title?: string;
+  /** Gentle idle bob + blink. Only for calm, non-coding surfaces. */
+  animated?: boolean;
+}) {
   const uid = useId().replace(/:/g, "");
   const gid = `sg${uid}`;
+  if (mood === "curl") return <CurledTess uid={uid} size={size} className={className} title={title} />;
 
   const arms: Record<Mood, [[number, number], [number, number]][]> = {
     idle: [[[60, 102], [66, 114]], [[100, 102], [94, 114]]],
@@ -104,6 +118,8 @@ export function Mascot({ mood = "idle", size = 120, className = "", title }: { m
     think: [[[60, 102], [66, 114]], [[100, 102], [89, 92]]],
     sleep: [[[60, 104], [70, 116]], [[100, 104], [90, 116]]],
     sad: [[[60, 104], [66, 118]], [[100, 104], [94, 118]]],
+    read: [[[60, 102], [60, 106]], [[100, 102], [100, 106]]],
+    curl: [],
   };
 
   const eyes = (() => {
@@ -124,9 +140,9 @@ export function Mascot({ mood = "idle", size = 120, className = "", title }: { m
           </g>
         );
       default: {
-        const look = mood === "think" ? { dx: 1.5, dy: -2 } : { dx: 0, dy: 0 };
+        const look = mood === "think" ? { dx: 1.5, dy: -2 } : mood === "read" ? { dx: 0, dy: 2 } : { dx: 0, dy: 0 };
         return (
-          <g>
+          <g className={animated ? "tess-blink" : undefined}>
             {[65, 95].map((x) => (
               <g key={x}>
                 <ellipse cx={x + look.dx} cy={56 + look.dy} rx={5} ry={5.9} fill={C.eye} />
@@ -162,7 +178,7 @@ export function Mascot({ mood = "idle", size = 120, className = "", title }: { m
       viewBox="0 0 170 170"
       width={size}
       height={size}
-      className={className}
+      className={`${animated ? "tess-bob " : ""}${className}`}
       role="img"
       aria-label={title ?? `Tess the pangolin${mood !== "idle" ? ` (${mood})` : ""}`}
     >
@@ -194,6 +210,22 @@ export function Mascot({ mood = "idle", size = 120, className = "", title }: { m
       {arms[mood].map(([from, to], i) => (
         <Arm key={i} from={from} to={to} />
       ))}
+
+      {mood === "read" && (
+        <g>
+          <path d="M55 95 L80 98 L105 95 L105 115 L80 118 L55 115Z" fill={C.scaleTop} stroke={C.outline} strokeWidth={2.2} strokeLinejoin="round" />
+          <path d="M58 96 L79 99 L79 114.5 L58 112Z" fill="#fffaf2" />
+          <path d="M81 99 L102 96 L102 112 L81 114.5Z" fill="#fffaf2" />
+          <path d="M62 101 L75 102.6 M62 105 L75 106.6 M62 109 L72 110.2 M85 102.6 L98 101 M85 106.6 L98 105 M85 110.4 L95 109.2" stroke={C.creamShade} strokeWidth={1.3} strokeLinecap="round" />
+          <line x1={80} y1={98.5} x2={80} y2={118} stroke={C.outline} strokeWidth={1.6} />
+          {[56, 104].map((x) => (
+            <g key={x}>
+              <circle cx={x} cy={106} r={5.6} fill={C.cream} stroke={C.outline} strokeWidth={2} />
+              <circle cx={x} cy={106} r={1.2} fill={C.claw} />
+            </g>
+          ))}
+        </g>
+      )}
 
       {/* head */}
       <ellipse cx={80} cy={58} rx={35} ry={30} fill={C.cream} stroke={C.outline} strokeWidth={2.6} />
@@ -246,6 +278,34 @@ export function Mascot({ mood = "idle", size = 120, className = "", title }: { m
   );
 }
 
+/** Rolled into a ball: what a pangolin does when it's waiting something out. */
+function CurledTess({ uid, size, className, title }: { uid: string; size: number; className: string; title?: string }) {
+  const gid = `sg${uid}`;
+  const ball = "M38 112 A46 46 0 1 0 130 112 A46 46 0 1 0 38 112Z";
+  // Tail wraps around the outside of the ball, lower-left.
+  const band = "M112 155 A50 50 0 0 1 34.6 105 Q35.5 97.5 43.5 98.5 L46.8 106 A38 38 0 0 0 105.5 145 Q114 147.5 112 155Z";
+  return (
+    <svg viewBox="22 50 124 124" width={size} height={size} className={className} role="img" aria-label={title ?? "Tess the pangolin, curled into a ball"}>
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={C.scaleTop} />
+          <stop offset="1" stopColor={C.scaleBottom} />
+        </linearGradient>
+      </defs>
+      <ellipse cx={84} cy={163} rx={48} ry={5.5} fill="#000" opacity={0.12} />
+      <Scaly id={`cb${uid}`} d={ball} gid={gid} box={[36, 64, 132, 160]} />
+      <Scaly id={`ct${uid}`} d={band} gid={gid} box={[30, 94, 118, 160]} />
+      {/* snout tip + nose peeking out where the tail tucks in */}
+      <path d="M44 104 C39.5 99 36.5 94.5 35.2 90.6 C34.4 87.6 36.8 85.4 39.6 86.8 C45 89.4 51 91.6 56 94.5Z" fill={C.snout} stroke={C.outline} strokeWidth={2} strokeLinejoin="round" />
+      <ellipse cx={36.4} cy={88.6} rx={3.9} ry={3} fill={C.nose} transform="rotate(35 36.4 88.6)" />
+      <path d="M55 86 Q58 88.5 61 86" fill="none" stroke={C.eye} strokeWidth={2.2} strokeLinecap="round" />
+      <g fill="currentColor" fontFamily="ui-sans-serif, system-ui" fontWeight={700} opacity={0.5}>
+        <text x={124} y={62} fontSize={13}>…</text>
+      </g>
+    </svg>
+  );
+}
+
 function Sparkle({ x, y, s }: { x: number; y: number; s: number }) {
   return <path transform={`translate(${x} ${y}) scale(${s})`} d="M0 -10 C1.5 -2 2 -1.5 10 0 C2 1.5 1.5 2 0 10 C-1.5 2 -2 1.5 -10 0 C-2 -1.5 -1.5 -2 0 -10Z" />;
 }
@@ -259,3 +319,54 @@ export function TessSays({ mood = "idle", children, size = 88 }: { mood?: Mood; 
     </div>
   );
 }
+
+/** A compact one-line Tess reaction (results panel, nudges). */
+export function TessRow({
+  mood,
+  children,
+  actions,
+  onDismiss,
+  tone = "neutral",
+}: {
+  mood: Mood;
+  children: ReactNode;
+  actions?: ReactNode;
+  onDismiss?: () => void;
+  tone?: "neutral" | "good" | "accent";
+}) {
+  const toneCls =
+    tone === "good" ? "border-good/30 bg-good-soft" : tone === "accent" ? "border-accent/30 bg-accent-soft" : "border-line bg-surface-2";
+  return (
+    <div className={`pop-in flex items-center gap-3 rounded-xl border px-3 py-2 ${toneCls}`}>
+      <Mascot mood={mood} size={mood === "curl" ? 44 : 36} className="-my-1 shrink-0 text-ink-2" />
+      <div className="min-w-0 flex-1 text-[13px] leading-snug text-ink-2">{children}</div>
+      {actions}
+      {onDismiss && (
+        <button onClick={onDismiss} className="rounded-md p-1 text-muted hover:bg-surface-3 hover:text-ink" aria-label="Dismiss">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Loading state that only shows after 300ms, so fast loads don't flash. */
+export function TessLoading({ label = "Warming up the compiler…" }: { label?: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 300);
+    return () => clearTimeout(t);
+  }, []);
+  if (!show) return null;
+  return (
+    <div className="grid h-full place-items-center">
+      <div className="flex flex-col items-center gap-2 text-sm text-muted">
+        <Mascot mood="think" size={96} className="text-ink-2" />
+        {label}
+      </div>
+    </div>
+  );
+}
+

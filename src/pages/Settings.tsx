@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Dashboard } from "../api";
 import { Mascot } from "../components/Mascot";
+import { setTessVoice, setConceptTips, useConceptTips, useTessVoice, type TessVoice } from "../tess/prefs";
 import { setTheme, useTheme, type ThemePref } from "../theme";
 
 export default function SettingsPage({ state, onChange }: { state: Dashboard; onChange: () => void }) {
@@ -9,6 +10,8 @@ export default function SettingsPage({ state, onChange }: { state: Dashboard; on
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState("");
   const { pref } = useTheme();
+  const voice = useTessVoice();
+  const tips = useConceptTips();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-8">
@@ -76,13 +79,46 @@ export default function SettingsPage({ state, onChange }: { state: Dashboard; on
         </div>
       </section>
 
-      <Link to="/mascot" className="card mt-5 flex items-center gap-4 p-5 hover:border-line-strong">
-        <Mascot mood="wave" size={64} className="shrink-0 text-ink-2" />
-        <div>
-          <h2 className="text-[15px] font-semibold">Meet Tess</h2>
-          <p className="text-sm text-ink-2">The daily.ts pangolin. The only mammal with armour-plated scales, just like your code with types.</p>
+      <section className="card mt-5 p-5">
+        <div className="flex items-center gap-4">
+          <Mascot mood={voice === "off" ? "sleep" : voice === "quiet" ? "idle" : "wave"} size={64} className="shrink-0 text-ink-2" />
+          <div className="flex-1">
+            <h2 className="text-[15px] font-semibold">Tess</h2>
+            <p className="text-sm text-ink-2">
+              How much the pangolin talks. <Link to="/mascot" className="text-accent hover:underline">Meet Tess</Link>
+            </p>
+          </div>
         </div>
-      </Link>
+        <div className="mt-4 flex rounded-lg border border-line bg-surface-2 p-0.5">
+          {(
+            [
+              ["chatty", "Chatty"],
+              ["quiet", "Quiet"],
+              ["off", "Off"],
+            ] as [TessVoice, string][]
+          ).map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setTessVoice(v)}
+              className={`flex-1 rounded-md py-1.5 text-sm font-medium ${voice === v ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          {voice === "chatty" && "Greetings, reactions to every run, hints in Tess's voice, and celebrations."}
+          {voice === "quiet" && "Greetings, celebrations and concept tips only. No reactions while you code."}
+          {voice === "off" && "No speech bubbles. Tess only shows up as art."}
+        </p>
+        <label className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4 text-sm">
+          <span>
+            <span className="font-medium">Concept tips</span>
+            <span className="block text-xs text-muted">Tess suggests the free Concept lesson when you're stuck. It switches itself off after 3 dismissals.</span>
+          </span>
+          <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={tips} onChange={(e) => setConceptTips(e.target.checked)} />
+        </label>
+      </section>
 
       <section className="card mt-5 border-bad/30 p-5">
         <h2 className="text-[15px] font-semibold text-bad">Reset progress</h2>

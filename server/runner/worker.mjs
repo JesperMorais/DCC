@@ -147,7 +147,13 @@ async function main() {
   }
 
   const results = [];
+  let looped = false;
   for (const t of tests) {
+    // One infinite loop is enough to know; don't make the learner wait for every test to time out.
+    if (looped) {
+      results.push({ name: t.name, pass: false, ms: 0, error: { message: "Skipped: an earlier test looped forever." } });
+      continue;
+    }
     const started = performance.now();
     try {
       // Run sync part under the vm timeout so `while(true)` in a test is caught.
@@ -162,6 +168,7 @@ async function main() {
       results.push({ name: t.name, pass: true, ms: performance.now() - started });
     } catch (e) {
       const timedOut = e?.code === "ERR_SCRIPT_EXECUTION_TIMEOUT";
+      if (timedOut) looped = true;
       results.push({
         name: t.name,
         pass: false,

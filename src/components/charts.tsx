@@ -12,7 +12,9 @@ export function RatingChart({ history }: { history: Dashboard["ratingHistory"] }
   if (data.length < 2)
     return (
       <EmptyChart>
-        Your rating curve starts after your first challenge. Every solve nudges it up; the bigger the stretch, the bigger the jump.
+        <TessSays mood="wave" size={72}>
+          Your rating curve starts after your first challenge. The bigger the stretch, the bigger the jump.
+        </TessSays>
       </EmptyChart>
     );
   const min = Math.min(...data.map((d) => d.rating));
@@ -93,7 +95,7 @@ export function RatingChart({ history }: { history: Dashboard["ratingHistory"] }
 function EmptyChart({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid h-[220px] place-items-center rounded-xl border border-dashed border-line px-8 text-center text-sm text-muted">
-      <p className="max-w-sm">{children}</p>
+      <div className="max-w-md text-left">{children}</div>
     </div>
   );
 }

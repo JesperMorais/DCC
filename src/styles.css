@@ -312,3 +312,23 @@ body {
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 10px; border: 2px solid var(--bg); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Tess micro-animations ---------- */
+@keyframes tess-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes tess-blink {
+  0%, 95%, 100% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+@keyframes tess-hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+}
+.tess-bob { animation: tess-bob 3.2s ease-in-out infinite; }
+.tess-blink { animation: tess-blink 6s infinite; transform-box: fill-box; transform-origin: center; }
+.tess-hop { animation: tess-hop 0.4s ease-out 0.15s 1; }
+@media (prefers-reduced-motion: reduce) {
+  .tess-bob, .tess-blink, .tess-hop, .pop-in { animation: none !important; }
+}
