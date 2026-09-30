@@ -1,0 +1,13 @@
+{
+  "title": "Paginate with chunk",
+  "level": 4,
+  "rating": 1160,
+  "topics": ["generics", "arrays", "slice"],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "`any` throws the element type away. Add a type parameter: `function chunk<T>(items: readonly T[], size: number): ...` — what should it return?",
+    "A list of pages where each page is a list of `T` is `T[][]`. Build it with a `for` loop that jumps `size` steps at a time.",
+    "for (let i = 0; i < items.length; i += size) pages.push(items.slice(i, i + size));"
+  ]
+}

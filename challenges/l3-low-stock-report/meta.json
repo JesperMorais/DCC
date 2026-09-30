@@ -1,0 +1,17 @@
+{
+  "title": "Low-stock report",
+  "level": 3,
+  "rating": 1135,
+  "topics": [
+    "filter/sort/map pipelines",
+    "readonly arrays",
+    "interfaces"
+  ],
+  "estMinutes": 10,
+  "mode": "runtime",
+  "hints": [
+    "Think of it as three steps chained together: keep the low ones → put them in order → turn each into a string.",
+    "`sort` mutates, and the input is `readonly`. But `filter` already returns a brand-new array, so sorting *after* filtering is safe. For the comparator: `a.stock - b.stock || a.name.localeCompare(b.name)`.",
+    "In the `map`, choose the status text first: \"out of stock\" when `p.stock === 0`, otherwise `${p.stock} left`. Then return `${p.sku} ${p.name} (${status})`."
+  ]
+}

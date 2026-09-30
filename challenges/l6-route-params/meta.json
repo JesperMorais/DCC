@@ -1,0 +1,13 @@
+{
+  "title": "Typed routes",
+  "level": 6,
+  "rating": 1630,
+  "topics": ["template literal types", "infer", "recursive types", "mapped types"],
+  "estMinutes": 12,
+  "mode": "types",
+  "hints": [
+    "Split the job: first a helper `ParamNames<S>` that produces a *union* of names (`\"id\" | \"postId\"`), then map over that union to build the object.",
+    "Template literal patterns can `infer` pieces: `S extends `${string}:${infer Name}/${infer Rest}`` captures one param followed by more path. Recurse on the rest; handle the \"last param, no slash after it\" case separately.",
+    "type ParamNames<S extends string> = S extends `${string}:${infer P}/${infer R}` ? P | ParamNames<R> : S extends `${string}:${infer P}` ? P : never;  type Params<S extends string> = { [K in ParamNames<S>]: string };"
+  ]
+}

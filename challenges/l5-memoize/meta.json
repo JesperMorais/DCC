@@ -1,0 +1,13 @@
+{
+  "title": "Remember that?",
+  "level": 5,
+  "rating": 1330,
+  "topics": ["closures", "higher-order functions", "generics", "Map"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "The cache has to live *outside* the returned function but *inside* `memoize` — so each memoized function gets its own private cache.",
+    "Use a `Map<A, R>`. Check `cache.has(arg)` rather than `cache.get(arg)` — a cached `0`, `\"\"` or `undefined` is still a cache hit.",
+    "const cache = new Map<A, R>(); return (arg) => { if (!cache.has(arg)) cache.set(arg, fn(arg)); return cache.get(arg) as R; };"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "What does it return?",
+  "level": 6,
+  "rating": 1460,
+  "topics": ["conditional types", "infer", "function types"],
+  "estMinutes": 7,
+  "mode": "types",
+  "hints": [
+    "A conditional type `T extends Shape ? A : B` can *match* T against a pattern — and `infer` lets you name a piece of that pattern.",
+    "The pattern you want is \"any function, whatever its parameters\": `(...args: any[]) => ...`. Put `infer R` where the return type goes.",
+    "type MyReturnType<T extends (...args: any[]) => any> = T extends (...args: any[]) => infer R ? R : never;"
+  ]
+}

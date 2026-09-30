@@ -1,0 +1,13 @@
+{
+  "title": "Distribute and conquer",
+  "level": 6,
+  "rating": 1500,
+  "topics": ["conditional types", "distributive conditional types", "unions", "never"],
+  "estMinutes": 9,
+  "mode": "types",
+  "hints": [
+    "A conditional type on a naked type parameter runs once *per union member* and unions the results. And `never` vanishes from a union: `\"a\" | never` is just `\"a\"`.",
+    "MyExclude: for each member of T, keep it if it's *not* assignable to U, otherwise produce `never`. IsNever: `T extends never` on a naked `T` distributes over the empty union and gives `never` — stop the distribution by wrapping both sides in a one-element tuple.",
+    "type MyExclude<T, U> = T extends U ? never : T;  type IsNever<T> = [T] extends [never] ? true : false;"
+  ]
+}

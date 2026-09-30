@@ -1,0 +1,18 @@
+{
+  "title": "A typed undo stack",
+  "level": 4,
+  "rating": 1230,
+  "topics": [
+    "classes",
+    "private fields",
+    "generics",
+    "errors"
+  ],
+  "estMinutes": 9,
+  "mode": "runtime",
+  "hints": [
+    "Store the elements in an array field that only the class can see: `#items: T[] = [];` (or `private items: T[] = [];`).",
+    "`push` and `pop` map directly onto the array's own methods. `peek` is the last element: `this.#items[this.#items.length - 1]`. `size` is a getter: `get size(): number { ... }`.",
+    "In `pop`, check first: `if (this.#items.length === 0) throw new Error(\"Stack is empty\");` — after that check the array can't be empty, so `return this.#items.pop()!;` is safe (`!` tells TypeScript it isn't `undefined`)."
+  ]
+}

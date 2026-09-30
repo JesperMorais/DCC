@@ -1,0 +1,17 @@
+{
+  "title": "Count the vowels",
+  "level": 2,
+  "rating": 880,
+  "topics": [
+    "for...of",
+    "strings",
+    "includes"
+  ],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Walk through the text one character at a time and keep a counter.",
+    "`for (const ch of text)` gives you each character. Lowercase it, then check if `\"aeiou\"` includes it.",
+    "let count = 0; for (const ch of text.toLowerCase()) { if (\"aeiou\".includes(ch)) count++; } return count;"
+  ]
+}

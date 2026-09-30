@@ -1,0 +1,18 @@
+{
+  "title": "Shopping list helpers",
+  "level": 2,
+  "rating": 920,
+  "topics": [
+    "arrays",
+    "includes",
+    "indexOf",
+    "spread"
+  ],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "Arrays have built-in methods for searching — `includes` and `indexOf` do most of the work here.",
+    "`indexOf` already returns -1 when the item is missing. For `addIfMissing`, check with `includes` first; if it's missing, build a new array with `[...list, item]`.",
+    "addIfMissing: `return list.includes(item) ? list : [...list, item];`"
+  ]
+}

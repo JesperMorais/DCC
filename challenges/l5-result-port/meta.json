@@ -1,0 +1,13 @@
+{
+  "title": "No exceptions allowed",
+  "level": 5,
+  "rating": 1380,
+  "topics": ["Result type", "discriminated unions", "generics", "never", "parsing"],
+  "estMinutes": 10,
+  "mode": "runtime",
+  "hints": [
+    "`Result<T, E>` is a union of two object types, told apart by a literal `ok: true` / `ok: false` field.",
+    "`ok(value)` just builds `{ ok: true, value }`. Its return type `Result<T, never>` fits anywhere a `Result<T, E>` is expected because `never` is assignable to everything.",
+    "In parsePort: trim, check `/^\\d+$/.test(s)` → else `err(\"not a number\")`; then `Number(s)` and range-check 1..65535 → `err(\"out of range\")`, otherwise `ok(n)`."
+  ]
+}

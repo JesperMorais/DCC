@@ -1,0 +1,13 @@
+{
+  "title": "Settings with defaults",
+  "level": 3,
+  "rating": 1030,
+  "topics": ["optional properties", "nullish coalescing", "interfaces"],
+  "estMinutes": 6,
+  "mode": "runtime",
+  "hints": [
+    "Each optional property is either its value or `undefined`. You need a fallback only for the `undefined` case.",
+    "`||` falls back on *any* falsy value — including `false`. Which operator only falls back on `null`/`undefined`?",
+    "return { theme: s.theme ?? \"light\", fontSize: s.fontSize ?? 14, emailAlerts: s.emailAlerts ?? true };"
+  ]
+}

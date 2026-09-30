@@ -1,0 +1,17 @@
+{
+  "title": "Can you vote?",
+  "level": 1,
+  "rating": 790,
+  "topics": [
+    "booleans",
+    "logical operators",
+    "comparison"
+  ],
+  "estMinutes": 6,
+  "mode": "runtime",
+  "hints": [
+    "There are two conditions and *both* must be true. Which operator means \"and\"?",
+    "Check the age with `>=` (\"at least\"), then combine it with the citizen boolean using `&&`.",
+    "return age >= 18 && isCitizen;"
+  ]
+}

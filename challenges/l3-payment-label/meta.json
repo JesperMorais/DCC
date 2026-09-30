@@ -1,0 +1,13 @@
+{
+  "title": "Payment method label",
+  "level": 3,
+  "rating": 1090,
+  "topics": ["union types", "in narrowing", "interfaces"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "`typeof` can't tell these apart — they're all objects. Check which *property* exists instead.",
+    "`if (\"cardNumber\" in method)` narrows `method` to `Card`. Do the same with `\"iban\"`; whatever is left must be `Invoice`.",
+    "Last four characters: `str.slice(-4)`. Brand label: `method.brand === \"visa\" ? \"Visa\" : \"Mastercard\"`."
+  ]
+}

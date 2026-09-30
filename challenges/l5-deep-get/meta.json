@@ -1,0 +1,13 @@
+{
+  "title": "Follow the path",
+  "level": 5,
+  "rating": 1340,
+  "topics": ["recursion", "unknown", "narrowing", "strings"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "Think recursively: getting `\"a.b.c\"` from `obj` is the same as getting `\"b.c\"` from `obj.a`. The base case is the empty path.",
+    "Split off the first segment with `path.indexOf(\".\")` (or `split`). Before indexing, make sure the current value is an object: `typeof v === \"object\" && v !== null`, otherwise return `undefined`.",
+    "if (path === \"\") return obj; const [head, ...rest] = path.split(\".\"); if (typeof obj !== \"object\" || obj === null) return undefined; return getPath((obj as Record<string, unknown>)[head], rest.join(\".\"));"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Parse server logs",
+  "level": 3,
+  "rating": 1110,
+  "topics": ["string parsing", "literal unions", "narrowing", "interfaces"],
+  "estMinutes": 10,
+  "mode": "runtime",
+  "hints": [
+    "Split the job in two: first cut the line into time / level / message, then check that the level is one of the three allowed values.",
+    "A regex with groups does the cutting: `/^(\\S+) \\[(\\w+)\\] (.+)$/`. For the level check, `level === \"INFO\" || level === \"WARN\" || level === \"ERROR\"` narrows a `string` down to `LogLevel`.",
+    "For `parseLog`: `text.split(\"\\n\").map(parseLogLine)` and then filter out the nulls with `.filter((e): e is LogEntry => e !== null)`."
+  ]
+}

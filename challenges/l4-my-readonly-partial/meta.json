@@ -1,0 +1,13 @@
+{
+  "title": "Build Readonly & Partial",
+  "level": 4,
+  "rating": 1265,
+  "topics": ["mapped types", "keyof", "modifiers", "utility types"],
+  "estMinutes": 8,
+  "mode": "types",
+  "hints": [
+    "Both are mapped types: `{ [K in keyof T]: T[K] }` copies every property of `T` unchanged. Start from that.",
+    "Modifiers go around the key: `readonly` in front of the bracket, `?` after it.",
+    "type MyReadonly<T> = { readonly [K in keyof T]: T[K] };  and  type MyPartial<T> = { [K in keyof T]?: T[K] };"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Patch a user record",
+  "level": 4,
+  "rating": 1245,
+  "topics": ["Partial", "Omit", "utility types", "object spread"],
+  "estMinutes": 9,
+  "mode": "runtime",
+  "hints": [
+    "`Partial<User>` makes every field optional — including `id` and `updatedAt`, which a patch must not touch. Remove those keys first.",
+    "Combine two utility types: `Partial<Omit<User, ...>>`. Then build the new object with spread: `{ ...user, ...patch, updatedAt: now }` — later properties win.",
+    "type UserPatch = Partial<Omit<User, \"id\" | \"updatedAt\">>; — then, if `patch.email !== undefined`, overwrite `email` with `patch.email.trim().toLowerCase()`."
+  ]
+}

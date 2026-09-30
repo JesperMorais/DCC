@@ -1,0 +1,13 @@
+{
+  "title": "Trust, but verify",
+  "level": 5,
+  "rating": 1360,
+  "topics": ["type guards", "asserts", "unknown", "narrowing", "JSON"],
+  "estMinutes": 10,
+  "mode": "runtime",
+  "hints": [
+    "Start by ruling out non-objects: `typeof value === \"object\" && value !== null`. After that, TypeScript still won't let you read `.id` — cast to `Record<string, unknown>` to inspect the fields.",
+    "Check each field with `typeof`. For `roles` use `Array.isArray(...)` plus `.every(r => typeof r === \"string\")`. For `email`, it's fine if it is `undefined`.",
+    "Write `isUser` first, then `assertUser` is two lines: `if (!isUser(value)) throw new Error(\"Invalid user\");` — the `asserts value is User` signature does the narrowing."
+  ]
+}

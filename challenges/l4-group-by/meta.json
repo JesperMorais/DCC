@@ -1,0 +1,13 @@
+{
+  "title": "Group logs with a Map",
+  "level": 4,
+  "rating": 1215,
+  "topics": ["generics", "Map", "callbacks"],
+  "estMinutes": 9,
+  "mode": "runtime",
+  "hints": [
+    "Two type parameters: `T` for the items and `K` for whatever `getKey` returns. The return type is then `Map<K, T[]>`.",
+    "Loop over the items, compute `const key = getKey(item)`, then either push onto the existing group or create a new one.",
+    "const group = groups.get(key); if (group) group.push(item); else groups.set(key, [item]);"
+  ]
+}

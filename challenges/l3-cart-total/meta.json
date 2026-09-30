@@ -1,0 +1,13 @@
+{
+  "title": "Shopping cart total",
+  "level": 3,
+  "rating": 1010,
+  "topics": ["interfaces", "reduce", "number formatting"],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Start with the interface: list each property with its type, e.g. `name: string;`.",
+    "`items.reduce((sum, item) => ..., 0)` walks the cart and carries a running total. Each line is worth `priceCents * quantity`.",
+    "For formatting: `(cents / 100).toFixed(2)` gives \"12.50\" — just put a `$` in front."
+  ]
+}

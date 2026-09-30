@@ -1,0 +1,17 @@
+{
+  "title": "Shout and whisper",
+  "level": 1,
+  "rating": 740,
+  "topics": [
+    "strings",
+    "string methods",
+    "functions"
+  ],
+  "estMinutes": 5,
+  "mode": "runtime",
+  "hints": [
+    "Strings come with built-in helpers you call with a dot, like `text.someMethod()`.",
+    "`toUpperCase()` makes every letter big, `toLowerCase()` makes every letter small. Then glue on the ending with `+`.",
+    "shout: `return text.toUpperCase() + \"!\";` — whisper is the same idea with `toLowerCase()` and `\"...\"`."
+  ]
+}

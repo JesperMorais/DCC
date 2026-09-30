@@ -1,0 +1,17 @@
+{
+  "title": "The biggest of three",
+  "level": 1,
+  "rating": 805,
+  "topics": [
+    "if/else",
+    "comparison",
+    "variables"
+  ],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Start by assuming the first number is the biggest, and remember it in a `let` variable.",
+    "Then compare that variable with `b`: if `b` is bigger, replace it. Do the same with `c`. Finally return the variable.",
+    "let biggest = a; if (b > biggest) { biggest = b; } if (c > biggest) { biggest = c; } return biggest;"
+  ]
+}

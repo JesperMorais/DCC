@@ -1,0 +1,13 @@
+{
+  "title": "Pocket calculator",
+  "level": 5,
+  "rating": 1445,
+  "topics": ["parsing", "tokenizer", "discriminated unions", "algorithms", "error handling"],
+  "estMinutes": 12,
+  "mode": "runtime",
+  "hints": [
+    "Split the job in two: first a tokenizer that turns the string into `Token[]` (numbers and operators, spaces skipped, anything else throws), then an evaluator over the tokens.",
+    "Precedence trick without a full parser: do one pass that collapses `*` and `/` into a list of terms, then a second pass that sums the terms with `+`/`-`, left to right. (Or: a tiny recursive-descent parser with `parseExpr` → `parseTerm`.)",
+    "Evaluator sketch: `let terms = [first number]; let ops = []` — for each (op, num): if op is `*` or `/`, replace the last term with `last op num`; else push op and num. Finally fold `terms` left-to-right with `ops`. Check that tokens alternate number/operator, else throw."
+  ]
+}

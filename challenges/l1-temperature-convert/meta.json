@@ -1,0 +1,17 @@
+{
+  "title": "Celsius to Fahrenheit",
+  "level": 1,
+  "rating": 755,
+  "topics": [
+    "numbers",
+    "arithmetic",
+    "functions"
+  ],
+  "estMinutes": 5,
+  "mode": "runtime",
+  "hints": [
+    "The formula is: multiply by 9, divide by 5, then add 32.",
+    "In code: `*` multiplies, `/` divides, `+` adds. Use parentheses if you want to be sure about the order.",
+    "return (celsius * 9) / 5 + 32;"
+  ]
+}

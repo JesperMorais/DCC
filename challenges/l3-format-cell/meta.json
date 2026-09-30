@@ -1,0 +1,13 @@
+{
+  "title": "Format a table cell",
+  "level": 3,
+  "rating": 1045,
+  "topics": ["union types", "typeof narrowing", "strings"],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Check the `null` case first with `value === null` — `typeof null` is \"object\", which is a famous JavaScript quirk.",
+    "Then use `typeof value === \"number\"` and `typeof value === \"boolean\"`. After those checks, TypeScript knows only `string` is left.",
+    "For the row: `row.map(formatCell).join(\" | \")`."
+  ]
+}

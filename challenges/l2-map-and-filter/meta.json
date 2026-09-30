@@ -1,0 +1,18 @@
+{
+  "title": "First steps with map and filter",
+  "level": 2,
+  "rating": 990,
+  "topics": [
+    "arrays",
+    "map",
+    "filter",
+    "arrow functions"
+  ],
+  "estMinutes": 10,
+  "mode": "runtime",
+  "hints": [
+    "`map` changes every item; `filter` keeps some items. Each takes a small function that gets one item at a time.",
+    "For `shoutAll`, the arrow function returns the uppercased word. For `longWords`, it returns `true` when the word is long enough (`>=`).",
+    "shoutAll: `return words.map((w) => w.toUpperCase());`  longWords: `return words.filter((w) => w.length >= minLength);`"
+  ]
+}

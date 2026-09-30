@@ -1,0 +1,17 @@
+{
+  "title": "Even or odd?",
+  "level": 1,
+  "rating": 770,
+  "topics": [
+    "booleans",
+    "numbers",
+    "remainder operator"
+  ],
+  "estMinutes": 5,
+  "mode": "runtime",
+  "hints": [
+    "A number is even when it can be split into 2 equal whole parts — nothing left over.",
+    "The `%` operator gives you what is left over after dividing. Check whether that leftover is `0` with `===`.",
+    "return n % 2 === 0;"
+  ]
+}

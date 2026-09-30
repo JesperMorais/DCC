@@ -1,0 +1,13 @@
+{
+  "title": "Try, try again",
+  "level": 5,
+  "rating": 1310,
+  "topics": ["async/await", "promises", "error handling", "generics"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "`await` inside a `try { ... } catch { ... }` turns a rejected promise into a normal catch — so a plain loop works.",
+    "Loop `attempts` times. On success, `return await fn()` immediately. On failure, remember the error and keep looping.",
+    "let last: unknown; for (let i = 0; i < attempts; i++) { try { return await fn(); } catch (e) { last = e; } } throw last;"
+  ]
+}

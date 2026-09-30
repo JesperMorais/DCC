@@ -1,0 +1,17 @@
+{
+  "title": "Score to letter grade",
+  "level": 1,
+  "rating": 825,
+  "topics": [
+    "if/else chains",
+    "comparison",
+    "strings"
+  ],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "Check the highest grade first. Once one check matches, `return` right away.",
+    "Use a chain: `if (score >= 90) ... else if (score >= 80) ... else if ...` and a final `else` for \"F\".",
+    "if (score >= 90) return \"A\"; if (score >= 80) return \"B\"; if (score >= 70) return \"C\"; if (score >= 60) return \"D\"; return \"F\";"
+  ]
+}

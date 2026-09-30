@@ -1,0 +1,17 @@
+{
+  "title": "Find the largest",
+  "level": 2,
+  "rating": 900,
+  "topics": [
+    "arrays",
+    "for...of",
+    "comparison"
+  ],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Keep a \"best so far\" variable. What's a safe first value for it, given the array is never empty?",
+    "Start with the first element, `nums[0]`, then loop over the array with `for...of` and replace the best when you find something bigger.",
+    "let best = nums[0]; for (const n of nums) { if (n > best) best = n; } return best;"
+  ]
+}

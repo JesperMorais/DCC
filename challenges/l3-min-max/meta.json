@@ -1,0 +1,17 @@
+{
+  "title": "Temperature range",
+  "level": 3,
+  "rating": 1075,
+  "topics": [
+    "tuples",
+    "readonly arrays",
+    "return types"
+  ],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Without an annotation, `return [lo, hi]` is inferred as `number[]`. Write the return type yourself: a tuple of two numbers, or `undefined`.",
+    "Don't sort — `readonly` forbids it (and it would mutate the caller's data). `Math.min(...nums)` and `Math.max(...nums)` work fine on a readonly array.",
+    "function minMax(temps: readonly number[]): [number, number] | undefined { if (temps.length === 0) return undefined; return [Math.min(...temps), Math.max(...temps)]; }"
+  ]
+}

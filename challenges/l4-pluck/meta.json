@@ -1,0 +1,13 @@
+{
+  "title": "Pluck a column",
+  "level": 4,
+  "rating": 1195,
+  "topics": ["keyof", "indexed access types", "generics"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "You need two type parameters: one for the object type and one for the key. The key must be one of the object's keys — that's what `keyof` is for.",
+    "Signature shape: `function pluck<T, K extends keyof T>(items: readonly T[], key: K): ???` — what is the type of `item[key]`?",
+    "The value type is `T[K]`, so return `T[K][]`: `return items.map((item) => item[key]);`"
+  ]
+}

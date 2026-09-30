@@ -1,0 +1,13 @@
+{
+  "title": "Dedupe by id",
+  "level": 4,
+  "rating": 1180,
+  "topics": ["generic constraints", "Set", "generics"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "A plain `<T>` doesn't know that `item.id` exists. Constrain it: `<T extends { id: number }>`.",
+    "Keep a `Set<number>` of ids you've already seen. `seen.has(id)` is fast even for huge lists.",
+    "return items.filter((item) => { if (seen.has(item.id)) return false; seen.add(item.id); return true; });"
+  ]
+}

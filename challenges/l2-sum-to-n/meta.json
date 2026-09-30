@@ -1,0 +1,17 @@
+{
+  "title": "Add up 1 to n",
+  "level": 2,
+  "rating": 860,
+  "topics": [
+    "for loops",
+    "numbers",
+    "accumulator"
+  ],
+  "estMinutes": 6,
+  "mode": "runtime",
+  "hints": [
+    "You need a running total that starts at 0 and grows. Should it be `const` or `let`?",
+    "Loop a counter `i` from 1 up to and including `n` (`i <= n`), and add `i` to the total on every round.",
+    "let total = 0; for (let i = 1; i <= n; i++) { total += i; } return total;"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Say hello",
+  "level": 1,
+  "rating": 720,
+  "topics": ["functions", "strings", "type annotations"],
+  "estMinutes": 5,
+  "mode": "runtime",
+  "hints": [
+    "A template literal uses backticks and lets you drop values in with ${...}.",
+    "Check whether the name is empty with `name === \"\"` (or `name.length === 0`) and return early.",
+    "return name === \"\" ? \"Hello, stranger!\" : `Hello, ${name}!`;"
+  ]
+}

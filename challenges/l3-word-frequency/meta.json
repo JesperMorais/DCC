@@ -1,0 +1,13 @@
+{
+  "title": "Word frequency",
+  "level": 3,
+  "rating": 1060,
+  "topics": ["Record", "regular expressions", "objects as maps"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "Lowercase the text first, then pull out the words: `text.match(/[a-z0-9]+/g)` returns an array of matches — or `null` if there are none.",
+    "Start with `const counts: Record<string, number> = {};` and loop over the words.",
+    "Inside the loop: `counts[word] = (counts[word] ?? 0) + 1;`"
+  ]
+}

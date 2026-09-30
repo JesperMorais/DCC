@@ -1,0 +1,17 @@
+{
+  "title": "Initials",
+  "level": 1,
+  "rating": 845,
+  "topics": [
+    "strings",
+    "string indexing",
+    "string methods"
+  ],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "You need the very first character of each name. Characters in a string are numbered starting at 0.",
+    "`first.charAt(0)` gives the first letter. Make it a capital with `.toUpperCase()`, then build the result with `+` or a template literal.",
+    "return first.charAt(0).toUpperCase() + \".\" + last.charAt(0).toUpperCase() + \".\";"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Build your own Pick",
+  "level": 6,
+  "rating": 1480,
+  "topics": ["mapped types", "keyof", "generics"],
+  "estMinutes": 10,
+  "mode": "types",
+  "hints": [
+    "A mapped type looks like `{ [P in SomeUnion]: ... }` — it creates one property per member of the union.",
+    "K must be restricted to real keys of T: `K extends keyof T`.",
+    "type MyPick<T, K extends keyof T> = { [P in K]: T[P] };"
+  ]
+}

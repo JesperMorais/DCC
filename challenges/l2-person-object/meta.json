@@ -1,0 +1,17 @@
+{
+  "title": "A typed person",
+  "level": 2,
+  "rating": 970,
+  "topics": [
+    "objects",
+    "type aliases",
+    "object types"
+  ],
+  "estMinutes": 9,
+  "mode": "runtime",
+  "hints": [
+    "An object type lists each property and its type between `{ }`, separated by `;`.",
+    "`type Person = { name: string; age: number };` — then read properties with `person.name`. For `haveBirthday`, return a brand-new object literal.",
+    "describe: return `${person.name} is ${person.age} years old`;  haveBirthday: return { name: person.name, age: person.age + 1 };"
+  ]
+}

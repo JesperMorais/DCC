@@ -1,0 +1,13 @@
+{
+  "title": "Cart reducer",
+  "level": 4,
+  "rating": 1290,
+  "topics": ["discriminated unions", "exhaustive switch", "never", "immutability"],
+  "estMinutes": 12,
+  "mode": "runtime",
+  "hints": [
+    "`switch (action.type)` — inside each `case`, TypeScript narrows `action` to that one variant, so `action.line` only exists in `case \"add\"`. Finish with `default: { const unreachable: never = action; return unreachable; }`.",
+    "Never mutate: return `{ lines: ... }` built with `map`, `filter` or spread. For \"add\", first check `state.lines.some((l) => l.id === action.line.id)`.",
+    "\"add\" existing → `state.lines.map((l) => l.id === id ? { ...l, qty: l.qty + 1 } : l)`; new → `[...state.lines, { ...action.line, qty: 1 }]`. \"setQty\" with `qty <= 0` → reuse the \"remove\" logic (`filter`)."
+  ]
+}

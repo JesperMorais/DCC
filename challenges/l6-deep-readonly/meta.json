@@ -1,0 +1,13 @@
+{
+  "title": "Frozen all the way down",
+  "level": 6,
+  "rating": 1590,
+  "topics": ["recursive types", "mapped types", "conditional types", "readonly"],
+  "estMinutes": 10,
+  "mode": "types",
+  "hints": [
+    "A type alias may refer to itself: apply `readonly` to every key, and for each value, apply `DeepReadonly` again.",
+    "You need a base case: primitives stay as they are, and so do functions (a mapped type over a function would wipe out its call signature). Check functions first, then `T extends object`.",
+    "type DeepReadonly<T> = T extends (...args: any[]) => any ? T : T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;"
+  ]
+}

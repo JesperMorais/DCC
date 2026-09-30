@@ -1,0 +1,13 @@
+{
+  "title": "Tuple toolkit",
+  "level": 6,
+  "rating": 1530,
+  "topics": ["tuples", "indexed access", "infer", "variadic tuple types"],
+  "estMinutes": 9,
+  "mode": "types",
+  "hints": [
+    "Tuples are objects with numeric keys and a literal `length` property — indexed access works on them: `T[\"length\"]`, `T[0]`, and `T[number]` (every element).",
+    "Constrain all three with `T extends readonly unknown[]` so `readonly` tuples are accepted and strings are rejected. For `Last`, match a variadic pattern: `[...infer Rest, infer L]`.",
+    "type Length<T extends readonly unknown[]> = T[\"length\"];  type TupleToUnion<T extends readonly unknown[]> = T[number];  type Last<T extends readonly unknown[]> = T extends readonly [...unknown[], infer L] ? L : never;"
+  ]
+}

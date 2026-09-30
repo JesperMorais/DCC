@@ -1,0 +1,13 @@
+{
+  "title": "Generate the getters",
+  "level": 6,
+  "rating": 1560,
+  "topics": ["mapped types", "key remapping", "template literal types", "Capitalize"],
+  "estMinutes": 9,
+  "mode": "types",
+  "hints": [
+    "Mapped types can rename keys: `{ [K in keyof T as NewName]: ... }`. Template literal types build the new name, and the built-in `Capitalize<S>` upper-cases the first letter.",
+    "`Capitalize` only accepts strings, but `keyof T` may include numbers and symbols. Intersecting with `string` (`K & string`) turns non-string keys into `never` — and remapping a key to `never` drops it.",
+    "type Getters<T> = { [K in keyof T as `get${Capitalize<K & string>}`]: () => T[K] };"
+  ]
+}
