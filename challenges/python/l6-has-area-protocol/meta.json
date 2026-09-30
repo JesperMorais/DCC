@@ -1,0 +1,12 @@
+{
+  "title": "If it has an area…",
+  "level": 6,
+  "rating": 1460,
+  "topics": ["typing.Protocol", "structural typing", "TypeVar bounds", "generics"],
+  "estMinutes": 8,
+  "hints": [
+    "Declare the protocol's method with a `...` body, and decorate the class with `@runtime_checkable` so that `isinstance` works on it.",
+    "`largest` doesn't need a loop: `max` takes `key=` (how to compare) and `default=` (what to return for empty input), and it returns the element itself.",
+    "def largest[T: HasArea](shapes: Iterable[T]) -> T | None:\n    return max(shapes, key=lambda s: s.area(), default=None)\n\ndef total_area(shapes: Iterable[HasArea]) -> float:\n    return sum((s.area() for s in shapes), 0.0)"
+  ]
+}

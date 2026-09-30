@@ -1,0 +1,12 @@
+{
+  "title": "Split a command line",
+  "level": 5,
+  "rating": 1445,
+  "topics": ["malloc", "arrays of strings", "ownership", "cleanup"],
+  "estMinutes": 12,
+  "hints": [
+    "Two passes make the sizes easy: first count the tokens (a token starts wherever a non-delimiter follows a delimiter or the start), then allocate `count + 1` pointers, the extra one for the terminating `NULL`.",
+    "In the second pass, find each token's start and length, `malloc(len + 1)`, `memcpy` the characters and add `'\\0'`. `free_tokens` walks the array until `NULL`, frees each string, then frees the array itself.",
+    "If a token allocation fails halfway, free what you already built (`tokens[i] = NULL; free_tokens(tokens);`) and return `NULL`. Store `*count` only at the end, on success."
+  ]
+}

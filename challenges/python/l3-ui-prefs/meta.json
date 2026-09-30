@@ -1,0 +1,12 @@
+{
+  "title": "Read nested user settings",
+  "level": 3,
+  "rating": 1030,
+  "topics": ["dicts", "nested data", "dict.get defaults"],
+  "estMinutes": 8,
+  "hints": [
+    "`d.get(key, default)` never raises `KeyError`. Walk down one level at a time: settings first, then ui.",
+    "A key can exist but hold `None` (JSON `null`), and then `.get(key, {})` gives you `None`. `profile.get(\"settings\") or {}` covers both cases.",
+    "`settings = profile.get(\"settings\") or {}`, `ui = settings.get(\"ui\") or {}`, then `return ui.get(\"theme\", \"light\"), ui.get(\"font_size\", 14)`."
+  ]
+}

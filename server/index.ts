@@ -1,14 +1,25 @@
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadChallenges, LEVELS, type Challenge } from "./challenges.ts";
-import { applyResult, currentStreak, dashboard, dailyChallenge, expectedScore, levelForRating, newTopicsFor, START_RATING } from "./engine.ts";
-import { runChallenge } from "./runner/index.ts";
+import { isLang, LANGUAGES, LEVEL_BANDS, type Lang } from "../shared/languages.ts";
+import { loadChallenges, type Challenge } from "./challenges.ts";
+import {
+  applyResult,
+  currentStreak,
+  dailyChallenge,
+  dashboard,
+  expectedScore,
+  levelForRating,
+  newTopicsFor,
+  ratingFor,
+  START_RATING,
+} from "./engine.ts";
 import { HARNESS_DTS } from "./runner/harness.ts";
+import { runChallenge } from "./runner/index.ts";
 import { load, reset, save, today, type Attempt, type Experience } from "./store.ts";
 
 const PORT = Number(process.env.PORT ?? 4321);
@@ -27,8 +38,15 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-const activeAttempt = (challengeId: string) =>
-  load().attempts.find((a) => a.challengeId === challengeId && a.status === "in-progress");
+const activeAttempt = (challengeId: string) => load().attempts.find((a) => a.challengeId === challengeId && a.status === "in-progress");
+
+const langParam = (c: Context, fallback: Lang = "typescript"): Lang => {
+  const l = c.req.query("lang") ?? c.req.param("lang");
+  return isLang(l) ? l : fallback;
+};
+
+/** Resolve `/:lang/:slug` to a challenge. */
+const findChallenge = (c: Context) => byId().get(`${c.req.param("lang")}/${c.req.param("slug")}`);
 
 function challengeView(c: Challenge) {
   const data = load();
@@ -36,11 +54,14 @@ function challengeView(c: Challenge) {
   const active = attempts.find((a) => a.status === "in-progress");
   const everFinished = attempts.some((a) => a.status !== "in-progress");
   const best = attempts.filter((a) => a.status === "solved").sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  const rating = ratingFor(data, c.language);
   return {
     id: c.id,
+    slug: c.slug,
+    language: c.language,
     title: c.title,
     level: c.level,
-    levelName: LEVELS[c.level].name,
+    levelName: LANGUAGES[c.language].levels[c.level],
     rating: c.rating,
     topics: c.topics,
     estMinutes: c.estMinutes,
@@ -55,9 +76,10 @@ function challengeView(c: Challenge) {
     attempt: active ?? null,
     solved: attempts.some((a) => a.status === "solved"),
     bestCode: best?.code ?? null,
-    isDaily: data.dailies[today()] === c.id,
-    expected: data.profile ? expectedScore(data.profile.rating, c.rating) : null,
+    isDaily: data.dailies[today()]?.[c.language] === c.id,
+    expected: rating !== null ? expectedScore(rating, c.rating) : null,
     newTopics: newTopicsFor(data, challenges, c),
+    languageStarted: rating !== null,
   };
 }
 
@@ -66,24 +88,44 @@ app.get("/api/harness", (c) => c.text(HARNESS_DTS));
 app.get("/api/state", (c) => {
   const data = load();
   if (!data.profile) return c.json({ profile: null });
-  const d = dashboard(data, challenges);
+  const d = dashboard(data, challenges, langParam(c));
   save(data); // dashboard may have assigned today's daily
   return c.json(d);
 });
 
-app.post("/api/profile", async (c) => {
-  const body = await c.req.json<{ name?: string; experience?: Experience }>();
-  const experience = body.experience && body.experience in START_RATING ? body.experience : "new";
+function startLanguage(lang: Lang, experience: Experience) {
   const data = load();
   const now = new Date().toISOString();
-  const rating = START_RATING[experience];
-  if (data.profile) {
-    data.profile.name = body.name?.trim() || data.profile.name;
-  } else {
-    data.profile = { name: body.name?.trim() || "Coder", experience, createdAt: now, rating };
-    data.ratingHistory = [{ at: now, rating }];
+  const p = data.profile!;
+  if (!p.languages[lang]) {
+    const rating = START_RATING[experience];
+    p.languages[lang] = { experience, rating, startedAt: now };
+    data.ratingHistory.push({ at: now, rating, language: lang });
   }
   save(data);
+}
+
+const experienceOf = (e: unknown): Experience => (typeof e === "string" && e in START_RATING ? (e as Experience) : "new");
+
+app.post("/api/profile", async (c) => {
+  const body = await c.req.json<{ name?: string; experience?: Experience; language?: string }>();
+  const data = load();
+  if (data.profile) {
+    data.profile.name = body.name?.trim() || data.profile.name;
+    save(data);
+  } else {
+    data.profile = { name: body.name?.trim() || "Coder", createdAt: new Date().toISOString(), languages: {} };
+    save(data);
+    startLanguage(isLang(body.language) ? body.language : "typescript", experienceOf(body.experience));
+  }
+  return c.json({ ok: true });
+});
+
+app.post("/api/languages/:lang/start", async (c) => {
+  const lang = c.req.param("lang");
+  if (!isLang(lang) || !load().profile) return c.json({ error: "unknown language" }, 400);
+  const body = await c.req.json<{ experience?: Experience }>().catch(() => ({ experience: undefined }));
+  startLanguage(lang, experienceOf(body.experience));
   return c.json({ ok: true });
 });
 
@@ -94,6 +136,7 @@ app.post("/api/reset", (c) => {
 
 app.get("/api/challenges", (c) => {
   const data = load();
+  const lang = langParam(c);
   const status = (id: string) => {
     const as = data.attempts.filter((a) => a.challengeId === id);
     if (as.some((a) => a.status === "solved")) return "solved";
@@ -102,43 +145,50 @@ app.get("/api/challenges", (c) => {
     return "new";
   };
   return c.json({
-    levels: Object.entries(LEVELS).map(([k, v]) => ({ level: Number(k), name: v.name, band: v.band })),
-    rating: data.profile?.rating ?? null,
-    challenges: challenges.map((ch) => ({
-      id: ch.id,
-      title: ch.title,
-      level: ch.level,
-      rating: ch.rating,
-      topics: ch.topics,
-      estMinutes: ch.estMinutes,
-      mode: ch.mode,
-      status: status(ch.id),
-    })),
+    language: lang,
+    levels: Object.entries(LEVEL_BANDS).map(([k, band]) => ({ level: Number(k), name: LANGUAGES[lang].levels[Number(k)], band })),
+    rating: ratingFor(data, lang),
+    challenges: challenges
+      .filter((ch) => ch.language === lang)
+      .map((ch) => ({
+        id: ch.id,
+        slug: ch.slug,
+        language: ch.language,
+        title: ch.title,
+        level: ch.level,
+        rating: ch.rating,
+        topics: ch.topics,
+        estMinutes: ch.estMinutes,
+        mode: ch.mode,
+        status: status(ch.id),
+      })),
   });
 });
 
-app.get("/api/challenges/:id", (c) => {
-  const ch = byId().get(c.req.param("id"));
+app.get("/api/challenges/:lang/:slug", (c) => {
+  const ch = findChallenge(c);
   if (!ch) return c.json({ error: "not found" }, 404);
   return c.json(challengeView(ch));
 });
 
-app.post("/api/challenges/:id/start", (c) => {
-  const ch = byId().get(c.req.param("id"));
+app.post("/api/challenges/:lang/:slug/start", (c) => {
+  const ch = findChallenge(c);
   const data = load();
   if (!ch || !data.profile) return c.json({ error: "not found" }, 404);
+  if (!data.profile.languages[ch.language]) return c.json({ error: "language not started" }, 409);
   if (!activeAttempt(ch.id)) {
-    dailyChallenge(data, challenges);
+    dailyChallenge(data, challenges, ch.language);
     const date = today();
     const attempt: Attempt = {
       id: crypto.randomUUID(),
       challengeId: ch.id,
+      language: ch.language,
       date,
       startedAt: new Date().toISOString(),
       status: "in-progress",
       hintsUsed: 0,
       runs: 0,
-      isDaily: data.dailies[date] === ch.id,
+      isDaily: data.dailies[date]?.[ch.language] === ch.id,
       rated: !data.attempts.some((a) => a.challengeId === ch.id && a.status !== "in-progress"),
     };
     data.attempts.push(attempt);
@@ -147,8 +197,8 @@ app.post("/api/challenges/:id/start", (c) => {
   return c.json(challengeView(ch));
 });
 
-app.post("/api/challenges/:id/hint", (c) => {
-  const ch = byId().get(c.req.param("id"));
+app.post("/api/challenges/:lang/:slug/hint", (c) => {
+  const ch = findChallenge(c);
   const a = ch && activeAttempt(ch.id);
   if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
   a.hintsUsed = Math.min(ch.hints.length, a.hintsUsed + 1);
@@ -156,11 +206,11 @@ app.post("/api/challenges/:id/hint", (c) => {
   return c.json({ hints: ch.hints.slice(0, a.hintsUsed) });
 });
 
-app.post("/api/challenges/:id/run", async (c) => {
-  const ch = byId().get(c.req.param("id"));
+app.post("/api/challenges/:lang/:slug/run", async (c) => {
+  const ch = findChallenge(c);
   if (!ch) return c.json({ error: "not found" }, 404);
   const { code } = await c.req.json<{ code: string }>();
-  const result = await runChallenge(String(code ?? ""), ch.tests, ch.mode);
+  const result = await runChallenge(ch.language, String(code ?? ""), ch.tests, ch.mode);
   const a = activeAttempt(ch.id);
   if (a) {
     a.runs++;
@@ -177,35 +227,36 @@ function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: s
   a.code = code;
   applyResult(data, a, ch);
   save(data);
+  const rating = ratingFor(data, ch.language)!;
   return {
     status,
     score: a.score,
     rated: a.rated,
-    ratingBefore: a.ratingBefore ?? data.profile!.rating,
-    ratingAfter: a.ratingAfter ?? data.profile!.rating,
+    ratingBefore: a.ratingBefore ?? rating,
+    ratingAfter: a.ratingAfter ?? rating,
     minutes: (Date.parse(a.finishedAt) - Date.parse(a.startedAt)) / 60_000,
     hintsUsed: a.hintsUsed,
     solution: ch.solution,
-    levelBefore: levelForRating(a.ratingBefore ?? data.profile!.rating).level,
-    levelAfter: levelForRating(data.profile!.rating).level,
-    levelName: levelForRating(data.profile!.rating).name,
+    levelBefore: levelForRating(ch.language, a.ratingBefore ?? rating).level,
+    levelAfter: levelForRating(ch.language, rating).level,
+    levelName: levelForRating(ch.language, rating).name,
     streak: currentStreak(data),
     firstSolveToday: status === "solved" && !solvedTodayBefore,
   };
 }
 
-app.post("/api/challenges/:id/submit", async (c) => {
-  const ch = byId().get(c.req.param("id"));
+app.post("/api/challenges/:lang/:slug/submit", async (c) => {
+  const ch = findChallenge(c);
   const a = ch && activeAttempt(ch.id);
   if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
   const { code } = await c.req.json<{ code: string }>();
-  const result = await runChallenge(String(code ?? ""), ch.tests, ch.mode);
+  const result = await runChallenge(ch.language, String(code ?? ""), ch.tests, ch.mode);
   if (!result.passed) return c.json({ error: "Not all checks pass yet", result }, 400);
   return c.json({ ...finish(ch, a, "solved", code), result });
 });
 
-app.post("/api/challenges/:id/giveup", async (c) => {
-  const ch = byId().get(c.req.param("id"));
+app.post("/api/challenges/:lang/:slug/giveup", async (c) => {
+  const ch = findChallenge(c);
   const a = ch && activeAttempt(ch.id);
   if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
   const { code } = await c.req.json<{ code: string }>().catch(() => ({ code: "" }));
@@ -220,5 +271,5 @@ if (fs.existsSync(dist)) {
 }
 
 serve({ fetch: app.fetch, port: PORT, hostname: "127.0.0.1" }, () => {
-  console.log(`\n  Daily TS  →  http://localhost:${PORT}${process.env.NODE_ENV === "production" ? "" : "  (API; UI on vite)"}\n`);
+  console.log(`\n  daily.ts  →  http://localhost:${PORT}${process.env.NODE_ENV === "production" ? "" : "  (API; UI on vite)"}\n`);
 });

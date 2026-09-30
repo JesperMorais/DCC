@@ -1,0 +1,16 @@
+{
+  "title": "Receipt line",
+  "level": 1,
+  "rating": 795,
+  "topics": [
+    "f-strings",
+    "formatting",
+    "float"
+  ],
+  "estMinutes": 6,
+  "hints": [
+    "First compute the line total: the price of one item times how many there are.",
+    "Inside an f-string, `{value:.2f}` shows a number with exactly two decimals.",
+    "`total = unit_price * quantity` then `return f\"{quantity} x {item} = {total:.2f}\"`"
+  ]
+}

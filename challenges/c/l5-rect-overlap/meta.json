@@ -1,0 +1,12 @@
+{
+  "title": "Where windows overlap",
+  "level": 5,
+  "rating": 1320,
+  "topics": ["structs", "pass by value", "pass by pointer"],
+  "estMinutes": 10,
+  "hints": [
+    "Treat each axis on its own: two ranges `[a, a+w)` and `[b, b+w)` overlap from `max(start)` to `min(end)`.",
+    "Compute `left = max(a.x, b.x)`, `right = min(a.x + a.w, b.x + b.w)`, and the same for top/bottom. If `right <= left` or `bottom <= top`, there's no overlap: return `false` before touching `out`.",
+    "`if (out != NULL) { *out = (Rect){ left, top, right - left, bottom - top }; } return true;` and `rect_area` is just `r->w * r->h`."
+  ]
+}

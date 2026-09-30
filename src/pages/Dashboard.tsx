@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import type { Dashboard } from "../api";
 import { Heatmap, LevelProgress, RatingChart, TopicMastery } from "../components/charts";
 import { Mascot, TessSays, type Mood } from "../components/Mascot";
+import { LangBadge, LANGUAGES } from "../lang";
 import { greeting as tessGreeting } from "../tess/lines";
 import { read, useTessVoice, write } from "../tess/prefs";
 import { fmtMinutes, Icon, LevelBadge, relTime, StatusDot, Tag, type IconName } from "../ui";
@@ -20,19 +21,23 @@ export default function DashboardPage({ state }: { state: Dashboard }) {
     <div className="mx-auto max-w-[1240px] px-4 py-8 sm:px-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted">{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
+          <p className="flex items-center gap-2 text-sm text-muted">
+            <LangBadge lang={state.language} size={18} />
+            <span className="font-medium text-ink-2">{LANGUAGES[state.language].name}</span> ·{" "}
+            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </p>
           <h1 className="mt-1 text-[28px] font-semibold tracking-tight">
             {greeting()}, {name}
           </h1>
         </div>
-        <Link to="/library" className="btn">
+        <Link to={`/${state.language}/library`} className="btn">
           <Icon name="library" /> Browse all challenges
         </Link>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <DailyCard state={state} />
-        <RatingCard stats={stats} level={level} />
+        <RatingCard stats={stats} level={level} lang={state.language} />
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-4">
@@ -157,7 +162,7 @@ function DailyCard({ state }: { state: Dashboard }) {
         <h2 className={`mt-3 text-2xl font-semibold tracking-tight ${showBubble ? "sm:pr-36" : ""}`}>{daily.title}</h2>
         {voice !== "off" && <p className="mt-1 text-sm text-ink-2 sm:hidden">{line.text}</p>}
         <div className={`mt-3 flex flex-wrap items-center gap-2 ${showBubble ? "sm:pr-36" : ""}`}>
-          <LevelBadge level={daily.level} withName />
+          <LevelBadge level={daily.level} name={daily.levelName} />
           {daily.mode === "types" && <Tag>type-level</Tag>}
           {daily.topics.map((t) => (
             <Tag key={t}>{t}</Tag>
@@ -176,7 +181,7 @@ function DailyCard({ state }: { state: Dashboard }) {
 
         <div className="mt-auto flex flex-wrap items-center gap-3 pt-6">
           {!done ? (
-            <button className="btn btn-primary h-10 px-5" onClick={() => navigate(`/c/${daily.id}`)}>
+            <button className="btn btn-primary h-10 px-5" onClick={() => navigate(`/solve/${daily.id}`)}>
               <Icon name="play" size={14} /> {daily.status === "in-progress" ? "Continue" : "Start challenge"}
             </button>
           ) : (
@@ -185,11 +190,11 @@ function DailyCard({ state }: { state: Dashboard }) {
                 <Icon name="check" size={15} /> {daily.status === "solved" ? "Done for today" : "Attempted today"}
               </div>
               {next && (
-                <button className="btn btn-primary h-10" onClick={() => navigate(`/c/${next.id}`)}>
+                <button className="btn btn-primary h-10" onClick={() => navigate(`/solve/${next.id}`)}>
                   Bonus: {next.title} <Icon name="chevron" size={14} />
                 </button>
               )}
-              <button className="btn btn-ghost h-10" onClick={() => navigate(`/c/${daily.id}`)}>
+              <button className="btn btn-ghost h-10" onClick={() => navigate(`/solve/${daily.id}`)}>
                 Review
               </button>
             </>
@@ -202,21 +207,22 @@ function DailyCard({ state }: { state: Dashboard }) {
 
 const TESS_MOOD: Record<string, Mood> = { "not-started": "wave", "in-progress": "think", solved: "happy", "gave-up": "cheer" };
 
-function RatingCard({ stats, level }: { stats: Dashboard["stats"]; level: Dashboard["level"] }) {
+function RatingCard({ stats, level, lang }: { stats: Dashboard["stats"]; level: Dashboard["level"]; lang: Dashboard["language"] }) {
   const d = stats.ratingDelta7d;
   const voice = useTessVoice();
   // Once per level: Tess congratulates you on the new level. The starting level doesn't count.
   const [newLevel, setNewLevel] = useState(() => {
-    const seen = Number(read("tess:level-seen") ?? 0);
+    const key = `tess:level-seen:${lang}`;
+    const seen = Number(read(key) ?? (lang === "typescript" ? read("tess:level-seen") : null) ?? 0);
     if (!seen) {
-      write("tess:level-seen", String(level.level));
+      write(key, String(level.level));
       return false;
     }
     return level.level > seen;
   });
   return (
     <section className="card flex flex-col p-6">
-      <div className="text-xs font-medium text-muted">Skill rating</div>
+      <div className="text-xs font-medium text-muted">{LANGUAGES[lang].name} skill rating</div>
       <div className="mt-2 flex items-baseline gap-3">
         <span className="text-5xl font-semibold tracking-tight tabular">{stats.rating.toLocaleString()}</span>
         {d !== 0 && (
@@ -243,7 +249,7 @@ function RatingCard({ stats, level }: { stats: Dashboard["stats"]; level: Dashbo
               className="text-muted hover:text-ink"
               aria-label="Dismiss"
               onClick={() => {
-                write("tess:level-seen", String(level.level));
+                write(`tess:level-seen:${lang}`, String(level.level));
                 setNewLevel(false);
               }}
             >
@@ -285,7 +291,7 @@ function RecentTable({ recent }: { recent: Dashboard["recent"] }) {
           {recent.map((r) => (
             <tr key={r.id} className="border-t border-line">
               <td className="px-2 py-2.5">
-                <Link to={`/c/${r.challengeId}`} className="flex items-center gap-2 hover:text-accent">
+                <Link to={`/solve/${r.challengeId}`} className="flex items-center gap-2 hover:text-accent">
                   <LevelBadge level={r.level} />
                   <span className="font-medium">{r.title}</span>
                   {r.isDaily && <Tag>daily</Tag>}

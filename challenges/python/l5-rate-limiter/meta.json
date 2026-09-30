@@ -1,0 +1,12 @@
+{
+  "title": "Slow down, please",
+  "level": 5,
+  "rating": 1330,
+  "topics": ["closures", "nonlocal", "higher-order functions"],
+  "estMinutes": 8,
+  "hints": [
+    "Keep two pieces of state in `make_rate_limiter`: when the current window started (nothing yet at first) and how many calls it has allowed. `allow` reads and updates them.",
+    "`allow` rebinds those variables, so it needs `nonlocal window_start, used`. On each call: read `now = clock()`; if there's no window yet or `now - window_start >= window`, start a new one.",
+    "if window_start is None or now - window_start >= window: window_start, used = now, 0\nif used < limit: used += 1; return True\nreturn False"
+  ]
+}

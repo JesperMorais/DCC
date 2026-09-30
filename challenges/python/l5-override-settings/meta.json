@@ -1,0 +1,12 @@
+{
+  "title": "Just for this block",
+  "level": 5,
+  "rating": 1440,
+  "topics": ["context managers", "contextlib", "try/finally", "sentinels"],
+  "estMinutes": 10,
+  "hints": [
+    "Before changing anything, remember the old value of **each key in `changes`** (not a copy of the whole dict, because edits to other keys must survive).",
+    "Put the `yield` inside `try:` and the restoring inside `finally:`. For keys that were missing, store a sentinel (`_MISSING = object()`) as their \"old value\" so you know to `pop` them afterwards.",
+    "saved = {k: settings.get(k, _MISSING) for k in changes}\nsettings.update(changes)\ntry: yield settings\nfinally:\n    for k, old in saved.items():\n        if old is _MISSING: settings.pop(k, None)\n        else: settings[k] = old"
+  ]
+}

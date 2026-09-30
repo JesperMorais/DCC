@@ -1,0 +1,12 @@
+{
+  "title": "Sorting usernames, any case",
+  "level": 3,
+  "rating": 1148,
+  "topics": ["strings", "comparison", "ctype.h"],
+  "estMinutes": 10,
+  "hints": [
+    "Walk both strings with the same index and compare lowercased characters. The first position where they differ decides the answer.",
+    "Loop while `a[i] != '\\0'` and the lowercased characters are equal. When the loop stops, return the difference of the two lowercased characters at `i`. If one string ended, its `'\\0'` (value 0) makes it compare smaller automatically.",
+    "`size_t i = 0; while (a[i] != '\\0' && tolower((unsigned char)a[i]) == tolower((unsigned char)b[i])) i++; return tolower((unsigned char)a[i]) - tolower((unsigned char)b[i]);`"
+  ]
+}

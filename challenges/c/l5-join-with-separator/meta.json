@@ -1,0 +1,12 @@
+{
+  "title": "Join the columns",
+  "level": 5,
+  "rating": 1385,
+  "topics": ["malloc", "size computation", "strings"],
+  "estMinutes": 10,
+  "hints": [
+    "Do it in two passes: first work out exactly how many bytes the result needs, then allocate once and fill it.",
+    "The size is: the sum of every part's length, plus `strlen(sep)` for each gap between parts (there are `count - 1` gaps when `count > 0`), plus 1 for the `'\\0'`. With `count == 0` that's just 1 byte.",
+    "Keep a write cursor `char *p = out;`. For each part: if `i > 0`, `memcpy(p, sep, sep_len); p += sep_len;` then `memcpy` the part and advance. Finish with `*p = '\\0';`."
+  ]
+}

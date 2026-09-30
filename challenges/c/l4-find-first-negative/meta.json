@@ -1,0 +1,12 @@
+{
+  "title": "Point at the problem",
+  "level": 4,
+  "rating": 1205,
+  "topics": ["pointers", "returning pointers", "NULL"],
+  "estMinutes": 9,
+  "hints": [
+    "Return the **address** of the element, not its value: `&balances[i]` (or `balances + i`). If you finish the loop without finding one, return `NULL`.",
+    "Loop `i` from 0 while `i < count`. The first time `balances[i] < 0`, return its address straight away. Handle `balances == NULL` before the loop.",
+    "`if (balances == NULL) return NULL; for (size_t i = 0; i < count; i++) { if (balances[i] < 0) return &balances[i]; } return NULL;`"
+  ]
+}

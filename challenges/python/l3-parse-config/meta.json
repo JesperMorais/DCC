@@ -1,0 +1,12 @@
+{
+  "title": "Parse a connection string",
+  "level": 3,
+  "rating": 1140,
+  "topics": ["string parsing", "str.split", "dicts", "validation"],
+  "estMinutes": 10,
+  "hints": [
+    "Split the whole text on `\";\"` first, then handle each segment on its own. Strip it, and skip it if it's empty.",
+    "`segment.split(\"=\", 1)` splits at the **first** `=` only, so `\"a=b=c\"` gives `[\"a\", \"b=c\"]`. `\"=\" not in segment` means the segment is malformed.",
+    "In the loop: `if \"=\" not in segment: raise ValueError(f\"malformed segment: {segment!r}\")`, then `key, value = segment.split(\"=\", 1)` and `config[key.strip().lower()] = value.strip()`."
+  ]
+}

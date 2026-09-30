@@ -1,0 +1,12 @@
+{
+  "title": "Audit who gained access",
+  "level": 3,
+  "rating": 1060,
+  "topics": ["sets", "set operations", "sorted"],
+  "estMinutes": 8,
+  "hints": [
+    "Turn both lists into sets with `set(...)`. That also removes the duplicates for free.",
+    "`after - before` is who was added, `before - after` who was removed, and `before & after` who was in both.",
+    "`old, new = set(before), set(after)` then `return {\"added\": sorted(new - old), \"removed\": sorted(old - new), \"kept\": sorted(old & new)}`"
+  ]
+}

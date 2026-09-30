@@ -1,5 +1,6 @@
-// The adaptive part: an Elo-style skill rating, challenge selection and dashboard stats.
-import { LEVELS, type Challenge } from "./challenges.ts";
+// The adaptive part: an Elo-style skill rating per language, challenge selection and dashboard stats.
+import { LANG_IDS, LANGUAGES, LEVEL_BANDS, type Lang } from "../shared/languages.ts";
+import type { Challenge } from "./challenges.ts";
 import { today, type Attempt, type Data, type Experience } from "./store.ts";
 
 export const START_RATING: Record<Experience, number> = {
@@ -12,6 +13,8 @@ export const START_RATING: Record<Experience, number> = {
 
 const DAY = 86_400_000;
 const TARGET_MINUTES = 10;
+
+export const ratingFor = (data: Data, lang: Lang) => data.profile?.languages[lang]?.rating ?? null;
 
 /** Probability the learner "beats" a challenge, classic Elo curve. */
 export const expectedScore = (rating: number, difficulty: number) => 1 / (1 + 10 ** ((difficulty - rating) / 400));
@@ -30,21 +33,21 @@ export function performanceScore(a: Attempt, c: Challenge): number {
 }
 
 function kFactor(ratedCount: number) {
-  if (ratedCount < 5) return 64; // calibrate fast in the first few days
+  if (ratedCount < 5) return 64; // calibrate fast in the first few days of each language
   if (ratedCount < 15) return 40;
   return 28;
 }
 
 export function applyResult(data: Data, a: Attempt, c: Challenge) {
-  const profile = data.profile!;
+  const progress = data.profile!.languages[c.language]!;
   a.score = performanceScore(a, c);
   if (!a.rated) return;
-  const ratedCount = data.attempts.filter((x) => x.rated && x.status !== "in-progress" && x.id !== a.id).length;
-  const delta = kFactor(ratedCount) * (a.score - expectedScore(profile.rating, c.rating));
-  a.ratingBefore = profile.rating;
-  profile.rating = Math.round(Math.max(600, Math.min(1800, profile.rating + delta)));
-  a.ratingAfter = profile.rating;
-  data.ratingHistory.push({ at: a.finishedAt!, rating: profile.rating, challengeId: c.id });
+  const ratedCount = data.attempts.filter((x) => x.language === c.language && x.rated && x.status !== "in-progress" && x.id !== a.id).length;
+  const delta = kFactor(ratedCount) * (a.score - expectedScore(progress.rating, c.rating));
+  a.ratingBefore = progress.rating;
+  progress.rating = Math.round(Math.max(600, Math.min(1800, progress.rating + delta)));
+  a.ratingAfter = progress.rating;
+  data.ratingHistory.push({ at: a.finishedAt!, rating: progress.rating, language: c.language, challengeId: c.id });
 }
 
 function hash(s: string) {
@@ -56,20 +59,21 @@ function hash(s: string) {
 const finished = (a: Attempt) => a.status !== "in-progress";
 
 /**
- * Pick the best next challenge: close to (slightly above) the learner's rating,
+ * Pick the best next challenge in a language: close to (slightly above) the learner's rating,
  * not recently seen, leaning towards topics they're weakest at.
  */
-export function pickChallenge(data: Data, challenges: Challenge[], exclude: Set<string> = new Set()): Challenge | null {
-  const rating = data.profile?.rating ?? 900;
+export function pickChallenge(data: Data, all: Challenge[], lang: Lang, exclude: Set<string> = new Set()): Challenge | null {
+  const challenges = all.filter((c) => c.language === lang);
+  const rating = ratingFor(data, lang) ?? 900;
   const target = rating + 30; // a gentle stretch
   const now = Date.now();
-  const done = data.attempts.filter(finished);
+  const done = data.attempts.filter((a) => a.language === lang && finished(a));
 
   const lastFinish = new Map<string, Attempt>();
   for (const a of done) lastFinish.set(a.challengeId, a);
 
   const recentTopics = new Set(done.slice(-3).flatMap((a) => challenges.find((c) => c.id === a.challengeId)?.topics ?? []));
-  const topicScores = topicStats(data, challenges);
+  const topicScores = topicStats(data, all, lang);
 
   const eligible = (c: Challenge) => {
     if (exclude.has(c.id)) return false;
@@ -104,33 +108,34 @@ export function pickChallenge(data: Data, challenges: Challenge[], exclude: Set<
   return pool.reduce((best, c) => (cost(c) < cost(best) ? c : best));
 }
 
-export function dailyChallenge(data: Data, challenges: Challenge[]): { challenge: Challenge | null; assigned: boolean } {
+export function dailyChallenge(data: Data, challenges: Challenge[], lang: Lang): Challenge | null {
   const d = today();
-  const existing = data.dailies[d];
+  const existing = data.dailies[d]?.[lang];
   const found = existing && challenges.find((c) => c.id === existing);
-  if (found) return { challenge: found, assigned: false };
+  if (found) return found;
+  if (!data.profile?.languages[lang]) return null; // pick only once the language is started
   const inProgress = new Set(data.attempts.filter((a) => a.status === "in-progress").map((a) => a.challengeId));
-  const c = pickChallenge(data, challenges, inProgress) ?? pickChallenge(data, challenges);
-  if (c) data.dailies[d] = c.id;
-  return { challenge: c, assigned: !!c };
+  const c = pickChallenge(data, challenges, lang, inProgress) ?? pickChallenge(data, challenges, lang);
+  if (c) data.dailies[d] = { ...data.dailies[d], [lang]: c.id };
+  return c;
 }
 
-export function levelForRating(rating: number) {
-  const entries = Object.entries(LEVELS).map(([k, v]) => ({ level: Number(k), ...v }));
+export function levelForRating(lang: Lang, rating: number) {
+  const entries = Object.entries(LEVEL_BANDS).map(([k, band]) => ({ level: Number(k), band }));
   const current = entries.find((l) => rating < l.band[1]) ?? entries[entries.length - 1];
   const [lo, hi] = current.band;
   return {
     level: current.level,
-    name: current.name,
+    name: LANGUAGES[lang].levels[current.level],
     progress: Math.max(0, Math.min(1, (rating - lo) / (hi - lo))),
     nextAt: hi,
   };
 }
 
-export function topicStats(data: Data, challenges: Challenge[]) {
+export function topicStats(data: Data, challenges: Challenge[], lang: Lang) {
   const byId = new Map(challenges.map((c) => [c.id, c]));
   const m = new Map<string, { attempts: number; solved: number; total: number }>();
-  for (const a of data.attempts.filter(finished)) {
+  for (const a of data.attempts.filter((x) => x.language === lang && finished(x))) {
     for (const t of byId.get(a.challengeId)?.topics ?? []) {
       const s = m.get(t) ?? { attempts: 0, solved: 0, total: 0 };
       s.attempts++;
@@ -147,7 +152,7 @@ export function topicStats(data: Data, challenges: Challenge[]) {
 export function streaks(solvedDays: Set<string>) {
   const dayStr = (offset: number) => today(new Date(Date.now() - offset * DAY));
   // Current streak counts back from today, or from yesterday if today isn't done yet.
-  let start = solvedDays.has(dayStr(0)) ? 0 : 1;
+  const start = solvedDays.has(dayStr(0)) ? 0 : 1;
   let current = 0;
   while (solvedDays.has(dayStr(start + current))) current++;
 
@@ -164,54 +169,98 @@ export function streaks(solvedDays: Set<string>) {
   return { current, best: Math.max(best, current) };
 }
 
-export function dashboard(data: Data, challenges: Challenge[]) {
+/** Streaks are global: a day you practised any language counts. */
+export function currentStreak(data: Data) {
+  return streaks(new Set(data.attempts.filter((a) => a.status === "solved").map((a) => a.date))).current;
+}
+
+/** Topics of a challenge the learner has never finished a challenge in (within that language). */
+export function newTopicsFor(data: Data, challenges: Challenge[], c: Challenge) {
+  const seen = new Set(topicStats(data, challenges, c.language).map((t) => t.topic));
+  return c.topics.filter((t) => !seen.has(t));
+}
+
+export function languageSummaries(data: Data, challenges: Challenge[]) {
+  return LANG_IDS.map((lang) => {
+    const p = data.profile?.languages[lang];
+    const solved = new Set(data.attempts.filter((a) => a.language === lang && a.status === "solved").map((a) => a.challengeId));
+    const d = data.dailies[today()]?.[lang];
+    const dailyDone = !!d && data.attempts.some((a) => a.challengeId === d && a.date === today() && a.status !== "in-progress");
+    return {
+      id: lang,
+      started: !!p,
+      rating: p?.rating ?? null,
+      level: p ? levelForRating(lang, p.rating).level : null,
+      solved: solved.size,
+      total: challenges.filter((c) => c.language === lang).length,
+      dailyDone,
+    };
+  });
+}
+
+export function dashboard(data: Data, challenges: Challenge[], lang: Lang) {
+  const inLang = challenges.filter((c) => c.language === lang);
   const byId = new Map(challenges.map((c) => [c.id, c]));
-  const done = data.attempts.filter(finished);
+  const all = data.attempts.filter(finished);
+  const done = all.filter((a) => a.language === lang);
   const solved = done.filter((a) => a.status === "solved");
   const solvedIds = new Set(solved.map((a) => a.challengeId));
-  const solvedDays = new Set(solved.map((a) => a.date));
-  const rating = data.profile?.rating ?? 0;
+  const allSolvedDays = new Set(all.filter((a) => a.status === "solved").map((a) => a.date));
+  const rating = ratingFor(data, lang) ?? 0;
+  const history = data.ratingHistory.filter((p) => p.language === lang);
 
-  const { challenge: daily } = dailyChallenge(data, challenges);
+  const daily = dailyChallenge(data, challenges, lang);
   const todayStr = today();
-  const dailyAttempt = daily
-    ? [...data.attempts].reverse().find((a) => a.challengeId === daily.id && a.date === todayStr)
-    : undefined;
+  const dailyAttempt = daily ? [...data.attempts].reverse().find((a) => a.challengeId === daily.id && a.date === todayStr) : undefined;
 
   const solveMinutes = solved.map((a) => (Date.parse(a.finishedAt!) - Date.parse(a.startedAt)) / 60_000);
   const weekAgo = Date.now() - 7 * DAY;
-  const ratingWeekAgo =
-    [...data.ratingHistory].reverse().find((p) => Date.parse(p.at) <= weekAgo)?.rating ?? data.ratingHistory[0]?.rating ?? rating;
+  const ratingWeekAgo = [...history].reverse().find((p) => Date.parse(p.at) <= weekAgo)?.rating ?? history[0]?.rating ?? rating;
 
+  // The heatmap shows every language, so the streak it illustrates is the real one.
   const heatDays = 7 * 20;
   const heatmap = Array.from({ length: heatDays }, (_, i) => {
     const date = today(new Date(Date.now() - (heatDays - 1 - i) * DAY));
-    return { date, solved: solved.filter((a) => a.date === date).length };
+    return { date, solved: all.filter((a) => a.status === "solved" && a.date === date).length };
   });
 
-  const next =
-    dailyAttempt && dailyAttempt.status !== "in-progress"
-      ? pickChallenge(data, challenges, new Set([daily!.id, ...data.attempts.filter((a) => a.status === "in-progress").map((a) => a.challengeId)]))
-      : null;
+  const inProgress = data.attempts.filter((a) => a.status === "in-progress").map((a) => a.challengeId);
+  const next = dailyAttempt && dailyAttempt.status !== "in-progress" ? pickChallenge(data, challenges, lang, new Set([daily!.id, ...inProgress])) : null;
 
   const summary = (c: Challenge | null | undefined) =>
-    c && { id: c.id, title: c.title, level: c.level, levelName: LEVELS[c.level].name, rating: c.rating, topics: c.topics, estMinutes: c.estMinutes, mode: c.mode };
+    c && {
+      id: c.id,
+      slug: c.slug,
+      language: c.language,
+      title: c.title,
+      level: c.level,
+      levelName: LANGUAGES[c.language].levels[c.level],
+      rating: c.rating,
+      topics: c.topics,
+      estMinutes: c.estMinutes,
+      mode: c.mode,
+    };
+  const { current, best } = streaks(allSolvedDays);
 
   return {
-    profile: data.profile,
-    level: levelForRating(rating),
+    profile: data.profile && { name: data.profile.name, createdAt: data.profile.createdAt },
+    language: lang,
+    started: !!data.profile?.languages[lang],
+    languages: languageSummaries(data, challenges),
+    level: levelForRating(lang, rating),
     stats: {
       rating,
       ratingDelta7d: rating - ratingWeekAgo,
-      streak: streaks(solvedDays).current,
-      bestStreak: streaks(solvedDays).best,
+      streak: current,
+      bestStreak: best,
       solved: solvedIds.size,
-      totalChallenges: challenges.length,
+      totalChallenges: inLang.length,
       attempts: done.length,
       successRate: done.length ? solved.length / done.length : null,
       medianMinutes: solveMinutes.length ? solveMinutes.sort((a, b) => a - b)[Math.floor(solveMinutes.length / 2)] : null,
       hintsPerSolve: solved.length ? solved.reduce((s, a) => s + a.hintsUsed, 0) / solved.length : null,
-      solvedToday: solvedDays.has(todayStr),
+      solvedToday: allSolvedDays.has(todayStr),
+      solvedTodayHere: solved.some((a) => a.date === todayStr),
     },
     daily: daily && {
       ...summary(daily)!,
@@ -219,12 +268,13 @@ export function dashboard(data: Data, challenges: Challenge[]) {
       expected: expectedScore(rating, daily.rating),
     },
     next: summary(next),
-    ratingHistory: data.ratingHistory,
+    ratingHistory: history,
     heatmap,
-    topics: topicStats(data, challenges),
-    levels: Object.entries(LEVELS).map(([k, v]) => {
-      const inLevel = challenges.filter((c) => c.level === Number(k));
-      return { level: Number(k), name: v.name, total: inLevel.length, solved: inLevel.filter((c) => solvedIds.has(c.id)).length };
+    topics: topicStats(data, challenges, lang),
+    levels: Object.keys(LEVEL_BANDS).map((k) => {
+      const level = Number(k);
+      const inLevel = inLang.filter((c) => c.level === level);
+      return { level, name: LANGUAGES[lang].levels[level], total: inLevel.length, solved: inLevel.filter((c) => solvedIds.has(c.id)).length };
     }),
     recent: [...done]
       .reverse()
@@ -242,16 +292,6 @@ export function dashboard(data: Data, challenges: Challenge[]) {
         isDaily: a.isDaily,
       })),
   };
-}
-
-/** Topics of a challenge the learner has never finished a challenge in. */
-export function newTopicsFor(data: Data, challenges: Challenge[], c: Challenge) {
-  const seen = new Set(topicStats(data, challenges).map((t) => t.topic));
-  return c.topics.filter((t) => !seen.has(t));
-}
-
-export function currentStreak(data: Data) {
-  return streaks(new Set(data.attempts.filter((a) => a.status === "solved").map((a) => a.date))).current;
 }
 
 export type Dashboard = ReturnType<typeof dashboard>;

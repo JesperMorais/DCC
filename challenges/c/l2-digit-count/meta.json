@@ -1,0 +1,12 @@
+{
+  "title": "How many digits?",
+  "level": 2,
+  "rating": 880,
+  "topics": ["while loops", "integer division", "edge cases"],
+  "estMinutes": 8,
+  "hints": [
+    "Dividing an `int` by 10 chops off its last digit: `2026 / 10` is `202`. Count how many times you can do that before the number runs out.",
+    "Use a `while` loop that keeps dividing by 10. Careful with `0`: it has one digit, but a loop that runs `while (n != 0)` would never start. One fix: begin with 1 digit and loop `while (n / 10 != 0)`. Negative numbers need no special case, because C's division truncates towards zero.",
+    "`int digits = 1; while (n / 10 != 0) { n /= 10; digits++; } return digits;`"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Price lookup at the till",
+  "level": 2,
+  "rating": 915,
+  "topics": [
+    "dicts",
+    "dict.get",
+    "for loops"
+  ],
+  "estMinutes": 7,
+  "hints": [
+    "Keep a running total, then loop over the basket and look up each item's price in the dict.",
+    "`prices[item]` crashes on unknown items. `prices.get(item, 0)` returns `0` instead.",
+    "`total = 0`, then `for item in basket: total += prices.get(item, 0)`, then `return total`"
+  ]
+}

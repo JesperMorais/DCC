@@ -1,0 +1,12 @@
+{
+  "title": "Drop the dropouts",
+  "level": 4,
+  "rating": 1268,
+  "topics": ["arrays", "in-place", "two pointers"],
+  "estMinutes": 10,
+  "hints": [
+    "You don't need a second array. Use one index to **read** every element and another to **write** the ones you keep. The write index never gets ahead of the read index.",
+    "`size_t w = 0; for (size_t r = 0; r < count; r++) { ... }`. When `readings[r]` is not the sentinel, copy it to `readings[w]` and advance `w`. At the end, `w` is the new length.",
+    "`if (readings == NULL) return 0; size_t w = 0; for (size_t r = 0; r < count; r++) { if (readings[r] != sentinel) readings[w++] = readings[r]; } return w;`"
+  ]
+}

@@ -56,12 +56,12 @@ export function Icon({ name, size = 16, ...rest }: { name: IconName; size?: numb
 /* ---------- Small building blocks ---------- */
 export const LEVEL_NAMES = ["", "First steps", "Building blocks", "Shaping data", "Generics", "Advanced patterns", "Type wizardry"];
 
-export function LevelBadge({ level, withName = false }: { level: number; withName?: boolean }) {
+export function LevelBadge({ level, name }: { level: number; name?: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-ink-2">
       <LevelPips level={level} />
       L{level}
-      {withName && <span className="font-medium text-muted">· {LEVEL_NAMES[level]}</span>}
+      {name && <span className="font-medium text-muted">· {name}</span>}
     </span>
   );
 }

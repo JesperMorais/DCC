@@ -2,7 +2,8 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type ChallengeView, type FinishResult, type RunResult } from "../api";
-import "../monaco"; // configures the bundled Monaco before <Editor> mounts
+import { monaco } from "../monaco"; // configures the bundled Monaco before <Editor> mounts
+import { LangBadge, LANGUAGES, type Lang } from "../lang";
 import { Mascot, TessLoading, TessRow } from "../components/Mascot";
 import { categorize, conceptCardCopy, conceptNudge, finishLine, finishTitle, runReaction, type Line } from "../tess/lines";
 import {
@@ -32,7 +33,10 @@ const readDraft = (attemptId: string) => {
 };
 
 export default function ChallengePage({ onFinished }: { onFinished: () => void }) {
-  const { id = "" } = useParams();
+  const { lang: langParam = "typescript", slug = "" } = useParams();
+  const lang = langParam as Lang;
+  const id = `${lang}/${slug}`;
+  const info = LANGUAGES[lang];
   const navigate = useNavigate();
   const { theme } = useTheme();
 
@@ -123,7 +127,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
       const r = await api.run(view.id, code);
       const h = runs.current;
       const cat = categorize(r, h.prevPassing);
-      setReaction(runReaction(r, cat, h.prevPassing, h.runNo));
+      setReaction(runReaction(r, cat, h.prevPassing, h.runNo, lang));
+      showMarkers(r);
       h.prevPassing = r.tests.filter((t) => t.pass).length;
       h.runNo++;
       h.fails = r.passed ? 0 : h.fails + 1;
@@ -209,6 +214,30 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
     });
   };
 
+  // Monaco checks TypeScript live; for C and Python, paint the compiler's findings onto the code.
+  const showMarkers = (r: RunResult | null) => {
+    const model = editorRef.current?.getModel();
+    if (!model) return;
+    if (lang === "typescript" || !r) {
+      monaco.editor.setModelMarkers(model, "daily", []);
+      return;
+    }
+    monaco.editor.setModelMarkers(
+      model,
+      "daily",
+      r.diagnostics
+        .filter((d) => d.file === "your-code")
+        .map((d) => ({
+          startLineNumber: d.line,
+          startColumn: d.column,
+          endLineNumber: d.line,
+          endColumn: Math.max(d.column + 1, model.getLineMaxColumn(Math.min(d.line, model.getLineCount()))),
+          message: `${d.message} (${d.tool}${d.code && d.code !== d.tool ? ` ${d.code}` : ""})`,
+          severity: d.severity === "error" ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
+        })),
+    );
+  };
+
   const jumpTo = (line: number, column: number) => {
     const ed = editorRef.current;
     if (!ed) return;
@@ -220,7 +249,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
   if (error)
     return (
       <div className="p-10 text-ink-2">
-        {error} — <Link to="/" className="text-accent">back to dashboard</Link>
+        {error} — <Link to={`/${lang}`} className="text-accent">back to dashboard</Link>
       </div>
     );
   if (!view) return <TessLoading />;
@@ -233,6 +262,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           <Icon name="back" size={16} />
         </button>
         <div className="flex min-w-0 items-center gap-2.5">
+          <LangBadge lang={lang} size={22} />
           <h1 className="truncate text-[15px] font-semibold">{view.title}</h1>
           <LevelBadge level={view.level} />
           {view.isDaily && (
@@ -357,7 +387,11 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
             {tab === "tests" && (
               <>
                 <p className="mb-3 text-sm text-ink-2">
-                  These run against your code. They're type-checked too, so a wrong parameter or return type shows up as a type error.
+                  {lang === "typescript" && "These run against your code. They're type-checked too, so a wrong parameter or return type shows up as a type error."}
+                  {lang === "python" &&
+                    "These pytest-style tests run against your code. Your type hints are checked by mypy --strict: its findings show as warnings, which are advice and won't block a solve."}
+                  {lang === "c" &&
+                    "Compiled together with your code using gcc -Wall -Wextra and AddressSanitizer. Out-of-bounds access, use-after-free and memory leaks fail a test."}
                 </p>
                 <CodeBlock code={view.tests} />
               </>
@@ -379,8 +413,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                 <div className="absolute top-2 right-4 z-10 rounded-md bg-surface-2 px-2 py-1 text-xs text-muted">Read-only · your submitted code</div>
               )}
               <Editor
-                path="file:///your-code.ts"
-                language="typescript"
+                path={`file:///your-code.${info.ext}`}
+                language={info.monaco}
                 value={code}
                 onChange={(v) => setCode(v ?? "")}
                 onMount={onMount}
@@ -393,7 +427,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                   minimap: { enabled: false },
                   scrollBeyondLastLine: false,
                   padding: { top: 14 },
-                  tabSize: 2,
+                  tabSize: lang === "typescript" ? 2 : 4,
+                  insertSpaces: true,
                   renderLineHighlight: "line",
                   smoothScrolling: true,
                   cursorBlinking: "smooth",
@@ -408,6 +443,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
               result={result}
               running={running}
               mode={view.mode}
+              lang={lang}
               onJump={jumpTo}
               canSubmit={canSubmit}
               onSubmit={submit}
@@ -457,7 +493,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
             setFinish(null);
             load();
           }}
-          onDashboard={() => navigate("/")}
+          onDashboard={() => navigate(`/${lang}`)}
         />
       )}
     </div>
@@ -595,7 +631,9 @@ function ResultsPanel({
   reviewing,
   reaction,
   nudge,
+  lang,
 }: {
+  lang: Lang;
   reaction: Line | null;
   nudge: { text: string; onOpen: () => void; onDismiss: () => void } | null;
   result: RunResult | null;
@@ -612,13 +650,17 @@ function ResultsPanel({
 
   const summary = useMemo(() => {
     if (!result) return null;
-    if (result.passed) return { tone: "good", text: mode === "types" ? "All type checks pass" : `All ${total} tests pass` };
+    const warns = result.diagnostics.filter((d) => d.severity === "warning").length;
+    if (result.passed)
+      return { tone: "good", text: (mode === "types" ? "All type checks pass" : `All ${total} tests pass`) + (warns ? ` · ${warns} warning${warns > 1 ? "s" : ""}` : "") };
     const parts: string[] = [];
-    if (result.typeErrors.length) parts.push(`${result.typeErrors.length} type error${result.typeErrors.length > 1 ? "s" : ""}`);
+    const errs = result.diagnostics.filter((d) => d.severity === "error").length;
+    const noun = lang === "typescript" ? "type error" : lang === "python" ? "syntax error" : "compile error";
+    if (errs) parts.push(`${errs} ${noun}${errs > 1 ? "s" : ""}`);
     if (result.setupErrors.length) parts.push("runtime error");
     if (mode === "runtime" && total) parts.push(`${passing}/${total} tests pass`);
     return { tone: "bad", text: parts.join(" · ") };
-  }, [result, mode, passing, total]);
+  }, [result, mode, passing, total, lang]);
 
   return (
     <div className="flex h-full flex-col bg-surface">
@@ -655,7 +697,7 @@ function ResultsPanel({
               "Reviewing a finished challenge. Hit “Practice again” for a fresh, unrated attempt."
             ) : (
               <p>
-                Press <span className="kbd">Ctrl ↵</span> or <b className="text-ink-2">Run</b> to type-check and test your code.
+                Press <span className="kbd">Ctrl ↵</span> or <b className="text-ink-2">Run</b> to {lang === "c" ? "compile" : lang === "python" ? "check" : "type-check"} and test your code.
               </p>
             )}
           </div>
@@ -663,7 +705,7 @@ function ResultsPanel({
 
         {result && tab === "console" && (
           <div className="font-mono text-[12.5px]">
-            {result.logs.length === 0 && <p className="font-sans text-sm text-muted">No console output. console.log() in your code shows up here.</p>}
+            {result.logs.length === 0 && <p className="font-sans text-sm text-muted">No output. {lang === "python" ? "print()" : lang === "c" ? "printf()" : "console.log()"} in your code shows up here.</p>}
             {result.logs.map((l, i) => (
               <pre
                 key={i}
@@ -708,18 +750,23 @@ function ResultsPanel({
               )
             )}
 
-            {result.typeErrors.length > 0 && (
+            {result.diagnostics.length > 0 && (
               <div>
-                <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Type errors</h3>
+                <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{LANGUAGES[lang].checkLabel}</h3>
                 <div className="flex flex-col gap-2">
-                  {result.typeErrors.map((e, i) => (
+                  {result.diagnostics.map((e, i) => (
                     <button
                       key={i}
                       onClick={() => e.file === "your-code" && onJump(e.line, e.column)}
-                      className={`rounded-lg border border-line bg-surface-2 p-3 text-left ${e.file === "your-code" ? "hover:border-line-strong" : "cursor-default"}`}
+                      className={`rounded-lg border bg-surface-2 p-3 text-left ${e.severity === "warning" ? "border-warn/30" : "border-line"} ${e.file === "your-code" ? "hover:border-line-strong" : "cursor-default"}`}
                     >
-                      <div className="flex items-center gap-2 text-xs text-muted">
-                        <span className="rounded bg-bad-soft px-1.5 py-0.5 font-mono font-semibold text-bad">TS{e.code}</span>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                        <span
+                          className={`rounded px-1.5 py-0.5 font-mono font-semibold ${e.severity === "error" ? "bg-bad-soft text-bad" : "bg-warn-soft text-warn"}`}
+                        >
+                          {e.severity === "warning" ? "warning" : "error"}
+                        </span>
+                        <span className="font-mono">{e.tool === "tsc" ? e.code : `${e.tool}${e.code && e.code !== e.tool && e.code !== "error" && e.code !== "warning" ? ` · ${e.code}` : ""}`}</span>
                         {e.file === "your-code" ? "your code" : "tests"} · line {e.line}
                       </div>
                       <div className="mt-1.5 text-[13px] whitespace-pre-wrap text-ink">{e.message}</div>
@@ -727,20 +774,28 @@ function ResultsPanel({
                     </button>
                   ))}
                 </div>
-                {result.typeErrors.some((e) => e.file === "tests") && mode === "runtime" && (
+                {lang === "typescript" && result.diagnostics.some((e) => e.file === "tests") && mode === "runtime" && (
                   <p className="mt-2 text-xs text-muted">Errors in the tests usually mean a function's parameter or return type doesn't match what the tests expect.</p>
+                )}
+                {result.diagnostics.some((e) => e.tool === "mypy") && (
+                  <p className="mt-2 text-xs text-muted">mypy checks your type hints. Python runs fine without fixing these, but teams treat them like bugs waiting to happen.</p>
+                )}
+                {lang === "c" && result.passed && result.diagnostics.length > 0 && (
+                  <p className="mt-2 text-xs text-muted">It works, but gcc has concerns. In real C projects, warnings are usually treated as errors (-Werror).</p>
                 )}
               </div>
             )}
 
             {result.setupErrors.map((e, i) => (
               <div key={i} className="rounded-lg border border-bad/30 bg-bad-soft p-3">
-                <div className="text-xs font-semibold text-bad">Crashed while loading {e.file === "your-code" ? "your code" : "the tests"}</div>
+                <div className="text-xs font-semibold text-bad">
+                  {/Linker error|main\(\)/.test(e.message) ? "Couldn't link" : `Crashed while loading ${e.file === "your-code" ? "your code" : "the tests"}`}
+                </div>
                 <pre className="mt-1 font-mono text-xs whitespace-pre-wrap text-ink">{e.message}</pre>
               </div>
             ))}
 
-            {mode === "types" && result.typeErrors.length === 0 && result.setupErrors.length === 0 && (
+            {mode === "types" && result.diagnostics.length === 0 && result.setupErrors.length === 0 && (
               <div className="flex items-center gap-2 text-sm text-good">
                 <Icon name="check" size={15} /> The compiler accepts every type test.
               </div>

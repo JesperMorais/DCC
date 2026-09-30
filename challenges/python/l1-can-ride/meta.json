@@ -1,0 +1,16 @@
+{
+  "title": "Tall enough to ride?",
+  "level": 1,
+  "rating": 735,
+  "topics": [
+    "booleans",
+    "comparisons",
+    "and"
+  ],
+  "estMinutes": 5,
+  "hints": [
+    "There are two separate checks: one for height and one for age. Both must be true.",
+    "`height_cm >= 120` is already a `bool` (`True` or `False`). Combine two checks with `and`.",
+    "`return height_cm >= 120 and age >= 8`"
+  ]
+}

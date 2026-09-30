@@ -1,0 +1,12 @@
+{
+  "title": "Cipher-breaker's tally",
+  "level": 3,
+  "rating": 1110,
+  "topics": ["strings", "arrays", "char arithmetic"],
+  "estMinutes": 9,
+  "hints": [
+    "Letters are consecutive numbers: `'c' - 'a'` is `2`. That turns a letter into an index from 0 to 25.",
+    "First set all 26 counts to 0 (the caller's array may hold garbage). Then, for each character that `isalpha` accepts, lowercase it and add one to `counts[c - 'a']`.",
+    "`for (int k = 0; k < 26; k++) counts[k] = 0; for (size_t i = 0; s[i]; i++) { unsigned char c = (unsigned char)s[i]; if (isalpha(c)) counts[tolower(c) - 'a']++; }`"
+  ]
+}

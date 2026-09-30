@@ -1,0 +1,12 @@
+{
+  "title": "Add without overflowing",
+  "level": 6,
+  "rating": 1530,
+  "topics": ["undefined behavior", "integer overflow", "INT_MAX/INT_MIN"],
+  "estMinutes": 10,
+  "hints": [
+    "You can't compute `a + b` first and check afterwards: if it overflows, the damage (undefined behavior) is already done. Decide *before* adding, using only operations that can't overflow.",
+    "Overflow upwards is only possible when `b > 0`, and it happens exactly when `a > INT_MAX - b`. Downwards only when `b < 0`, exactly when `a < INT_MIN - b`. Both subtractions are safe given the sign of `b`.",
+    "For subtraction, don't rewrite it as `checked_add(a, -b, out)`: `-INT_MIN` overflows. Mirror the add checks instead: `b < 0 && a > INT_MAX + b` overflows up, `b > 0 && a < INT_MIN + b` overflows down."
+  ]
+}

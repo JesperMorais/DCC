@@ -1,0 +1,16 @@
+{
+  "title": "Tally the votes",
+  "level": 2,
+  "rating": 970,
+  "topics": [
+    "dicts",
+    "counting",
+    "for loops"
+  ],
+  "estMinutes": 8,
+  "hints": [
+    "Start with an empty dict. For each vote, skip blanks, then either start that option's count at 1 or add 1 to it.",
+    "`if vote in counts:` tells you whether you've seen this option before. Or use `counts.get(vote, 0)` to read a count that might not exist yet.",
+    "`counts: dict[str, int] = {}`, then `for vote in votes: if vote == \"\": continue` and `counts[vote] = counts.get(vote, 0) + 1`, then `return counts`"
+  ]
+}

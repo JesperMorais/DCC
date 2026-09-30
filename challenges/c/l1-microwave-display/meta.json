@@ -1,0 +1,12 @@
+{
+  "title": "Microwave display",
+  "level": 1,
+  "rating": 735,
+  "topics": ["integer division", "remainder operator", "int arithmetic"],
+  "estMinutes": 7,
+  "hints": [
+    "With two `int`s, `/` throws away the remainder: `125 / 60` is `2`. And `%` gives you exactly the part that was thrown away: `125 % 60` is `5`.",
+    "Split the time into whole minutes (`seconds / 60`) and leftover seconds (`seconds % 60`). Then shift the minutes two digits to the left by multiplying them by 100.",
+    "`int minutes = seconds / 60; int rest = seconds % 60; return minutes * 100 + rest;`"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Pass the behaviour in",
+  "level": 6,
+  "rating": 1460,
+  "topics": ["function pointers", "callbacks", "higher-order functions"],
+  "estMinutes": 8,
+  "hints": [
+    "A parameter declared `int (*f)(int)` is called just like a normal function: `f(x)`.",
+    "`map_ints` is a single loop that overwrites each element with `f(arr[i])`. `fold_ints` keeps a running `acc` that starts at `init` and becomes `combine(acc, arr[i])` for each element in order.",
+    "`int acc = init; for (size_t i = 0; i < n; i++) acc = combine(acc, arr[i]); return acc;` With `n == 0` the loop never runs, so you return `init` and never call `combine`."
+  ]
+}

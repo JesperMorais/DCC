@@ -1,0 +1,12 @@
+{
+  "title": "Look up a customer, maybe",
+  "level": 4,
+  "rating": 1190,
+  "topics": ["Optional", "None narrowing", "type hints"],
+  "estMinutes": 9,
+  "hints": [
+    "`find_customer` loops and `return`s the first match. If the loop finishes without finding one, `return None`. Normalise both emails the same way before you compare them.",
+    "In `greeting_name`, call `find_customer` and check `if customer is None:` first. After that branch, mypy knows `customer` is a `Customer`.",
+    "`customer = find_customer(customers, email)`, `if customer is None: return \"Guest\"`, then `return customer.nickname or customer.name`."
+  ]
+}

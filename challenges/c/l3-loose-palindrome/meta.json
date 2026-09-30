@@ -1,0 +1,12 @@
+{
+  "title": "A man, a plan, a palindrome",
+  "level": 3,
+  "rating": 1095,
+  "topics": ["strings", "ctype.h", "two indices"],
+  "estMinutes": 11,
+  "hints": [
+    "Compare from both ends at once: one index at the start, one at the end. You only ever compare letters, lowercased with `tolower`.",
+    "Inside a `while (i < j)` loop, first move `i` forward past non-letters and `j` backward past non-letters, **keeping `i < j` in both inner loops** so they can't run off the ends. Then compare, and step both inward.",
+    "`while (i < j && !isalpha((unsigned char)s[i])) i++; while (i < j && !isalpha((unsigned char)s[j])) j--; if (tolower((unsigned char)s[i]) != tolower((unsigned char)s[j])) return false; i++; j--;`"
+  ]
+}

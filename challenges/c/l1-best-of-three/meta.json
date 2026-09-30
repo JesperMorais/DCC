@@ -1,0 +1,12 @@
+{
+  "title": "Best of three rounds",
+  "level": 1,
+  "rating": 775,
+  "topics": ["if/else", "comparison", "variables"],
+  "estMinutes": 7,
+  "hints": [
+    "You don't have to compare everything at once. Keep a variable called `best` that holds the highest score you've seen so far.",
+    "Start with `int best = a;`. Then look at `b`: if it's higher than `best`, replace `best` with it. Do the same for `c`.",
+    "`int best = a; if (b > best) { best = b; } if (c > best) { best = c; } return best;`"
+  ]
+}

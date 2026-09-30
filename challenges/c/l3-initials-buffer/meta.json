@@ -1,0 +1,12 @@
+{
+  "title": "Initials that fit",
+  "level": 3,
+  "rating": 1125,
+  "topics": ["strings", "buffers", "capacity checks"],
+  "estMinutes": 11,
+  "hints": [
+    "The output needs one byte per initial **plus one for `'\\0'`**. So with `cap` bytes you can store at most `cap - 1` initials. And with `cap == 0` you can't even store the terminator.",
+    "Walk `name` with a flag that says \"the next letter starts a word\" (true at the start and after a space). Keep an output index `n`. Before writing an initial, check `n + 1 < cap`; if not, return false.",
+    "`if (cap == 0) return false; size_t n = 0; bool start = true; for (...) { if (s[i] == ' ') { start = true; } else if (start) { if (n + 1 >= cap) return false; out[n++] = (char)toupper((unsigned char)s[i]); start = false; } } out[n] = '\\0'; return true;`"
+  ]
+}

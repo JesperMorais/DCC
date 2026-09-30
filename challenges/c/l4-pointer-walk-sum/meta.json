@@ -1,0 +1,12 @@
+{
+  "title": "Walking a range",
+  "level": 4,
+  "rating": 1175,
+  "topics": ["pointers", "pointer arithmetic", "half-open ranges"],
+  "estMinutes": 9,
+  "hints": [
+    "`begin` points at the first element and `end` points one **past** the last. Move a pointer from `begin` toward `end`, one element at a time with `p++`.",
+    "Loop `for (const int *p = begin; p != end; p++)`. The element under the pointer is `*p`. Never dereference `end` itself: it isn't part of the range.",
+    "`long total = 0; for (const int *p = begin; p != end; p++) { if (*p > limit) total += *p; } return total;`"
+  ]
+}

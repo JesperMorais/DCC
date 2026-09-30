@@ -1,0 +1,12 @@
+{
+  "title": "Where does the text end?",
+  "level": 3,
+  "rating": 1010,
+  "topics": ["strings", "null terminator", "loops"],
+  "estMinutes": 7,
+  "hints": [
+    "A C string is just a run of `char`s followed by a `'\\0'` byte. Nothing stores the length, so you have to walk until you see the terminator.",
+    "Keep a `size_t` counter. Look at `s[n]`: while it isn't `'\\0'`, step forward.",
+    "`size_t n = 0; while (s[n] != '\\0') { n++; } return n;`"
+  ]
+}

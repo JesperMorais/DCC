@@ -1,0 +1,12 @@
+{
+  "title": "Flatten the config",
+  "level": 5,
+  "rating": 1305,
+  "topics": ["recursion", "dicts", "isinstance"],
+  "estMinutes": 8,
+  "hints": [
+    "Each nested dict is the same problem again, just smaller. Let the function (or an inner helper) call itself on it, and pass down the key path built so far.",
+    "Walk `config.items()`. Build the full key as `f\"{prefix}{sep}{key}\"` (or just `key` at the top). If the value `isinstance(value, dict)`, recurse into it; otherwise store `out[full_key] = value`.",
+    "def walk(node: Mapping[str, object], prefix: str) -> None:\n    for key, value in node.items():\n        full = f\"{prefix}{sep}{key}\" if prefix else key\n        if isinstance(value, dict): walk(value, full)\n        else: out[full] = value"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Distance from zero",
+  "level": 1,
+  "rating": 730,
+  "topics": ["functions", "if/else", "int"],
+  "estMinutes": 5,
+  "hints": [
+    "A negative number becomes positive when you multiply it by -1 (or write `-n`).",
+    "Use `if (n < 0)` to decide whether to flip the sign.",
+    "`if (n < 0) { return -n; } return n;`"
+  ]
+}

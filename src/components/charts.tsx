@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Dashboard } from "../api";
-import { LEVEL_NAMES } from "../ui";
 import { TessSays } from "./Mascot";
 
 const LEVEL_EDGES = [850, 1000, 1150, 1300, 1450];
@@ -223,7 +222,7 @@ export function LevelProgress({ levels, current }: { levels: Dashboard["levels"]
       {levels.map((l) => (
         <div key={l.level} className={l.level === current ? "" : "opacity-80"}>
           <BarRow
-            label={`L${l.level} · ${LEVEL_NAMES[l.level]}${l.level === current ? "  ← you" : ""}`}
+            label={`L${l.level} · ${l.name}${l.level === current ? "  ← you" : ""}`}
             value={l.solved}
             max={l.total}
             right={`${l.solved} / ${l.total}`}

@@ -1,0 +1,12 @@
+{
+  "title": "Fix the leaking default list",
+  "level": 4,
+  "rating": 1160,
+  "topics": ["default arguments", "mutability", "None sentinel"],
+  "estMinutes": 6,
+  "hints": [
+    "Default values are evaluated **once**, when `def` runs, not on every call. Every call without `tags` gets the very same list object.",
+    "Use `None` as the default and create the fresh list **inside** the function body.",
+    "`def add_tag(tag: str, tags: list[str] | None = None) -> list[str]:` then `if tags is None: tags = []`, `tags.append(tag)`, `return tags`."
+  ]
+}

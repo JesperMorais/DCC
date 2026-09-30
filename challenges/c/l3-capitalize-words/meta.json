@@ -1,0 +1,12 @@
+{
+  "title": "Title Case In Place",
+  "level": 3,
+  "rating": 1040,
+  "topics": ["strings", "ctype.h", "in-place mutation"],
+  "estMinutes": 10,
+  "hints": [
+    "You need to know, for each character, whether it starts a word. A word starts at the beginning of the string or right after a whitespace character.",
+    "Keep a `bool at_word_start = true;`. For each character: if it's whitespace, set the flag to true; otherwise upper- or lowercase it depending on the flag, then set the flag to false.",
+    "`if (isspace(c)) { at_start = true; } else { s[i] = (char)(at_start ? toupper(c) : tolower(c)); at_start = false; }` with `c = (unsigned char)s[i]`."
+  ]
+}

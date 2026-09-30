@@ -1,0 +1,12 @@
+{
+  "title": "Structured log events",
+  "level": 4,
+  "rating": 1230,
+  "topics": ["*args", "**kwargs", "argument unpacking"],
+  "estMinutes": 9,
+  "hints": [
+    "Inside the function, `*tags` arrives as a **tuple** and `**fields` as a **dict**, in the order the caller wrote them.",
+    "Build a list of parts: start with `[name]`, extend it with `f\"#{t}\"` for each tag and `f\"{k}={v}\"` for each `fields.items()`, then `\" \".join(parts)`.",
+    "`format_error` passes everything straight through: `return format_event(\"error\", *tags, **fields)`. The `*` and `**` in a **call** unpack them again."
+  ]
+}

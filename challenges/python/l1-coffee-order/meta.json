@@ -1,0 +1,16 @@
+{
+  "title": "Coffee order with defaults",
+  "level": 1,
+  "rating": 840,
+  "topics": [
+    "functions",
+    "default parameters",
+    "keyword arguments"
+  ],
+  "estMinutes": 8,
+  "hints": [
+    "Give `size` and `shots` their default values right in the `def` line, like `size: str = \"medium\"`.",
+    "Build the text with an f-string. Pick the word first: `\"shot\"` when `shots == 1`, otherwise `\"shots\"`.",
+    "`def order_summary(drink: str, size: str = \"medium\", shots: int = 1) -> str:` then `word = \"shot\" if shots == 1 else \"shots\"` and `return f\"{size} {drink}, {shots} {word}\"`"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Letter grade as a char",
+  "level": 1,
+  "rating": 795,
+  "topics": ["if/else chains", "char", "comparison"],
+  "estMinutes": 7,
+  "hints": [
+    "Check the highest grade first. As soon as one check matches, `return` that letter; the rest of the function is skipped.",
+    "Use a chain: `if (score >= 90) ... else if (score >= 80) ...` and so on, with a final `else` for `'F'`. Remember: a `char` goes in **single** quotes.",
+    "`if (score >= 90) return 'A'; else if (score >= 80) return 'B'; else if (score >= 70) return 'C'; else if (score >= 60) return 'D'; else return 'F';`"
+  ]
+}

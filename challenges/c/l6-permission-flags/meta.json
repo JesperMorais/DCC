@@ -1,0 +1,12 @@
+{
+  "title": "Read, write, execute",
+  "level": 6,
+  "rating": 1480,
+  "topics": ["bit flags", "enums", "masks"],
+  "estMinutes": 10,
+  "hints": [
+    "Each permission is one bit, so a set of permissions is just an `unsigned` with several bits on. Combining flags is `|`; everything else is `&`, `~` or both.",
+    "Grant: `(perms | flags) & PERM_ALL`. Revoke: `perms & ~flags`. Has all: every required bit is present, i.e. `(perms & required) == required`. Has any: `(perms & wanted) != 0`.",
+    "`out[0] = (perms & PERM_READ) ? 'r' : '-';` and the same for `'w'` and `'x'`, then `out[3] = '\\0';`. Note that `perm_has_all(p, 0)` is `true` (nothing is required), while `perm_has_any(p, 0)` is `false`."
+  ]
+}

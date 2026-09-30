@@ -1,0 +1,12 @@
+{
+  "title": "Top failing endpoints",
+  "level": 3,
+  "rating": 1090,
+  "topics": ["collections.Counter", "generator expressions", "tuple unpacking"],
+  "estMinutes": 9,
+  "hints": [
+    "Every line has exactly four fields, so `method, path, status, _ = line.split()` unpacks one in a single step.",
+    "`Counter` accepts any iterable of keys and counts them. `most_common(n)` then gives the `n` biggest as `(key, count)` tuples, with ties in first-seen order.",
+    "`counts = Counter(f\"{m} {p}\" for m, p, s, _ in (line.split() for line in lines) if int(s) >= 500)` then `return counts.most_common(n)`."
+  ]
+}

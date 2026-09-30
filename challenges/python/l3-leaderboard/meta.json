@@ -1,0 +1,12 @@
+{
+  "title": "Rank the leaderboard",
+  "level": 3,
+  "rating": 1115,
+  "topics": ["sorted", "key functions", "tuple keys", "enumerate"],
+  "estMinutes": 10,
+  "hints": [
+    "`sorted(results, key=...)` sorts by whatever the key function returns. When that's a **tuple**, Python compares the first items, then the second on a tie, and so on.",
+    "Sorting is ascending, so to put the **highest** score first, negate it: `key=lambda r: (-r[1], r[2], r[0])`.",
+    "`ranked = sorted(results, key=lambda r: (-r[1], r[2], r[0]))` then `return [f\"{rank}. {name} ({score} pts)\" for rank, (name, score, _) in enumerate(ranked, start=1)]`"
+  ]
+}

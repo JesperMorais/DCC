@@ -1,0 +1,3 @@
+double celsius_to_fahrenheit(double celsius) {
+    return celsius;
+}

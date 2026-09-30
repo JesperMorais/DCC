@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Library } from "../api";
+import { LangBadge, LANGUAGES, useActiveLang } from "../lang";
 import { TessLoading, TessSays } from "../components/Mascot";
 import { Icon, LevelPips, StatusDot, Tag } from "../ui";
 
@@ -11,9 +12,11 @@ export default function LibraryPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
 
+  const lang = useActiveLang();
   useEffect(() => {
-    api.library().then(setLib);
-  }, []);
+    setLib(null);
+    api.library(lang).then(setLib);
+  }, [lang]);
 
   const visible = useMemo(() => {
     if (!lib) return [];
@@ -31,7 +34,9 @@ export default function LibraryPage() {
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8 sm:px-8">
       <header className="mb-6">
-        <h1 className="text-[28px] font-semibold tracking-tight">Library</h1>
+        <h1 className="flex items-center gap-3 text-[28px] font-semibold tracking-tight">
+          <LangBadge lang={lang} size={30} /> {LANGUAGES[lang].name} library
+        </h1>
         <p className="mt-1 text-sm text-ink-2">
           Every challenge, grouped by level. The daily pick comes from here automatically — but you can practise anything, any time.
         </p>
@@ -76,7 +81,7 @@ export default function LibraryPage() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((c) => (
-                  <Link key={c.id} to={`/c/${c.id}`} className="card group flex flex-col p-4 transition-colors hover:border-line-strong">
+                  <Link key={c.id} to={`/solve/${c.id}`} className="card group flex flex-col p-4 transition-colors hover:border-line-strong">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-medium group-hover:text-accent">{c.title}</h3>
                       <span className="shrink-0 text-xs tabular text-muted">{c.rating}</span>

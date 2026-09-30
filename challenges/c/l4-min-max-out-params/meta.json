@@ -1,0 +1,12 @@
+{
+  "title": "Two answers, one function",
+  "level": 4,
+  "rating": 1190,
+  "topics": ["pointers", "out-parameters", "arrays"],
+  "estMinutes": 10,
+  "hints": [
+    "A C function can only `return` one value. To hand back more, the caller passes the address of its variables (`&lo`) and you write through the pointer: `*min = ...`.",
+    "Check the edge case first: `if (values == NULL || count == 0) return false;` — and don't touch `*min`/`*max` in that case. Then start both at `values[0]` and loop from index 1.",
+    "`*min = *max = values[0]; for (size_t i = 1; i < count; i++) { if (values[i] < *min) *min = values[i]; if (values[i] > *max) *max = values[i]; } return true;`"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "A cursor that moves itself",
+  "level": 4,
+  "rating": 1245,
+  "topics": ["pointers", "pointer to pointer", "tokenizing"],
+  "estMinutes": 12,
+  "hints": [
+    "`*cursor` is the caller's `const char *`. Copy it into a local `const char *p = *cursor;`, move `p` along the text, and finish by writing it back with `*cursor = p;`.",
+    "Skip spaces while `*p == ' '`. If you then hit `'\\0'`, there's no word: store the end position in `*cursor` and return false. Otherwise remember `start = p`, advance `p` until a space or `'\\0'`, and fill `*word`, `*len` and `*cursor`.",
+    "`while (*p == ' ') p++; if (*p == '\\0') { *cursor = p; return false; } const char *start = p; while (*p != '\\0' && *p != ' ') p++; *word = start; *len = (size_t)(p - start); *cursor = p; return true;`"
+  ]
+}

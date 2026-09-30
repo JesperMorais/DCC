@@ -1,0 +1,12 @@
+{
+  "title": "Steps this week",
+  "level": 2,
+  "rating": 895,
+  "topics": ["arrays", "for loops", "size_t"],
+  "estMinutes": 7,
+  "hints": [
+    "Loop over every index from `0` up to (but not including) `count`, and add `steps[i]` to a running total.",
+    "Use `size_t` for the index, to match `count`: `for (size_t i = 0; i < count; i++)`. Start the total at `0`, so an empty array naturally gives `0`.",
+    "`int total = 0; for (size_t i = 0; i < count; i++) { total += steps[i]; } return total;`"
+  ]
+}

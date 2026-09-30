@@ -1,0 +1,16 @@
+{
+  "title": "Minutes to hours:minutes",
+  "level": 1,
+  "rating": 815,
+  "topics": [
+    "integer division",
+    "modulo",
+    "f-strings"
+  ],
+  "estMinutes": 7,
+  "hints": [
+    "An hour has 60 minutes. How many *whole* hours fit into the minutes, and how many minutes are left over?",
+    "`minutes // 60` gives the whole hours and `minutes % 60` gives the leftover minutes. Use `:02d` to pad the minutes to two digits.",
+    "`hours = minutes // 60`, `rest = minutes % 60`, then `return f\"{hours}:{rest:02d}\"`"
+  ]
+}

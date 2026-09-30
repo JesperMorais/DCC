@@ -1,0 +1,12 @@
+{
+  "title": "A register bit toolkit",
+  "level": 6,
+  "rating": 1500,
+  "topics": ["bit manipulation", "uint32_t", "shifts", "masks"],
+  "estMinutes": 10,
+  "hints": [
+    "`bit_is_set` starts with a mask that has only bit `n` set. Build it from an **unsigned** one: `1u << n`. `1 << 31` shifts a signed `int` into its sign bit, which is undefined behavior.",
+    "Test is `(x & mask) != 0`. A power of two has exactly one bit set, and `x & (x - 1)` clears the lowest set bit. For reversing, peel bits off the bottom of `x` with `& 1u` and `>>`, and push them onto the bottom of the result with `<<`.",
+    "`count_set_bits`: `while (x) { x &= x - 1; count++; }`. `reverse_bits`: loop 32 times, `r = (r << 1) | (x & 1u); x >>= 1;`. `is_power_of_two`: `x != 0 && (x & (x - 1)) == 0`."
+  ]
+}

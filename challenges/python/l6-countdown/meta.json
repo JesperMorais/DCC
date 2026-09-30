@@ -1,0 +1,12 @@
+{
+  "title": "T-minus",
+  "level": 6,
+  "rating": 1490,
+  "topics": ["iterator protocol", "dunder methods", "classes"],
+  "estMinutes": 8,
+  "hints": [
+    "The loop position must live in the `CountdownIterator`, not in `Countdown`. `Countdown` only remembers `start`, and its `__iter__` builds a new iterator each time.",
+    "`CountdownIterator.__init__` sets `self.remaining = start`. `__next__` raises `StopIteration` when `remaining` is 0, and otherwise hands out the current value and decrements.",
+    "def __next__(self) -> int:\n    if self.remaining <= 0: raise StopIteration\n    value = self.remaining\n    self.remaining -= 1\n    return value"
+  ]
+}

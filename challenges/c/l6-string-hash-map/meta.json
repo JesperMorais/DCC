@@ -1,0 +1,12 @@
+{
+  "title": "A tiny hash map",
+  "level": 6,
+  "rating": 1640,
+  "topics": ["hash tables", "chaining", "opaque types", "ownership"],
+  "estMinutes": 12,
+  "hints": [
+    "Every operation starts the same way: `bucket_of(key)` picks the chain, and you walk that linked list comparing keys with `strcmp` (not `==`, which compares addresses).",
+    "`put` first searches the chain and overwrites the value if the key is there. Otherwise it `malloc`s an `Entry`, gives it a **copy** of the key (`strlen(key) + 1` bytes), pushes it on the front of the chain and bumps `size`.",
+    "`strmap_free` owns three kinds of allocation: for every entry in every bucket free the key copy, then the entry (save `next` first), and finally the map itself. If copying the key fails in `put`, free the half-built entry and return `false`."
+  ]
+}

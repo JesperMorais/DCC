@@ -1,0 +1,12 @@
+{
+  "title": "Turn CSV rows into records",
+  "level": 3,
+  "rating": 1045,
+  "topics": ["zip", "list comprehensions", "dict comprehensions"],
+  "estMinutes": 9,
+  "hints": [
+    "`zip(keys, row)` pairs each column name with the value in the same position.",
+    "Clean the header once up front with a list comprehension. Then build each record with a dict comprehension over `zip(keys, row)`.",
+    "`keys = [h.strip().lower() for h in header]` then `return [{k: v.strip() for k, v in zip(keys, row)} for row in rows if len(row) == len(keys)]`"
+  ]
+}

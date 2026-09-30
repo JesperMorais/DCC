@@ -1,0 +1,12 @@
+{
+  "title": "Did you mean…?",
+  "level": 6,
+  "rating": 1550,
+  "topics": ["dynamic programming", "memoisation", "strings"],
+  "estMinutes": 12,
+  "hints": [
+    "Let `d(i, j)` be the distance between the first `i` characters of `a` and the first `j` of `b`. Base cases: `d(0, j) = j` and `d(i, 0) = i`.",
+    "Look at the last characters. `d(i, j)` is the smallest of: `d(i-1, j) + 1` (delete), `d(i, j-1) + 1` (insert), and `d(i-1, j-1) + (0 if a[i-1] == b[j-1] else 1)` (substitute or keep).",
+    "prev = list(range(len(b) + 1))\nfor i, ca in enumerate(a, 1):\n    cur = [i]\n    for j, cb in enumerate(b, 1):\n        cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))\n    prev = cur\nreturn prev[-1]"
+  ]
+}

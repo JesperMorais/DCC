@@ -1,0 +1,12 @@
+{
+  "title": "A playlist dataclass",
+  "level": 4,
+  "rating": 1210,
+  "topics": ["dataclasses", "field(default_factory)", "methods", "divmod"],
+  "estMinutes": 9,
+  "hints": [
+    "Add a `tracks: list[int]` field. A plain `= []` default is refused by `@dataclass` (it would be shared), so use `field(default_factory=list)`.",
+    "`add` is just `self.tracks.append(seconds)`. For the label, `minutes, secs = divmod(sum(self.tracks), 60)`.",
+    "`tracks: list[int] = field(default_factory=list)` and `return f\"{minutes}:{secs:02d}\"`. Zero-padding with `:02d` turns `5` into `\"05\"`."
+  ]
+}

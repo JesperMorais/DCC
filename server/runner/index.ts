@@ -1,22 +1,11 @@
 import { Worker } from "node:worker_threads";
-import { typeCheck, transpile, type Diagnostic } from "./check.ts";
+import type { Lang } from "../../shared/languages.ts";
+import { runC } from "./c.ts";
+import { typeCheck, transpile } from "./check.ts";
+import { runPython } from "./python.ts";
+import { verdict, type RunResult } from "./types.ts";
 
-export interface TestResult {
-  name: string;
-  pass: boolean;
-  ms: number;
-  error?: { message: string; expected?: string; received?: string; stack?: string };
-}
-
-export interface RunResult {
-  /** True when the code type-checks cleanly AND every test passes. */
-  passed: boolean;
-  typeErrors: Diagnostic[];
-  setupErrors: { file: string; message: string; stack?: string }[];
-  tests: TestResult[];
-  logs: { level: "log" | "warn" | "error"; text: string }[];
-  durationMs: number;
-}
+export type { Diagnostic, RunResult, TestResult } from "./types.ts";
 
 const WORKER_URL = new URL("./worker.mjs", import.meta.url);
 const HARD_KILL_MS = 6000;
@@ -43,20 +32,22 @@ function execute(userJs: string, testsJs: string) {
   });
 }
 
-export async function runChallenge(userCode: string, testsCode: string, mode: "runtime" | "types"): Promise<RunResult> {
+async function runTypeScript(userCode: string, testsCode: string, mode: "runtime" | "types"): Promise<RunResult> {
   const started = performance.now();
-  const typeErrors = typeCheck(userCode, testsCode);
-
+  const diagnostics = typeCheck(userCode, testsCode);
   // Type-only challenges are judged purely by the compiler.
-  const exec =
-    mode === "types"
-      ? { setupErrors: [], tests: [], logs: [] }
-      : await execute(transpile(userCode), transpile(testsCode));
+  const exec = mode === "types" ? { setupErrors: [], tests: [], logs: [] } : await execute(transpile(userCode), transpile(testsCode));
+  const r = { diagnostics, ...exec };
+  return { ...r, passed: verdict(r, mode === "types"), durationMs: Math.round(performance.now() - started) };
+}
 
-  const passed =
-    typeErrors.length === 0 &&
-    exec.setupErrors.length === 0 &&
-    (mode === "types" || (exec.tests.length > 0 && exec.tests.every((t) => t.pass)));
-
-  return { passed, typeErrors, ...exec, durationMs: Math.round(performance.now() - started) };
+export function runChallenge(language: Lang, userCode: string, testsCode: string, mode: "runtime" | "types" = "runtime"): Promise<RunResult> {
+  switch (language) {
+    case "typescript":
+      return runTypeScript(userCode, testsCode, mode);
+    case "python":
+      return runPython(userCode, testsCode);
+    case "c":
+      return runC(userCode, testsCode);
+  }
 }

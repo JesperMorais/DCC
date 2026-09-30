@@ -1,0 +1,12 @@
+{
+  "title": "Celsius to Fahrenheit",
+  "level": 1,
+  "rating": 755,
+  "topics": ["double", "floating-point arithmetic", "functions"],
+  "estMinutes": 6,
+  "hints": [
+    "The formula is F = C × 9 / 5 + 32. `celsius` is a `double`, so the maths can keep decimals, as long as you don't accidentally do a whole-number division first.",
+    "Watch out: `9 / 5` on its own is two `int`s, so it's `1`, not `1.8`. Write `9.0 / 5.0` (or `1.8`), or multiply `celsius` first so the whole calculation stays a `double`.",
+    "`return celsius * 9.0 / 5.0 + 32.0;`"
+  ]
+}

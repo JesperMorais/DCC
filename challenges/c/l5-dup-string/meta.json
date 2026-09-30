@@ -1,0 +1,12 @@
+{
+  "title": "Keep a copy",
+  "level": 5,
+  "rating": 1305,
+  "topics": ["malloc", "strings", "memory ownership"],
+  "estMinutes": 7,
+  "hints": [
+    "A C string needs one byte more than `strlen` says: the terminating `'\\0'` has to live somewhere too.",
+    "Handle `NULL` first. Then `malloc(strlen(s) + 1)`, check the result for `NULL`, and copy the bytes including the terminator.",
+    "`if (s == NULL) return NULL; size_t n = strlen(s) + 1; char *copy = malloc(n); if (copy == NULL) return NULL; memcpy(copy, s, n); return copy;`"
+  ]
+}

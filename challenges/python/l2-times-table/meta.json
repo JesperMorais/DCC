@@ -1,0 +1,17 @@
+{
+  "title": "Times table",
+  "level": 2,
+  "rating": 860,
+  "topics": [
+    "for loops",
+    "range",
+    "lists",
+    "append"
+  ],
+  "estMinutes": 6,
+  "hints": [
+    "Start with an empty list, then add one number to it on each trip through a loop.",
+    "`for i in range(1, count + 1):` gives you 1, 2, …, count. Multiply each `i` by `n` and `.append` it.",
+    "`result: list[int] = []`, then `for i in range(1, count + 1): result.append(n * i)`, then `return result`"
+  ]
+}

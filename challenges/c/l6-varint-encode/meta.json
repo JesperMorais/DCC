@@ -1,0 +1,12 @@
+{
+  "title": "Pack it like protobuf",
+  "level": 6,
+  "rating": 1580,
+  "topics": ["varint", "LEB128", "bit manipulation", "caller buffers"],
+  "estMinutes": 12,
+  "hints": [
+    "Each output byte carries 7 bits of the value: `value & 0x7F`. Then shift the value right by 7. The high bit `0x80` says \"another byte follows\", so it's set on every byte except the last.",
+    "Work out the length first (keep shifting a copy right by 7 until it's below `0x80`, counting bytes). If it's more than `cap`, return 0 without writing anything. Otherwise write exactly that many bytes.",
+    "`while (value >= 0x80) { buf[i++] = (uint8_t)((value & 0x7F) | 0x80); value >>= 7; } buf[i++] = (uint8_t)value; return i;` Note that 0 still takes one byte."
+  ]
+}

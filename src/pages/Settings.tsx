@@ -44,7 +44,7 @@ export default function SettingsPage({ state, onChange }: { state: Dashboard; on
           </button>
         </div>
         <p className="mt-3 text-xs text-muted">
-          Member since {new Date(state.profile!.createdAt).toLocaleDateString()} · rating {state.stats.rating}
+          Member since {new Date(state.profile!.createdAt).toLocaleDateString()} · {state.languages.filter((l) => l.started).map((l) => `${l.id === "typescript" ? "TS" : l.id === "python" ? "Python" : "C"} ${l.rating}`).join(" · ")}
         </p>
       </section>
 
@@ -75,6 +75,7 @@ export default function SettingsPage({ state, onChange }: { state: Dashboard; on
             <li>Giving up counts as 0, and the challenge comes back in a week.</li>
             <li>Only your first attempt at a challenge is rated. Practising it again is free.</li>
             <li>Your first five results move your rating more, so it finds your level quickly.</li>
+            <li>Each language (TypeScript, Python, C) has its own rating and its own daily challenge. Your streak counts any language.</li>
           </ul>
         </div>
       </section>

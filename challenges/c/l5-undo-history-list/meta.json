@@ -1,0 +1,12 @@
+{
+  "title": "Undo history",
+  "level": 5,
+  "rating": 1340,
+  "topics": ["linked lists", "malloc/free", "pointer to pointer"],
+  "estMinutes": 10,
+  "hints": [
+    "`history_push` gets `Step **head` (the address of the caller's head pointer) because it has to *change* which node the caller's list starts at.",
+    "Push: `malloc` a node, fill in `action`, point its `next` at the old head (`*head`), then make `*head` point at the new node. Free: walk the list, but save `next` **before** you free the current node.",
+    "`while (head != NULL) { Step *next = head->next; free(head); head = next; }` — reading `head->next` after `free(head)` is a use-after-free."
+  ]
+}

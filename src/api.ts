@@ -2,12 +2,17 @@
 // so a change on one side is a compile error on the other.
 import type { Dashboard } from "../server/engine.ts";
 import type { RunResult } from "../server/runner/index.ts";
-import type { Attempt, Experience } from "../server/store.ts";
+import type { Attempt } from "../server/store.ts";
+import type { Experience, Lang } from "../shared/languages.ts";
 
-export type { Dashboard, RunResult, Attempt, Experience };
+export type { Dashboard, RunResult, Attempt, Experience, Lang };
+export type { Diagnostic } from "../server/runner/index.ts";
 
 export interface ChallengeView {
   id: string;
+  slug: string;
+  language: Lang;
+  languageStarted: boolean;
   title: string;
   level: number;
   levelName: string;
@@ -33,6 +38,8 @@ export interface ChallengeView {
 
 export interface LibraryItem {
   id: string;
+  slug: string;
+  language: Lang;
   title: string;
   level: number;
   rating: number;
@@ -43,6 +50,7 @@ export interface LibraryItem {
 }
 
 export interface Library {
+  language: Lang;
   levels: { level: number; name: string; band: readonly [number, number] }[];
   rating: number | null;
   challenges: LibraryItem[];
@@ -77,11 +85,12 @@ async function call<T>(path: string, init?: { method?: string; body?: unknown })
 }
 
 export const api = {
-  state: () => call<Dashboard | { profile: null }>("/state"),
-  createProfile: (name: string, experience: Experience) => call("/profile", { method: "POST", body: { name, experience } }),
+  state: (lang: Lang) => call<Dashboard | { profile: null }>(`/state?lang=${lang}`),
+  createProfile: (name: string, experience: Experience, language: Lang) => call("/profile", { method: "POST", body: { name, experience, language } }),
+  startLanguage: (lang: Lang, experience: Experience) => call(`/languages/${lang}/start`, { method: "POST", body: { experience } }),
   rename: (name: string) => call("/profile", { method: "POST", body: { name } }),
   reset: () => call("/reset", { method: "POST", body: {} }),
-  library: () => call<Library>("/challenges"),
+  library: (lang: Lang) => call<Library>(`/challenges?lang=${lang}`),
   challenge: (id: string) => call<ChallengeView>(`/challenges/${id}`),
   start: (id: string) => call<ChallengeView>(`/challenges/${id}/start`, { method: "POST", body: {} }),
   hint: (id: string) => call<{ hints: string[] }>(`/challenges/${id}/hint`, { method: "POST", body: {} }),

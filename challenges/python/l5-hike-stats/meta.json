@@ -1,0 +1,12 @@
+{
+  "title": "Ups and downs",
+  "level": 5,
+  "rating": 1370,
+  "topics": ["itertools", "pairwise", "groupby", "generator expressions"],
+  "estMinutes": 10,
+  "hints": [
+    "Turn the samples into steps first: `[b - a for a, b in pairwise(elevations)]`. Everything else is computed from that list.",
+    "Ascent and descent are filtered sums over the steps. For the longest climb, `groupby(steps, key=lambda d: d > 0)` gives you runs of rising steps. Sum each rising run and take the largest.",
+    "longest = max((sum(run) for rising, run in groupby(steps, key=lambda d: d > 0) if rising), default=0)"
+  ]
+}

@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Daily 10-minute TypeScript challenges that adapt to your level. Runs locally.",
+  "description": "Daily 10-minute coding challenges in TypeScript, Python and C that adapt to your level. Runs locally.",
   "scripts": {
     "dev": "concurrently -k -n api,web -c magenta,cyan \"tsx watch server/index.ts\" \"vite\"",
     "build": "vite build",

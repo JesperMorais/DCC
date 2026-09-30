@@ -1,0 +1,12 @@
+{
+  "title": "Config errors with their own classes",
+  "level": 4,
+  "rating": 1255,
+  "topics": ["custom exceptions", "try/except/else", "exception hierarchies"],
+  "estMinutes": 11,
+  "hints": [
+    "Give `MissingKeyError` an `__init__(self, key: str)` that calls `super().__init__(f\"missing key: {key}\")` and stores `self.key = key`.",
+    "In `read_port`, turn low-level errors into your own: catch `KeyError` from `config[\"port\"]` and `ValueError` from `int(...)`, and re-raise with `raise ... from None`. Check the range after the conversion succeeds.",
+    "In `collect_ports`: `try: port = read_port(cfg)`, `except ConfigError as err: errors.append(str(err))`, `else: ports.append(port)`. Catching the base class also catches `MissingKeyError`."
+  ]
+}

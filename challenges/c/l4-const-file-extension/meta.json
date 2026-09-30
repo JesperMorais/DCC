@@ -1,0 +1,12 @@
+{
+  "title": "Const all the way through",
+  "level": 4,
+  "rating": 1225,
+  "topics": ["pointers", "const correctness", "strings"],
+  "estMinutes": 10,
+  "hints": [
+    "Two things need fixing: the **signature** (both the parameter and the return type become `const char *`) and the **logic** (remember the position of the last `'.'` you've seen).",
+    "Keep a `const char *dot = NULL;` and walk a `const char *p` over the string. Every time `*p == '.'`, set `dot = p`. At the end, return `NULL` if `dot` is still `NULL`, otherwise `dot + 1`.",
+    "`const char *file_extension(const char *path) { const char *dot = NULL; for (const char *p = path; *p != '\\0'; p++) { if (*p == '.') dot = p; } return dot ? dot + 1 : NULL; }`"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Positive thinking",
+  "level": 6,
+  "rating": 1610,
+  "topics": ["descriptors", "__set_name__", "validation", "overload"],
+  "estMinutes": 10,
+  "hints": [
+    "Remember the attribute name in `__set_name__` (`self.name = name`). Don't store values on `self`, because the descriptor is shared by every `Product`. Store them on `obj`.",
+    "In `__set__`, validate first (`isinstance(value, bool)` must be checked explicitly, since `bool` is a subclass of `int`) and then write `obj.__dict__[self.name] = value`. In `__get__`, return `self` when `obj is None`.",
+    "def __get__(self, obj, owner=None):\n    if obj is None: return self\n    try: value: float = obj.__dict__[self.name]\n    except KeyError: raise AttributeError(f\"{self.name} has not been set\") from None\n    return value"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "A UART ring buffer",
+  "level": 6,
+  "rating": 1560,
+  "topics": ["ring buffers", "modular indexing", "embedded"],
+  "estMinutes": 12,
+  "hints": [
+    "`head` is where the next `pop` reads, `tail` is where the next `push` writes. Both only ever move forward and wrap back to 0 at the end of the array.",
+    "`count` settles the one ambiguous case: when `head == tail` the buffer is either empty or full, and `count` tells you which. Check `count == RING_CAP` before pushing and `count == 0` before popping.",
+    "Push: `rb->data[rb->tail] = value; rb->tail = (rb->tail + 1) % RING_CAP; rb->count++;` Pop: `*out = rb->data[rb->head]; rb->head = (rb->head + 1) % RING_CAP; rb->count--;`"
+  ]
+}

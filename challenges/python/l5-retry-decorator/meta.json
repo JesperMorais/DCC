@@ -1,0 +1,12 @@
+{
+  "title": "Try, try again",
+  "level": 5,
+  "rating": 1410,
+  "topics": ["decorators", "functools.wraps", "closures", "exceptions", "ParamSpec"],
+  "estMinutes": 10,
+  "hints": [
+    "You need three layers: `retry(times, on)` returns `decorate(fn)`, which returns `wrapper(*args, **kwargs)`. Validate `times` in the outermost layer, so it fails at decoration time.",
+    "Inside `wrapper`, loop over the attempt numbers. `try: return fn(*args, **kwargs)`, and in `except on:` either re-raise with a bare `raise` (if this was the last attempt) or carry on to the next attempt.",
+    "@functools.wraps(fn)\ndef wrapper(*args: P.args, **kwargs: P.kwargs) -> R:\n    for attempt in range(1, times + 1):\n        try: return fn(*args, **kwargs)\n        except on:\n            if attempt == times: raise\n    raise AssertionError(\"unreachable\")"
+  ]
+}

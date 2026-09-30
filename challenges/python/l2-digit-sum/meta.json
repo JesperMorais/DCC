@@ -1,0 +1,16 @@
+{
+  "title": "Sum of the digits",
+  "level": 2,
+  "rating": 930,
+  "topics": [
+    "while loops",
+    "modulo",
+    "integer division"
+  ],
+  "estMinutes": 8,
+  "hints": [
+    "`n % 10` is the last digit of `n`, and `n // 10` is `n` with the last digit chopped off.",
+    "Take `abs(n)` first. Then, `while n > 0:`, add the last digit to a total and chop it off. The loop ends when nothing is left.",
+    "`n = abs(n)`, `total = 0`, `while n > 0: total += n % 10; n //= 10`, then `return total`"
+  ]
+}

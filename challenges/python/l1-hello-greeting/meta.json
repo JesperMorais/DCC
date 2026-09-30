@@ -1,0 +1,12 @@
+{
+  "title": "Say hello",
+  "level": 1,
+  "rating": 720,
+  "topics": ["functions", "strings", "f-strings"],
+  "estMinutes": 5,
+  "hints": [
+    "An f-string starts with `f` before the quote and lets you drop a value in with `{...}`: `f\"Hi {x}\"`.",
+    "Check for an empty name first with `if name == \"\":` and `return` early.",
+    "`if name == \"\": return \"Hello, stranger!\"` then `return f\"Hello, {name}!\"`"
+  ]
+}

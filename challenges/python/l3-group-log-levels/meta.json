@@ -1,0 +1,12 @@
+{
+  "title": "Group log lines by level",
+  "level": 3,
+  "rating": 1075,
+  "topics": ["collections.defaultdict", "str.partition", "grouping"],
+  "estMinutes": 9,
+  "hints": [
+    "`line.partition(\":\")` splits at the **first** colon and gives back `(before, sep, after)`. `sep` is `\"\"` when there was no colon.",
+    "A `defaultdict(list)` creates the empty list the first time you touch a key, so `groups[level].append(message)` just works.",
+    "For each line: `level, sep, message = line.partition(\":\")`, `if not sep: continue`, then `groups[level.strip().upper()].append(message.strip())`. Finish with `return dict(groups)`."
+  ]
+}

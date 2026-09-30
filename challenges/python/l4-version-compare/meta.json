@@ -1,0 +1,12 @@
+{
+  "title": "Compare version numbers",
+  "level": 4,
+  "rating": 1285,
+  "topics": ["dunder methods", "@classmethod", "functools.total_ordering"],
+  "estMinutes": 12,
+  "hints": [
+    "Compare **tuples of ints**, not strings: `(1, 10, 0) > (1, 9, 2)` is `True`, but `\"1.10.0\" > \"1.9.2\"` is `False`. A small helper that returns `(self.major, self.minor, self.patch)` keeps every comparison one line.",
+    "`from_string` is a `@classmethod`: strip an optional leading `\"v\"`, `split(\".\")`, check there are exactly 3 parts that all pass `.isdecimal()`, then `return cls(*(int(p) for p in parts))`.",
+    "In `__eq__`/`__lt__`, start with `if not isinstance(other, Version): return NotImplemented`. Decorate the class with `@functools.total_ordering` so `>`, `<=` and `>=` come for free from `__eq__` and `__lt__`."
+  ]
+}

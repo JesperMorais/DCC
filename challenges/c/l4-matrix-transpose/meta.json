@@ -1,0 +1,12 @@
+{
+  "title": "Flip the spreadsheet",
+  "level": 4,
+  "rating": 1292,
+  "topics": ["2D arrays", "out-parameters", "variable-length arrays"],
+  "estMinutes": 11,
+  "hints": [
+    "Transposing means the value at row `r`, column `c` of the input goes to row `c`, column `r` of the output. The output has `cols` rows and `rows` columns.",
+    "Two nested loops: `r` from 0 to `rows`, `c` from 0 to `cols`. Inside, a single assignment. Be careful which size goes with which index, or a non-square table will write out of bounds.",
+    "`for (size_t r = 0; r < rows; r++) for (size_t c = 0; c < cols; c++) out[c][r] = in[r][c];`"
+  ]
+}

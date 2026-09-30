@@ -1,0 +1,12 @@
+{
+  "title": "Play it backwards",
+  "level": 5,
+  "rating": 1405,
+  "topics": ["linked lists", "in-place", "pointer juggling"],
+  "estMinutes": 10,
+  "hints": [
+    "You don't need any new nodes. Walk the list once and turn each `next` pointer around, so it points at the node *behind* you.",
+    "Keep three pointers: `prev` (starts `NULL`), `cur` (starts at `head`) and `next`. Save `cur->next` before you overwrite it, or you lose the rest of the list.",
+    "`Song *prev = NULL; while (head != NULL) { Song *next = head->next; head->next = prev; prev = head; head = next; } return prev;`"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Leap year",
+  "level": 1,
+  "rating": 840,
+  "topics": ["bool", "boolean logic", "remainder operator"],
+  "estMinutes": 9,
+  "hints": [
+    "\"Divisible by 4\" means `year % 4 == 0`. Write each of the three rules as a condition like that first.",
+    "Deal with the most specific rule first: divisible by 400 → `true`. Then divisible by 100 → `false`. Then divisible by 4 → `true`. Everything else → `false`.",
+    "In one line: `return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;`"
+  ]
+}

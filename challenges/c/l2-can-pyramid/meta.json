@@ -1,0 +1,12 @@
+{
+  "title": "Can pyramid",
+  "level": 2,
+  "rating": 860,
+  "topics": ["for loops", "accumulator", "int arithmetic"],
+  "estMinutes": 6,
+  "hints": [
+    "You need a running total that starts at 0, and a loop that visits every row number from 1 to `n`.",
+    "`for (int row = 1; row <= n; row++)` visits 1, 2, …, n. Add `row` to your total each time round. If `n` is 0 or negative, the loop simply never runs.",
+    "`int total = 0; for (int row = 1; row <= n; row++) { total += row; } return total;`"
+  ]
+}

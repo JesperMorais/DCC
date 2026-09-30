@@ -1,0 +1,12 @@
+{
+  "title": "Pocket calculator",
+  "level": 6,
+  "rating": 1640,
+  "topics": ["parsing", "recursive descent", "grammars", "closures"],
+  "estMinutes": 12,
+  "hints": [
+    "Write the grammar first, one level per precedence: expression → term → factor. Each rule becomes one inner function that uses `peek()`/`take()`.",
+    "`expression` = a term, then loop while `peek()` is `+`/`-`. `term` = a factor, then loop over `*`/`/`. `factor` = a number, or `(` expression `)`. After the top call, every token must have been consumed.",
+    "def factor() -> float:\n    token = take()\n    if _NUMBER.fullmatch(token): return float(token)\n    if token == \"(\":\n        value = expression()\n        if take() != \")\": raise ValueError(\"expected ')'\")\n        return value\n    raise ValueError(f\"unexpected token {token!r}\")\n# and after parsing: if pos != len(tokens): raise ValueError(...)"
+  ]
+}

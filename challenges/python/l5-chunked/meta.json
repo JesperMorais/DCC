@@ -1,0 +1,12 @@
+{
+  "title": "One batch at a time",
+  "level": 5,
+  "rating": 1390,
+  "topics": ["generators", "yield", "iterators", "itertools"],
+  "estMinutes": 8,
+  "hints": [
+    "Never turn the input into a list. Call `iter(iterable)` once and keep pulling from that same iterator, one chunk at a time.",
+    "`list(islice(it, n))` takes the next chunk (up to `n` items). When it comes back empty, the input is exhausted and the generator should end.",
+    "if n < 1: raise ValueError(\"n must be at least 1\")\nit = iter(iterable)\nwhile chunk := list(islice(it, n)):\n    yield chunk"
+  ]
+}

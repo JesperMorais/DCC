@@ -1,0 +1,15 @@
+{
+  "title": "Museum ticket prices",
+  "level": 1,
+  "rating": 775,
+  "topics": [
+    "if/elif/else",
+    "comparisons"
+  ],
+  "estMinutes": 7,
+  "hints": [
+    "Go through the age groups in order, youngest first, and `return` as soon as one matches.",
+    "Use `if age <= 2:` ... `elif age <= 12:` ... `elif age <= 64:` ... `else:`. Each `elif` only runs if every check above it was `False`.",
+    "`if age <= 2: return 0`, `elif age <= 12: return 60`, `elif age <= 64: return 120`, `else: return 80`"
+  ]
+}

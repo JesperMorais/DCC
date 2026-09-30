@@ -1,0 +1,12 @@
+{
+  "title": "Average sensor reading",
+  "level": 2,
+  "rating": 915,
+  "topics": ["arrays", "double", "type casts"],
+  "estMinutes": 8,
+  "hints": [
+    "An average is the sum divided by how many there are. Handle the empty case first, since you can't divide by zero.",
+    "Sum the readings in an `int` loop as usual. The trap is the division: `sum / count` is whole-number division and drops the `.5`. Convert to `double` first: `(double)sum / (double)count`.",
+    "`if (count == 0) return 0.0; int sum = 0; for (size_t i = 0; i < count; i++) sum += readings[i]; return (double)sum / (double)count;`"
+  ]
+}

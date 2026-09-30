@@ -1,0 +1,12 @@
+{
+  "title": "Is it a working day?",
+  "level": 1,
+  "rating": 815,
+  "topics": ["switch", "bool", "default case"],
+  "estMinutes": 8,
+  "hints": [
+    "Write `switch (day) { ... }` and give each possible value its own `case`. Anything that doesn't match a `case` lands in `default`.",
+    "You can stack several `case` labels on top of each other so they share the same code: `case 1: case 2: ... case 5: return true;`. Weekends and invalid numbers can both go to `default`.",
+    "`switch (day) { case 1: case 2: case 3: case 4: case 5: return true; default: return false; }`"
+  ]
+}

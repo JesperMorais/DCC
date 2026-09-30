@@ -1,0 +1,17 @@
+{
+  "title": "Party guest list",
+  "level": 2,
+  "rating": 900,
+  "topics": [
+    "lists",
+    "in",
+    "len",
+    "append"
+  ],
+  "estMinutes": 7,
+  "hints": [
+    "Check the two \"no\" cases first, in the order the prompt lists them. Only append when both checks pass.",
+    "`name in guests` tells you whether someone is already invited. `len(guests) >= capacity` tells you whether the list is full.",
+    "`if name in guests: return \"already invited\"`, `if len(guests) >= capacity: return \"full\"`, then `guests.append(name)` and `return \"added\"`"
+  ]
+}

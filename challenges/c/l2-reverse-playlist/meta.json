@@ -1,0 +1,12 @@
+{
+  "title": "Reverse the playlist",
+  "level": 2,
+  "rating": 970,
+  "topics": ["arrays", "output arrays", "index arithmetic"],
+  "estMinutes": 9,
+  "hints": [
+    "Fill `out` one slot at a time: `out[0]` gets the **last** song of `src`, `out[1]` the second-to-last, and so on.",
+    "Loop `i` from `0` while `i < count`. The last valid index of `src` is `count - 1`, so the element that belongs in `out[i]` is `i` steps back from there. Don't compute `count - 1` before the loop: with `count == 0` and an unsigned `size_t`, it wraps around to a huge number.",
+    "`for (size_t i = 0; i < count; i++) { out[i] = src[count - 1 - i]; }`"
+  ]
+}

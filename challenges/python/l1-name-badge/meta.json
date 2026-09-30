@@ -1,0 +1,16 @@
+{
+  "title": "Conference name badge",
+  "level": 1,
+  "rating": 755,
+  "topics": [
+    "strings",
+    "string methods",
+    "indexing"
+  ],
+  "estMinutes": 7,
+  "hints": [
+    "Tidy both names first with `.strip()`. Then check whether the last name is empty.",
+    "`first.strip().upper()` gives the shouted first name. `last[0]` is the first letter of the last name, and you only take it when `last` isn't `\"\"`.",
+    "`first = first.strip().upper()`, `last = last.strip()`, `if last == \"\": return first`, then `return f\"{first} {last[0].upper()}.\"`"
+  ]
+}

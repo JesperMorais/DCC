@@ -1,0 +1,12 @@
+{
+  "title": "An array that grows",
+  "level": 5,
+  "rating": 1365,
+  "topics": ["realloc", "dynamic arrays", "amortized growth"],
+  "estMinutes": 12,
+  "hints": [
+    "Only grow when the array is full (`len == cap`). The new capacity is `cap == 0 ? 4 : cap * 2`, and `realloc(NULL, n)` behaves like `malloc(n)`, so the first push needs no special case.",
+    "`realloc` takes a size in **bytes**: `new_cap * sizeof *v->data`. Store its result in a temporary first. If it's `NULL`, the old block is still valid and still yours, so return `false` without touching `v`.",
+    "`int *grown = realloc(v->data, new_cap * sizeof *grown); if (grown == NULL) return false; v->data = grown; v->cap = new_cap;` then `v->data[v->len++] = value;`. Free: `free(v->data); intvec_init(v);`"
+  ]
+}

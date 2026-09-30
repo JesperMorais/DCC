@@ -1,0 +1,12 @@
+{
+  "title": "Order status as an Enum",
+  "level": 4,
+  "rating": 1175,
+  "topics": ["enum", "methods", "exceptions"],
+  "estMinutes": 9,
+  "hints": [
+    "Calling the class with a value looks up the member: `OrderStatus(\"paid\")` is `OrderStatus.PAID`, and an unknown value raises `ValueError` on its own.",
+    "Iterating over an Enum class gives its members in definition order, so `list(OrderStatus)` is the whole workflow. `members.index(self)` tells you where you are.",
+    "`parse_status`: `return OrderStatus(raw.strip().lower())`. `advance`: `members = list(OrderStatus)`, `i = members.index(self)`, raise `ValueError(\"... final ...\")` if it's the last one, else `return members[i + 1]`."
+  ]
+}

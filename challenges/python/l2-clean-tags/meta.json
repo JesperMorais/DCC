@@ -1,0 +1,16 @@
+{
+  "title": "Clean up blog tags",
+  "level": 2,
+  "rating": 990,
+  "topics": [
+    "list comprehensions",
+    "strings",
+    "filtering"
+  ],
+  "estMinutes": 8,
+  "hints": [
+    "Each tag needs two things: tidy it with string methods, and drop it if nothing is left afterwards.",
+    "The shape is `[<new value> for tag in tags if <keep it?>]`. `tag.strip().lower()` is the new value, and an empty string counts as false in a condition.",
+    "`return [tag.strip().lower() for tag in tags if tag.strip()]`"
+  ]
+}

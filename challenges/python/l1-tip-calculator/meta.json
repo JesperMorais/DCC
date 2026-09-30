@@ -1,0 +1,16 @@
+{
+  "title": "Tip calculator",
+  "level": 1,
+  "rating": 710,
+  "topics": [
+    "arithmetic",
+    "float",
+    "variables"
+  ],
+  "estMinutes": 5,
+  "hints": [
+    "A percentage is \"out of 100\", so 15 percent is the same as `15 / 100`, which is `0.15`.",
+    "Work out the tip first: `tip = bill * tip_percent / 100`. Then add it to the bill.",
+    "`tip = bill * tip_percent / 100` then `return bill + tip`"
+  ]
+}

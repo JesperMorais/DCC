@@ -1,0 +1,12 @@
+{
+  "title": "Vectors that feel built-in",
+  "level": 6,
+  "rating": 1520,
+  "topics": ["dunder methods", "operator overloading", "NotImplemented", "dataclasses"],
+  "estMinutes": 10,
+  "hints": [
+    "`@dataclass(frozen=True)` gives you `__init__`, `__eq__`, `__hash__` and immutability for free. You still write `__add__`, `__sub__`, `__mul__`, `__rmul__`, `__abs__`, `__bool__` and `__repr__`.",
+    "In each operator, check the other operand's type first and `return NotImplemented` (don't raise) if it's wrong. Python then raises the `TypeError` for you. `__rmul__` can simply delegate to `__mul__`.",
+    "def __mul__(self, k: float) -> \"Vector\":\n    if not isinstance(k, (int, float)): return NotImplemented\n    return Vector(self.x * k, self.y * k)\n__rmul__ = __mul__\ndef __abs__(self) -> float: return math.hypot(self.x, self.y)\ndef __repr__(self) -> str: return f\"Vector({self.x!r}, {self.y!r})\""
+  ]
+}

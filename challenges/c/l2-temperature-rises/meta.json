@@ -1,0 +1,12 @@
+{
+  "title": "Off by one",
+  "level": 2,
+  "rating": 985,
+  "topics": ["off-by-one errors", "array bounds", "AddressSanitizer"],
+  "estMinutes": 8,
+  "hints": [
+    "Run the tests and read the AddressSanitizer report. It says the code read memory just past the end of the array. Which line does that, and on which round of the loop?",
+    "An array with `count` elements has valid indices `0` to `count - 1`. Look at the loop condition: what's the value of `i` on the very last round, and is `temps[i]` still inside the array then?",
+    "Change `i <= count` to `i < count`. The loop still starts at `1`, so it compares every pair `temps[i - 1], temps[i]` and never touches `temps[count]`."
+  ]
+}

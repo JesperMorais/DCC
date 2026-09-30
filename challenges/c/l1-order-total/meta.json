@@ -1,0 +1,12 @@
+{
+  "title": "Checkout total",
+  "level": 1,
+  "rating": 705,
+  "topics": ["functions", "variables", "int arithmetic"],
+  "estMinutes": 5,
+  "hints": [
+    "Everything you need is already a parameter: `quantity`, `unit_price` and `shipping`. You only have to combine them with `*` and `+`.",
+    "First work out what the items cost together (how many × price of one), then add the shipping on top.",
+    "`return quantity * unit_price + shipping;` — `*` happens before `+`, just like in maths."
+  ]
+}

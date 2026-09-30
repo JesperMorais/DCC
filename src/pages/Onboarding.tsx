@@ -1,33 +1,31 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api, type Experience } from "../api";
+import { ExperiencePicker } from "../components/ExperiencePicker";
 import { Mascot } from "../components/Mascot";
-import { Icon, LevelPips } from "../ui";
-
-const OPTIONS: { key: Experience; title: string; body: string; level: number }[] = [
-  { key: "new", title: "Brand new to coding", body: "I've never really written code. Start from the very beginning.", level: 1 },
-  { key: "other-lang", title: "I know another language", body: "Python, C#, Java… I get loops and functions, TypeScript is new.", level: 2 },
-  { key: "js", title: "I write JavaScript", body: "Comfortable with JS. Types and interfaces are the new part.", level: 3 },
-  { key: "some-ts", title: "I use some TypeScript", body: "I've shipped TS, but generics and advanced types are fuzzy.", level: 4 },
-  { key: "pro", title: "TypeScript regular", body: "Bring on async patterns, conditional types and infer.", level: 5 },
-];
+import { LangBadge, LANGUAGES, type Lang } from "../lang";
+import { Icon } from "../ui";
 
 const PICK_LINE: Record<Experience, string> = {
   new: "We'll start from the very beginning. I'll explain things as we go.",
-  "other-lang": "You know the ideas already. We'll put types on them.",
-  js: "Good, you know JS. Types are the fun new part.",
-  "some-ts": "Let's firm up generics and the tricky parts of the type system.",
-  pro: "Conditional types it is. Let's see what you've got.",
+  "other-lang": "You know the ideas already. Now we learn how this language says them.",
+  js: "Good, you've got the basics. The fun part is next.",
+  "some-ts": "Let's firm up the tricky parts.",
+  pro: "Hard mode it is. Let's see what you've got.",
 };
 
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState("");
+  const [lang, setLang] = useState<Lang>("typescript");
   const [exp, setExp] = useState<Experience | null>(null);
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
 
   const start = async () => {
     if (!exp) return;
     setBusy(true);
-    await api.createProfile(name, exp);
+    await api.createProfile(name, exp, lang);
+    navigate(`/${lang}`);
     onDone();
   };
 
@@ -38,23 +36,23 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           <Mascot mood="wave" size={132} className="-ml-3 shrink-0 text-ink-2" />
           <div>
             <span className="text-xl font-semibold tracking-tight">
-              daily<span className="text-accent">.ts</span>
+              daily<span className="text-accent">.{LANGUAGES[lang].ext}</span>
             </span>
             <div className="relative mt-2 rounded-2xl rounded-bl-sm border border-line bg-surface px-4 py-2.5 text-sm text-ink-2 shadow-sm">
               {exp ? (
                 PICK_LINE[exp]
               ) : (
                 <>
-                  Hi, I'm <b className="text-ink">Tess</b>. Pangolins are covered in scales, and your code gets covered in types. Both are armour.
+                  Hi, I'm <b className="text-ink">Tess</b>. {LANGUAGES[lang].tessIntro}
                 </>
               )}
             </div>
           </div>
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight">One small TypeScript challenge a day.</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">One small coding challenge a day.</h1>
         <p className="mt-3 max-w-xl text-ink-2">
-          About ten minutes each. Every challenge teaches one concept, and the difficulty adjusts to how you do — solve fast
-          and it gets harder, struggle and it eases off. Everything runs and stays on this machine.
+          About ten minutes each, in TypeScript, Python or C. Every challenge teaches one concept, and the difficulty adjusts to how you do.
+          Solve fast and it gets harder; struggle and it eases off. Everything runs and stays on this machine.
         </p>
 
         <div className="card mt-8 p-6">
@@ -70,29 +68,27 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
             autoFocus
           />
 
-          <p className="mt-6 text-sm font-medium">Where are you starting from?</p>
-          <p className="mt-1 text-xs text-muted">This only sets your starting point. Your rating takes over after a few challenges.</p>
-          <div className="mt-3 grid gap-2">
-            {OPTIONS.map((o) => (
+          <p className="mt-6 text-sm font-medium">Which language first?</p>
+          <p className="mt-1 text-xs text-muted">You can add the others any time. Each language has its own rating.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {(Object.keys(LANGUAGES) as Lang[]).map((l) => (
               <button
-                key={o.key}
-                onClick={() => setExp(o.key)}
-                className={`flex items-center gap-4 rounded-xl border p-3.5 text-left transition-colors ${
-                  exp === o.key ? "border-accent bg-accent-soft" : "border-line hover:border-line-strong hover:bg-surface-2"
+                key={l}
+                onClick={() => setLang(l)}
+                className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                  lang === l ? "border-accent bg-accent-soft" : "border-line hover:border-line-strong hover:bg-surface-2"
                 }`}
               >
-                <LevelPips level={o.level} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold">{o.title}</div>
-                  <div className="text-xs text-ink-2">{o.body}</div>
-                </div>
-                <span
-                  className={`grid size-5 place-items-center rounded-full border ${exp === o.key ? "border-accent bg-accent text-white" : "border-line-strong"}`}
-                >
-                  {exp === o.key && <Icon name="check" size={12} strokeWidth={3} />}
-                </span>
+                <LangBadge lang={l} size={30} />
+                <span className="text-sm font-semibold">{LANGUAGES[l].name}</span>
               </button>
             ))}
+          </div>
+
+          <p className="mt-6 text-sm font-medium">Where are you starting from in {LANGUAGES[lang].name}?</p>
+          <p className="mt-1 text-xs text-muted">This only sets your starting point. Your rating takes over after a few challenges.</p>
+          <div className="mt-3">
+            <ExperiencePicker lang={lang} value={exp} onChange={setExp} />
           </div>
 
           <button className="btn btn-primary mt-6 h-11 w-full justify-center text-[15px]" disabled={!exp || busy} onClick={start}>

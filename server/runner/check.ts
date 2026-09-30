@@ -1,15 +1,6 @@
 import ts from "typescript";
 import { HARNESS_DTS } from "./harness.ts";
-
-export interface Diagnostic {
-  file: "your-code" | "tests";
-  line: number; // 1-based
-  column: number; // 1-based
-  message: string;
-  code: number;
-  /** The source line the error points at, for context in the UI. */
-  source: string;
-}
+import type { Diagnostic } from "./types.ts";
 
 export const COMPILER_OPTIONS: ts.CompilerOptions = {
   target: ts.ScriptTarget.ES2022,
@@ -73,8 +64,10 @@ export function typeCheck(userCode: string, testsCode: string): Diagnostic[] {
       line: line + 1,
       column: character + 1,
       message: ts.flattenDiagnosticMessageText(d.messageText, "\n"),
-      code: d.code,
+      code: `TS${d.code}`,
       source: (lines[line] ?? "").trim(),
+      severity: "error",
+      tool: "tsc",
     });
   }
   // User's own errors first — that's what they can fix.

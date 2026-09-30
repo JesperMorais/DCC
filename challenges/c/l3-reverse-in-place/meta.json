@@ -1,0 +1,12 @@
+{
+  "title": "Backwards, in place",
+  "level": 3,
+  "rating": 1075,
+  "topics": ["strings", "in-place mutation", "two indices"],
+  "estMinutes": 9,
+  "hints": [
+    "Swap the first and last characters, then the second and second-to-last, and so on, until you meet in the middle. The `'\\0'` stays where it is.",
+    "Find the length first. Then keep two indices, `i = 0` and `j = len - 1`, and swap while `i < j`. Watch out: if `len` is 0, `len - 1` on a `size_t` wraps around to a huge number.",
+    "`size_t len = strlen(s); if (len < 2) return; for (size_t i = 0, j = len - 1; i < j; i++, j--) { char t = s[i]; s[i] = s[j]; s[j] = t; }`"
+  ]
+}

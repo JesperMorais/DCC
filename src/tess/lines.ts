@@ -1,6 +1,6 @@
 // Tess's voice. Lines are picked with a seed (date + key), so they stay stable for the day
 // instead of flickering every time the app refetches state.
-import type { ChallengeView, Dashboard, FinishResult, RunResult } from "../api";
+import type { ChallengeView, Dashboard, FinishResult, Lang, RunResult } from "../api";
 import type { Mood } from "../components/Mascot";
 
 export interface Line {
@@ -82,14 +82,14 @@ export function categorize(r: RunResult, prevPassing: number | null): RunCategor
   const msgs = [...r.setupErrors.map((e) => e.message), ...r.tests.map((t) => t.error?.message ?? "")];
   if (msgs.some((m) => /infinite loop|timed out/i.test(m))) return "timeout";
   if (r.setupErrors.length) return "crash";
-  if (r.typeErrors.length) return "types";
+  if (r.diagnostics.some((d) => d.severity === "error")) return "types";
   if (r.passed) return "pass";
   const passing = r.tests.filter((t) => t.pass).length;
   if (prevPassing !== null && passing > prevPassing) return "progress";
   return "failing";
 }
 
-export function runReaction(r: RunResult, cat: RunCategory, prevPassing: number | null, runNo: number): Line {
+export function runReaction(r: RunResult, cat: RunCategory, prevPassing: number | null, runNo: number, lang: Lang = "typescript"): Line {
   const total = r.tests.length;
   const passing = r.tests.filter((t) => t.pass).length;
   const firstFail = r.tests.find((t) => !t.pass);
@@ -103,16 +103,38 @@ export function runReaction(r: RunResult, cat: RunCategory, prevPassing: number 
           "That took too long. Is there a while loop that never ends, or a promise that never resolves?",
         ]),
       };
-    case "crash":
-      return { mood: "think", text: rot(["It crashed while loading, before any test ran. The message below says where.", "Runtime error on load. Try a console.log just above it."]) };
+    case "crash": {
+      const log = lang === "python" ? "print()" : lang === "c" ? "printf()" : "console.log";
+      const link = r.setupErrors.some((e) => /Linker error|main\(\)/.test(e.message));
+      if (link) return { mood: "think", text: "It compiled, but the pieces didn't link. The message below says exactly what's missing." };
+      return { mood: "think", text: rot(["It crashed while loading, before any test ran. The message below says where.", `Runtime error on load. Try a ${log} just above it.`]) };
+    }
     case "types": {
-      if (r.typeErrors.every((e) => e.file === "tests")) return { mood: "think", text: "Your function's shape doesn't match what the tests expect. Check the parameter and return types." };
-      const n = r.typeErrors.length;
-      return { mood: "think", text: rot([`The compiler spotted ${n} thing${n > 1 ? "s" : ""}. Click one to jump there.`, "Types first. Fix these and the tests will run cleanly."]) };
+      const errors = r.diagnostics.filter((d) => d.severity === "error");
+      if (lang === "python") return { mood: "think", text: "Python can't parse this yet. The arrow points at where it got confused. Often the real slip is just before it." };
+      if (lang === "c" && errors.every((e) => e.file === "tests"))
+        return { mood: "think", text: "The tests can't find or call your function the way they expect. Check its name, parameters and return type." };
+      if (errors.every((e) => e.file === "tests")) return { mood: "think", text: "Your function's shape doesn't match what the tests expect. Check the parameter and return types." };
+      const n = errors.length;
+      const who = lang === "c" ? "gcc" : "The compiler";
+      return {
+        mood: "think",
+        text: rot([`${who} spotted ${n} error${n > 1 ? "s" : ""}. Click one to jump there.`, lang === "c" ? "Fix the first compiler error first. The rest are often knock-on effects." : "Types first. Fix these and the tests will run cleanly."]),
+      };
     }
     case "progress":
       return { mood: "cheer", text: rot([`${passing}/${total} now, up from ${prevPassing}. Keep going.`, `Progress. ${total - passing} to go.`]) };
-    case "failing":
+    case "failing": {
+      // A failing test without expected/received is a crash or exception, not a wrong answer.
+      const crash = r.tests.find((t) => !t.pass && t.error && t.error.expected === undefined && !/^Skipped/.test(t.error.message));
+      if (crash && lang === "c") {
+        const m = crash.error!.message;
+        if (/Memory leak/.test(m)) return { mood: "think", text: "The answers are right, but some memory never gets freed. The test shows where it was allocated." };
+        if (/Out of bounds|NULL pointer|Use after free|Double free|Segmentation|Undefined behavior|Stack overflow|Dangling|Invalid free/.test(m))
+          return { mood: "think", text: "AddressSanitizer caught a memory bug. The red test names the exact line. In C, this is the lesson." };
+      }
+      if (crash && lang === "python" && !/^assert /.test(crash.error!.message))
+        return { mood: "think", text: `Your code raised ${crash.error!.message.split(":")[0]}. The line under the test shows where in your code it happened.` };
       return {
         mood: "think",
         text: rot([
@@ -120,8 +142,13 @@ export function runReaction(r: RunResult, cat: RunCategory, prevPassing: number 
           firstFail ? `Not yet. Start with “${firstFail.name}”.` : "Not yet. Look at the first failing test.",
         ]),
       };
-    case "pass":
+    }
+    case "pass": {
+      const warns = r.diagnostics.filter((d) => d.severity === "warning");
+      if (warns.length && lang === "c") return { mood: "happy", text: `All green. gcc still has ${warns.length} warning${warns.length > 1 ? "s" : ""}, worth a look before you submit.` };
+      if (warns.length && lang === "python") return { mood: "happy", text: `All green. mypy has ${warns.length} note${warns.length > 1 ? "s" : ""} on your type hints. Optional, but good practice.` };
       return { mood: "happy", text: rot(["Everything passes. Tidy up if you like, then submit.", "All green. Submit when you're happy with it."]) };
+    }
   }
 }
 

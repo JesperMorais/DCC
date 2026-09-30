@@ -1,0 +1,12 @@
+{
+  "title": "A bank account that says no",
+  "level": 4,
+  "rating": 1200,
+  "topics": ["classes", "exceptions", "properties"],
+  "estMinutes": 10,
+  "hints": [
+    "Store the balance on the instance in `__init__` (e.g. `self._balance = 0`). The leading underscore means \"internal\".",
+    "Validate first, then change state: `if amount <= 0: raise ValueError(\"amount must be positive\")`. Do the same check for overdrafts in `withdraw`.",
+    "Expose the balance read-only with `@property def balance(self) -> int: return self._balance`. There's no setter, so `acct.balance = 5` raises AttributeError."
+  ]
+}

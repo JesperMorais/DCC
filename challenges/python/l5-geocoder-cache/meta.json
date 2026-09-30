@@ -1,0 +1,12 @@
+{
+  "title": "Don't pay twice",
+  "level": 5,
+  "rating": 1350,
+  "topics": ["functools.lru_cache", "memoisation", "closures"],
+  "estMinutes": 8,
+  "hints": [
+    "`functools.lru_cache(maxsize=...)` already implements least-recently-used eviction and doesn't cache exceptions. The trick is deciding *what* to cache.",
+    "Inside `make_geocoder`, define a small inner function decorated with `@lru_cache(maxsize=maxsize)` that just calls `fetch(key)`. Then return a second function that normalises the address and calls the cached one.",
+    "@lru_cache(maxsize=maxsize)\ndef cached(key: str) -> Coords: return fetch(key)\ndef lookup(address: str) -> Coords: return cached(address.strip().casefold())\nreturn lookup"
+  ]
+}

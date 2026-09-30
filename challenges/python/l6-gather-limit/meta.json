@@ -1,0 +1,12 @@
+{
+  "title": "Ten at a time",
+  "level": 6,
+  "rating": 1580,
+  "topics": ["asyncio", "Semaphore", "concurrency", "generics"],
+  "estMinutes": 10,
+  "hints": [
+    "The awaitables haven't started yet, so you control *when* each one runs. Make a single `asyncio.Semaphore(limit)` that all jobs share.",
+    "Write an inner `async def run(aw)` that does `async with sem: return await aw`. Wrap every input with it and pass all the wrappers to `asyncio.gather`, which keeps input order and propagates errors.",
+    "sem = asyncio.Semaphore(limit)\nasync def run(aw: Awaitable[T]) -> T:\n    async with sem:\n        return await aw\nreturn await asyncio.gather(*(run(aw) for aw in aws))"
+  ]
+}

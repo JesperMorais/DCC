@@ -1,0 +1,12 @@
+{
+  "title": "Warmest freezer reading",
+  "level": 2,
+  "rating": 945,
+  "topics": ["arrays", "best so far", "for loops"],
+  "estMinutes": 8,
+  "hints": [
+    "Keep a variable with the highest value seen so far, and update it whenever you find something bigger.",
+    "The starting value is the trap: `int highest = 0;` is wrong when every reading is below zero. Start with the first element, `values[0]`, and loop from index 1.",
+    "`int highest = values[0]; for (size_t i = 1; i < count; i++) { if (values[i] > highest) highest = values[i]; } return highest;`"
+  ]
+}

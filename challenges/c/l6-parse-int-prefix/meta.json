@@ -1,0 +1,12 @@
+{
+  "title": "Parse numbers out of G-code",
+  "level": 6,
+  "rating": 1610,
+  "topics": ["parsing", "end pointers", "overflow checks", "error reporting"],
+  "estMinutes": 12,
+  "hints": [
+    "Walk a pointer `p` from `s`: skip one optional sign, then consume digits with `value = value * 10 + digit`. Remember where the digits started, because \"no digits at all\" is an error.",
+    "The overflow check must happen **before** `value * 10 + d`. For a positive total that's `value > (INT_MAX - d) / 10`. `INT_MIN` has no positive twin, so the neat trick is to accumulate **negatively** (`value = value * 10 - d`, checking `value < (INT_MIN + d) / 10`) and negate at the end if the sign was `+`.",
+    "At the end: for a positive number, `value == INT_MIN` still means overflow; otherwise the result is `-value`. On any failure, `*end = s; return false;` without touching `*out`. On success, `*out = result; *end = p; return true;`"
+  ]
+}

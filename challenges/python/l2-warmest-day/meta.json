@@ -1,0 +1,17 @@
+{
+  "title": "Warmest day of the week",
+  "level": 2,
+  "rating": 950,
+  "topics": [
+    "for loops",
+    "enumerate",
+    "None",
+    "max by hand"
+  ],
+  "estMinutes": 9,
+  "hints": [
+    "Handle the empty list first. Then remember the index of the best day so far and compare every day against it.",
+    "Start with `best = 0` (day 0 is the warmest *so far*). Loop with `for i, temp in enumerate(temps):` and move `best` to `i` when `temp` is **strictly** warmer than `temps[best]`.",
+    "`if not temps: return None`, `best = 0`, `for i, temp in enumerate(temps): if temp > temps[best]: best = i`, then `return best`"
+  ]
+}
