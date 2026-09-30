@@ -4,9 +4,11 @@ import { api, isOnboarded, type Dashboard } from "./api";
 import ChallengePage from "./pages/Challenge";
 import DashboardPage from "./pages/Dashboard";
 import LibraryPage from "./pages/Library";
+import MascotGallery from "./pages/MascotGallery";
 import Onboarding from "./pages/Onboarding";
 import SettingsPage from "./pages/Settings";
 import { setTheme, useTheme } from "./theme";
+import { Mascot } from "./components/Mascot";
 import { Icon, type IconName } from "./ui";
 
 export default function App() {
@@ -26,12 +28,18 @@ export default function App() {
     refresh();
   }, [refresh, location.pathname]);
 
-  if (state === "loading") return <div className="grid h-full place-items-center text-muted">Loading…</div>;
+  if (state === "loading")
+    return (
+      <div className="grid h-full place-items-center text-muted">
+        <Mascot mood="think" size={96} className="text-ink-2" />
+      </div>
+    );
   if (state === "error")
     return (
       <div className="grid h-full place-items-center text-center text-ink-2">
-        <div>
-          <p className="font-semibold text-ink">Can't reach the local server.</p>
+        <div className="flex flex-col items-center">
+          <Mascot mood="sleep" size={120} className="text-ink-2" />
+          <p className="mt-3 font-semibold text-ink">Tess can't reach the local server.</p>
           <p className="mt-1 text-sm">
             Start it with <code className="font-mono">npm run dev</code> and reload.
           </p>
@@ -49,6 +57,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<DashboardPage state={state} />} />
           <Route path="/library" element={<LibraryPage />} />
+          <Route path="/mascot" element={<MascotGallery />} />
           <Route path="/settings" element={<SettingsPage state={state} onChange={refresh} />} />
           <Route path="/c/:id" element={<ChallengePage onFinished={refresh} />} />
         </Routes>
@@ -67,7 +76,7 @@ function Sidebar({ state }: { state: Dashboard }) {
   return (
     <aside className="flex w-[68px] shrink-0 flex-col items-center border-r border-line bg-surface py-4 lg:w-[220px] lg:items-stretch lg:px-3">
       <NavLink to="/" className="mb-6 flex items-center gap-2.5 px-2">
-        <span className="grid size-8 place-items-center rounded-lg bg-accent font-mono text-[13px] font-bold text-white">ts</span>
+        <Mascot mood="idle" size={36} className="shrink-0" title="daily.ts" />
         <span className="hidden text-[15px] font-semibold tracking-tight lg:block">
           daily<span className="text-accent">.ts</span>
         </span>

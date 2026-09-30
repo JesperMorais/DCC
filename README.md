@@ -1,5 +1,7 @@
 # daily.ts
 
+<img src="public/favicon.svg" width="72" align="right" alt="Tess the pangolin" />
+
 One ~10-minute TypeScript challenge a day, on your own machine. The difficulty adapts to you.
 
 ```bash
@@ -15,6 +17,7 @@ For hacking on the app itself: `npm run dev` (API on :4321 + Vite with hot reloa
 - **Your code is really type-checked.** The server runs the TypeScript compiler in `strict` mode over your code *and* the tests together, so a wrong signature is a type error, not just a failing test. Then it runs the tests in a sandboxed worker thread, which kills infinite loops after 1.5s. Type-level challenges are judged by the compiler alone.
 - **Adaptive difficulty (Elo).** You and every challenge have a rating. The daily pick sits slightly above your rating, avoids topics you just did and leans towards topics you're weak on. Solving pushes your rating up. Hints (−12% each), running well past 10 minutes and giving up pull it down. Only the first attempt at a challenge is rated; after that it's free practice.
 - **Dashboard.** Rating over time, streaks, a 20-week activity heatmap, topic mastery, level progress and recent attempts.
+- **Tess the pangolin** is the mascot. A pangolin's scales are armour, and so are types. Tess reacts to how your day is going (`src/components/Mascot.tsx`, all moods at `/mascot`).
 - **Everything local.** Progress lives in `data/progress.json`. The Monaco editor is bundled, so it works offline.
 
 ## Adding challenges

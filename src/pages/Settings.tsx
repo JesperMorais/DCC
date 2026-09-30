@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api, type Dashboard } from "../api";
+import { Mascot } from "../components/Mascot";
 import { setTheme, useTheme, type ThemePref } from "../theme";
 
 export default function SettingsPage({ state, onChange }: { state: Dashboard; onChange: () => void }) {
@@ -73,6 +75,14 @@ export default function SettingsPage({ state, onChange }: { state: Dashboard; on
           </ul>
         </div>
       </section>
+
+      <Link to="/mascot" className="card mt-5 flex items-center gap-4 p-5 hover:border-line-strong">
+        <Mascot mood="wave" size={64} className="shrink-0 text-ink-2" />
+        <div>
+          <h2 className="text-[15px] font-semibold">Meet Tess</h2>
+          <p className="text-sm text-ink-2">The daily.ts pangolin. The only mammal with armour-plated scales, just like your code with types.</p>
+        </div>
+      </Link>
 
       <section className="card mt-5 border-bad/30 p-5">
         <h2 className="text-[15px] font-semibold text-bad">Reset progress</h2>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api, type Experience } from "../api";
+import { Mascot } from "../components/Mascot";
 import { Icon, LevelPips } from "../ui";
 
 const OPTIONS: { key: Experience; title: string; body: string; level: number }[] = [
@@ -25,11 +26,16 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   return (
     <div className="min-h-full bg-bg px-4 py-12">
       <div className="pop-in mx-auto max-w-2xl">
-        <div className="mb-8 flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-accent font-mono text-base font-bold text-white">ts</span>
-          <span className="text-xl font-semibold tracking-tight">
-            daily<span className="text-accent">.ts</span>
-          </span>
+        <div className="mb-6 flex items-center gap-5">
+          <Mascot mood="wave" size={132} className="-ml-3 shrink-0 text-ink-2" />
+          <div>
+            <span className="text-xl font-semibold tracking-tight">
+              daily<span className="text-accent">.ts</span>
+            </span>
+            <div className="relative mt-2 rounded-2xl rounded-bl-sm border border-line bg-surface px-4 py-2.5 text-sm text-ink-2 shadow-sm">
+              Hi, I'm <b className="text-ink">Tess</b> 👋 Pangolins are covered in scales, and your code gets covered in types. Both are armour.
+            </div>
+          </div>
         </div>
         <h1 className="text-3xl font-semibold tracking-tight">One small TypeScript challenge a day.</h1>
         <p className="mt-3 max-w-xl text-ink-2">

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Dashboard } from "../api";
 import { LEVEL_NAMES } from "../ui";
+import { TessSays } from "./Mascot";
 
 const LEVEL_EDGES = [850, 1000, 1150, 1300, 1450];
 
@@ -233,7 +234,13 @@ export function LevelProgress({ levels, current }: { levels: Dashboard["levels"]
 
 export function TopicMastery({ topics }: { topics: Dashboard["topics"] }) {
   if (topics.length === 0)
-    return <p className="py-6 text-center text-sm text-muted">Topics show up here as you practise — you'll see what's clicking and what needs another rep.</p>;
+    return (
+      <div className="py-2">
+        <TessSays mood="think" size={72}>
+          Topics show up here as you practise, so you can see what's clicking and what needs another rep.
+        </TessSays>
+      </div>
+    );
   return (
     <div className="flex flex-col gap-3.5">
       {topics.slice(0, 7).map((t) => (

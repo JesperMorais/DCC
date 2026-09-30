@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type ChallengeView, type FinishResult, type RunResult } from "../api";
 import "../monaco"; // configures the bundled Monaco before <Editor> mounts
+import { Mascot } from "../components/Mascot";
 import { useTheme } from "../theme";
 import { CodeBlock, fmtClock, fmtMinutes, Icon, LevelBadge, Markdown, Tag } from "../ui";
 
@@ -244,7 +245,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                     {view.hints.map((h, i) => (
                       <div key={i} className="pop-in rounded-xl border border-line bg-warn-soft p-3.5">
                         <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-warn">
-                          <Icon name="bulb" size={13} /> Hint {i + 1}
+                          <Mascot mood="think" size={22} /> Tess's hint {i + 1}
                         </div>
                         <Markdown source={h} className="!text-[13px]" />
                       </div>
@@ -473,7 +474,8 @@ function ResultsPanel({
 
       <div className={`min-h-0 flex-1 overflow-y-auto p-4 ${running ? "opacity-50" : ""}`}>
         {!result && (
-          <div className="grid h-full place-items-center text-center text-sm text-muted">
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-muted">
+            <Mascot mood={reviewing ? "sleep" : "idle"} size={72} className="text-ink-2" />
             {reviewing ? (
               "Reviewing a finished challenge. Hit “Practice again” for a fresh, unrated attempt."
             ) : (
@@ -503,7 +505,7 @@ function ResultsPanel({
           <div className="flex flex-col gap-4">
             {result.passed && canSubmit && (
               <div className="pop-in flex items-center gap-3 rounded-xl border border-good/30 bg-good-soft p-3.5">
-                <Icon name="sparkles" size={18} className="text-good" />
+                <Mascot mood="happy" size={44} className="shrink-0" />
                 <div className="flex-1 text-sm">
                   <b className="text-good">Everything passes.</b> <span className="text-ink-2">Tidy it up if you like, then submit.</span>
                 </div>
@@ -657,12 +659,7 @@ function FinishModal({ finish, onClose, onDashboard }: { finish: FinishResult; o
       {solved && <Confetti />}
       <Modal onClose={onClose} wide>
         <div className="flex items-start gap-4">
-          <span
-            className="grid size-12 shrink-0 place-items-center rounded-2xl"
-            style={{ background: solved ? "var(--good-soft)" : "var(--surface-2)", color: solved ? "var(--good)" : "var(--text-2)" }}
-          >
-            <Icon name={solved ? "trophy" : "book"} size={24} />
-          </span>
+          <Mascot mood={solved ? "happy" : "cheer"} size={96} className="-my-2 -ml-2 shrink-0 text-ink-2" />
           <div>
             <h2 className="text-xl font-semibold tracking-tight">{solved ? "Solved!" : "Here's how it's done"}</h2>
             <p className="mt-1 text-sm text-ink-2">

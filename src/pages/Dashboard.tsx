@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Dashboard } from "../api";
 import { Heatmap, LevelProgress, RatingChart, TopicMastery } from "../components/charts";
+import { Mascot, TessSays, type Mood } from "../components/Mascot";
 import { fmtMinutes, Icon, LevelBadge, relTime, StatusDot, Tag, type IconName } from "../ui";
 
 const greeting = () => {
@@ -122,7 +123,12 @@ function DailyCard({ daily, next }: { daily: Dashboard["daily"]; next: Dashboard
         className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full opacity-60 blur-3xl"
         style={{ background: "radial-gradient(circle, color-mix(in oklab, var(--accent) 30%, transparent), transparent 70%)" }}
       />
-      <div className="relative flex h-full flex-col">
+      <Mascot
+        mood={TESS_MOOD[daily.status] ?? "wave"}
+        size={150}
+        className="pointer-events-none absolute right-5 bottom-2 hidden text-ink-2 sm:block"
+      />
+      <div className="relative flex h-full flex-col sm:pr-36">
         <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-accent uppercase">
           <Icon name="zap" size={14} /> Today's challenge
         </div>
@@ -171,6 +177,8 @@ function DailyCard({ daily, next }: { daily: Dashboard["daily"]; next: Dashboard
   );
 }
 
+const TESS_MOOD: Record<string, Mood> = { "not-started": "wave", "in-progress": "think", solved: "happy", "gave-up": "cheer" };
+
 function RatingCard({ stats, level }: { stats: Dashboard["stats"]; level: Dashboard["level"] }) {
   const d = stats.ratingDelta7d;
   return (
@@ -203,7 +211,14 @@ function RatingCard({ stats, level }: { stats: Dashboard["stats"]; level: Dashbo
 }
 
 function RecentTable({ recent }: { recent: Dashboard["recent"] }) {
-  if (recent.length === 0) return <p className="py-4 text-center text-sm text-muted">Nothing yet — today's challenge is waiting.</p>;
+  if (recent.length === 0)
+    return (
+      <div className="flex justify-center py-2">
+        <TessSays mood="wave" size={72}>
+          Nothing here yet. Today's challenge is waiting, and I'll keep score.
+        </TessSays>
+      </div>
+    );
   return (
     <div className="-mx-2 overflow-x-auto">
       <table className="w-full min-w-[640px] text-sm">
