@@ -8,5 +8,9 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": "http://127.0.0.1:4321" },
   },
-  build: { chunkSizeWarningLimit: 5000 },
+  build: {
+    // Monaco is big and ships its own workers + ~100 CSS files; both warnings are expected noise.
+    chunkSizeWarningLimit: 5000,
+    rolldownOptions: { checks: { bundlerTimings: false } },
+  },
 });
