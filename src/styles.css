@@ -97,71 +97,145 @@
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
 }
 
-/* Each language nudges the accent hue (TypeScript keeps the default blue) and tints the background
-   a hair, so you can tell at a glance which track you're in. Set via <html data-lang>. */
+/* Each language shifts the accent hue (TypeScript keeps the default blue) and tints the page,
+   cards and borders, so you can tell at a glance which track you're in. Set via <html data-lang>. */
+:root[data-lang="typescript"] {
+  --bg: #edf2fa;
+  --surface: #fbfcfe;
+  --surface-2: #e8eef7;
+  --surface-3: #dde5f1;
+  --border: #dbe3ef;
+  --border-strong: #c5d0e0;
+  --grid: #e3e9f2;
+  --heat-0: #e4eaf3;
+}
 :root[data-lang="python"] {
   --accent: #0d8070;
   --accent-strong: #0a5f54;
-  --accent-soft: #e0f3ef;
+  --accent-soft: #dcf1ec;
   --heat-1: #b3e2da;
   --heat-2: #5cbfb0;
   --heat-3: #0d8070;
   --heat-4: #095a4f;
-  --bg: #f4f7f6;
+  --bg: #ebf5f2;
+  --surface: #fbfdfc;
+  --surface-2: #e5f1ed;
+  --surface-3: #d8e9e3;
+  --border: #d6e7e1;
+  --border-strong: #bfd6ce;
+  --grid: #e0eee9;
+  --heat-0: #e1eeea;
 }
 :root[data-lang="c"] {
   --accent: #5457cf;
   --accent-strong: #3d3fa6;
-  --accent-soft: #ecebfb;
+  --accent-soft: #e8e7fb;
   --heat-1: #cdcdf5;
   --heat-2: #9496e8;
   --heat-3: #5457cf;
   --heat-4: #34358f;
-  --bg: #f6f6f9;
+  --bg: #efeffa;
+  --surface: #fcfcfe;
+  --surface-2: #eaeaf7;
+  --surface-3: #dfdff1;
+  --border: #dcdcef;
+  --border-strong: #c7c7e2;
+  --grid: #e5e5f3;
+  --heat-0: #e6e6f4;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-lang="typescript"]:not([data-theme="light"]) {
+    --bg: #080c14;
+    --surface: #0f141e;
+    --surface-2: #151c28;
+    --surface-3: #1c2533;
+    --border: #1f2736;
+    --border-strong: #2c3648;
+    --grid: #192130;
+    --heat-0: #161d2a;
+  }
+}
+:root[data-theme="dark"][data-lang="typescript"] {
+  --bg: #080c14;
+  --surface: #0f141e;
+  --surface-2: #151c28;
+  --surface-3: #1c2533;
+  --border: #1f2736;
+  --border-strong: #2c3648;
+  --grid: #192130;
+  --heat-0: #161d2a;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-lang="python"]:not([data-theme="light"]) {
     --accent: #198f7e;
     --accent-strong: #5cd0bd;
-    --accent-soft: #0e2925;
+    --accent-soft: #0d2a25;
     --heat-1: #123d37;
     --heat-2: #17766a;
     --heat-3: #198f7e;
     --heat-4: #7fdccd;
-    --bg: #090d0c;
+    --bg: #07100e;
+    --surface: #0e1715;
+    --surface-2: #141f1d;
+    --surface-3: #1b2a27;
+    --border: #1e2c29;
+    --border-strong: #2b3d39;
+    --grid: #18241f;
+    --heat-0: #15211e;
   }
 }
 :root[data-theme="dark"][data-lang="python"] {
   --accent: #198f7e;
   --accent-strong: #5cd0bd;
-  --accent-soft: #0e2925;
+  --accent-soft: #0d2a25;
   --heat-1: #123d37;
   --heat-2: #17766a;
   --heat-3: #198f7e;
   --heat-4: #7fdccd;
-  --bg: #090d0c;
+  --bg: #07100e;
+  --surface: #0e1715;
+  --surface-2: #141f1d;
+  --surface-3: #1b2a27;
+  --border: #1e2c29;
+  --border-strong: #2b3d39;
+  --grid: #18241f;
+  --heat-0: #15211e;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-lang="c"]:not([data-theme="light"]) {
     --accent: #6366e6;
     --accent-strong: #a2a4f3;
-    --accent-soft: #1b1c3a;
+    --accent-soft: #1b1c3d;
     --heat-1: #232552;
     --heat-2: #3c3f9a;
     --heat-3: #6366e6;
     --heat-4: #a9abf3;
-    --bg: #0b0b11;
+    --bg: #0a0a15;
+    --surface: #11121f;
+    --surface-2: #171828;
+    --surface-3: #1f2034;
+    --border: #222338;
+    --border-strong: #30324c;
+    --grid: #1b1c2d;
+    --heat-0: #18192a;
   }
 }
 :root[data-theme="dark"][data-lang="c"] {
   --accent: #6366e6;
   --accent-strong: #a2a4f3;
-  --accent-soft: #1b1c3a;
+  --accent-soft: #1b1c3d;
   --heat-1: #232552;
   --heat-2: #3c3f9a;
   --heat-3: #6366e6;
   --heat-4: #a9abf3;
-  --bg: #0b0b11;
+  --bg: #0a0a15;
+  --surface: #11121f;
+  --surface-2: #171828;
+  --surface-3: #1f2034;
+  --border: #222338;
+  --border-strong: #30324c;
+  --grid: #1b1c2d;
+  --heat-0: #18192a;
 }
 
 @theme inline {

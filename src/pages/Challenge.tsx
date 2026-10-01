@@ -2,7 +2,7 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type ChallengeView, type Clock, type FinishResult, type RunResult } from "../api";
-import { monaco } from "../monaco"; // configures the bundled Monaco before <Editor> mounts
+import { editorTheme, monaco } from "../monaco"; // configures the bundled Monaco before <Editor> mounts
 import { LangBadge, LANGUAGES, type Lang } from "../lang";
 import { Mascot, TessLoading, TessRow } from "../components/Mascot";
 import { categorize, conceptCardCopy, conceptNudge, finishLine, finishTitle, runReaction, type Line } from "../tess/lines";
@@ -513,7 +513,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                   }
                 }}
                 onMount={onMount}
-                theme={theme === "dark" ? "daily-dark" : "daily-light"}
+                theme={editorTheme(lang, theme === "dark" ? "dark" : "light")}
                 options={{
                   readOnly: reviewing || paused,
                   fontFamily: "'JetBrains Mono Variable', monospace",
