@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api, isOnboarded, type Dashboard } from "./api";
 import { Mascot, TessLoading } from "./components/Mascot";
@@ -19,19 +19,36 @@ export default function App() {
   const [state, setState] = useState<Dashboard | null | "loading" | "error">("loading");
   const location = useLocation();
   const lang = useActiveLang();
+  // Requests for different languages can overlap (e.g. onboarding refreshes before the
+  // navigation to the chosen language lands). Only the latest request may update state.
+  const latest = useRef(0);
 
   const refresh = useCallback(async () => {
+    const id = ++latest.current;
     try {
       const s = await api.state(lang);
-      setState(isOnboarded(s) ? s : null);
+      if (id === latest.current) setState(isOnboarded(s) ? s : null);
     } catch {
-      setState("error");
+      if (id === latest.current) setState("error");
     }
   }, [lang]);
 
   useEffect(() => {
     refresh();
   }, [refresh, location.pathname]);
+
+  // Safety net: if the loaded state is for another language, fetch the right one instead of waiting.
+  const retried = useRef<Lang | null>(null);
+  useEffect(() => {
+    if (!state || typeof state !== "object") return;
+    if (state.language === lang) {
+      retried.current = null;
+      return;
+    }
+    if (retried.current === lang) return;
+    retried.current = lang;
+    refresh();
+  }, [state, lang, refresh]);
 
   if (state === "loading") return <TessLoading />;
   if (state === "error")

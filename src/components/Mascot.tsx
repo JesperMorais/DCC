@@ -353,7 +353,7 @@ export function TessRow({
 }
 
 /** Loading state that only shows after 300ms, so fast loads don't flash. */
-export function TessLoading({ label = "Warming up the compiler…" }: { label?: string }) {
+export function TessLoading({ label = "Loading…" }: { label?: string }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 300);
