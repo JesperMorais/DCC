@@ -4,6 +4,7 @@ import * as monaco from "monaco-editor";
 import EditorWorker from "monaco-editor/editor/editor.worker?worker";
 import TsWorker from "monaco-editor/language/typescript/ts.worker?worker";
 import { api } from "./api";
+import { registerIntellisense } from "./intellisense";
 
 self.MonacoEnvironment = {
   getWorker: (_id: string, label: string) => (label === "typescript" || label === "javascript" ? new TsWorker() : new EditorWorker()),
@@ -66,5 +67,6 @@ export function defineThemes() {
 
 loader.config({ monaco });
 defineThemes();
+registerIntellisense(monaco);
 
 export { monaco };
