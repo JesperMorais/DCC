@@ -29,6 +29,11 @@ export interface Attempt {
   startedAt: string;
   /** First edit in the editor. The clock runs from here, so reading the task is free. */
   codingStartedAt?: string;
+  /** Total time spent paused (ms), not counting a pause still running. */
+  pausedMs?: number;
+  /** Set while the clock is paused. "away" = the tab was hidden or closed; it resumes on return. */
+  pausedAt?: string;
+  pauseReason?: "manual" | "away";
   finishedAt?: string;
   status: "in-progress" | "solved" | "gave-up";
   hintsUsed: number;

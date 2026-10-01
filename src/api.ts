@@ -8,6 +8,14 @@ import type { Experience, Lang } from "../shared/languages.ts";
 export type { Dashboard, RunResult, Attempt, Experience, Lang };
 export type { Diagnostic } from "../server/runner/index.ts";
 
+/** The challenge clock as the server sees it. */
+export interface Clock {
+  codingStartedAt: string | null;
+  pausedMs: number;
+  pausedAt: string | null;
+  pauseReason: "manual" | "away" | null;
+}
+
 export interface ChallengeView {
   id: string;
   slug: string;
@@ -94,6 +102,10 @@ export const api = {
   challenge: (id: string) => call<ChallengeView>(`/challenges/${id}`),
   start: (id: string) => call<ChallengeView>(`/challenges/${id}/start`, { method: "POST", body: {} }),
   begin: (id: string) => call<{ codingStartedAt: string }>(`/challenges/${id}/begin`, { method: "POST", body: {} }),
+  pause: (id: string, reason: "manual" | "away") => call<Clock>(`/challenges/${id}/pause?reason=${reason}`, { method: "POST", body: {} }),
+  resume: (id: string) => call<Clock>(`/challenges/${id}/resume`, { method: "POST", body: {} }),
+  /** Fire-and-forget pause that survives the page closing. */
+  pauseOnUnload: (id: string) => navigator.sendBeacon(`/api/challenges/${id}/pause?reason=away`),
   hint: (id: string) => call<{ hints: string[] }>(`/challenges/${id}/hint`, { method: "POST", body: {} }),
   run: (id: string, code: string) => call<RunResult>(`/challenges/${id}/run`, { method: "POST", body: { code } }),
   submit: (id: string, code: string) => call<FinishResult>(`/challenges/${id}/submit`, { method: "POST", body: { code } }),

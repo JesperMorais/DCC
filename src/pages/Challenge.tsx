@@ -1,7 +1,7 @@
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, type ChallengeView, type FinishResult, type RunResult } from "../api";
+import { api, type ChallengeView, type Clock, type FinishResult, type RunResult } from "../api";
 import { monaco } from "../monaco"; // configures the bundled Monaco before <Editor> mounts
 import { LangBadge, LANGUAGES, type Lang } from "../lang";
 import { Mascot, TessLoading, TessRow } from "../components/Mascot";
@@ -61,11 +61,66 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
   const [conceptSeen, setConceptSeen] = useState(false);
   const runs = useRef({ prevPassing: null as number | null, runNo: 0, fails: 0 });
   // The clock starts on the first real edit, not on opening the page.
-  const [codingStartedAt, setCodingStartedAt] = useState<string | null>(null);
+  const [clock, setClock] = useState<Clock>(NO_CLOCK);
+  const codingStartedAt = clock.codingStartedAt;
+  const setCodingStartedAt = (at: string) => setClock((c) => ({ ...c, codingStartedAt: at }));
   const beginning = useRef(false);
 
   const active = view?.attempt ?? null;
   const reviewing = !!view && !active;
+  const paused = !!active && !!clock.pausedAt;
+  // Only the clock's lifetime matters to the effects below, not every view update.
+  const clockId = active && view ? view.id : null;
+
+  // Pause/resume: update the display at once, then let the server's answer settle it. Requests are
+  // chained so a quick pause→resume can't arrive out of order.
+  const clockRef = useRef(clock);
+  clockRef.current = clock;
+  const clockQueue = useRef(Promise.resolve());
+  const setPaused = useCallback(
+    (pause: boolean, reason: "manual" | "away" = "manual") => {
+      const c = clockRef.current;
+      if (!clockId || !c.codingStartedAt) return;
+      if (pause === !!c.pausedAt && !(pause && reason === "manual" && c.pauseReason === "away")) return;
+      const now = Date.now();
+      setClock(
+        pause
+          ? { ...c, pausedAt: c.pausedAt ?? new Date(now).toISOString(), pauseReason: reason }
+          : { ...c, pausedMs: c.pausedMs + Math.max(0, now - Date.parse(c.pausedAt!)), pausedAt: null, pauseReason: null },
+      );
+      clockQueue.current = clockQueue.current
+        .then(() => (pause ? api.pause(clockId, reason) : api.resume(clockId)))
+        .then(setClock)
+        .catch(() => {});
+    },
+    [clockId],
+  );
+
+  // Stop the clock when the learner isn't here: tab hidden, page closed, or navigated away in the app.
+  // "Away" pauses resume by themselves on return; a manual pause waits for the Resume button.
+  useEffect(() => {
+    if (!clockId) return;
+    const challengeId = clockId;
+    const onVisibility = () => {
+      if (document.hidden) setPaused(true, "away");
+      else if (clockRef.current.pauseReason === "away") setPaused(false);
+    };
+    const onPageHide = () => {
+      if (clockRef.current.codingStartedAt && !clockRef.current.pausedAt) api.pauseOnUnload(challengeId);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      if (clockRef.current.codingStartedAt && !clockRef.current.pausedAt) api.pause(challengeId, "away").catch(() => {});
+    };
+  }, [clockId, setPaused]);
+
+  // Coming back to a challenge that was paused because we left: carry on.
+  useEffect(() => {
+    if (clock.pauseReason === "away" && !document.hidden) setPaused(false);
+  }, [clock.pauseReason, setPaused]);
 
   // Nudges only when tips are on, the concept hasn't been read, and we're under the per-attempt cap.
   const canNudge = () =>
@@ -102,7 +157,16 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
         setReaction(null);
         setNudge(null);
         setConceptSeen(!!v.attempt && readConceptOpened(v.attempt.id));
-        setCodingStartedAt(v.attempt?.codingStartedAt ?? null);
+        setClock(
+          v.attempt
+            ? {
+                codingStartedAt: v.attempt.codingStartedAt ?? null,
+                pausedMs: v.attempt.pausedMs ?? 0,
+                pausedAt: v.attempt.pausedAt ?? null,
+                pauseReason: v.attempt.pauseReason ?? null,
+              }
+            : NO_CLOCK,
+        );
         beginning.current = false;
         runs.current = { prevPassing: null, runNo: 0, fails: 0 };
       } catch (e) {
@@ -280,7 +344,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {active && <Timer startedAt={codingStartedAt} targetMin={Math.max(10, view.estMinutes)} />}
+          {active && <Timer clock={clock} targetMin={Math.max(10, view.estMinutes)} onToggle={() => setPaused(!paused)} />}
           {active && (
             <>
               <div className="relative">
@@ -420,6 +484,18 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
               {reviewing && (
                 <div className="absolute top-2 right-4 z-10 rounded-md bg-surface-2 px-2 py-1 text-xs text-muted">Read-only · your submitted code</div>
               )}
+              {paused && (
+                <div className="absolute inset-0 z-20 grid place-items-center bg-bg/70 backdrop-blur-sm">
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <Mascot mood="idle" size={88} className="text-ink-2" />
+                    <p className="font-semibold">Paused</p>
+                    <p className="max-w-xs text-sm text-muted">The clock is stopped. Your code is safe.</p>
+                    <button className="btn btn-primary" onClick={() => setPaused(false)} autoFocus>
+                      <Icon name="play" size={14} /> Resume
+                    </button>
+                  </div>
+                </div>
+              )}
               <Editor
                 path={`file:///your-code.${info.ext}`}
                 language={info.monaco}
@@ -439,7 +515,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                 onMount={onMount}
                 theme={theme === "dark" ? "daily-dark" : "daily-light"}
                 options={{
-                  readOnly: reviewing,
+                  readOnly: reviewing || paused,
                   fontFamily: "'JetBrains Mono Variable', monospace",
                   fontSize: 14,
                   lineHeight: 22,
@@ -577,14 +653,17 @@ function HintAsk({ onConcept, onHint }: { onConcept: () => void; onHint: () => v
 }
 
 /* ---------- Timer ---------- */
-function Timer({ startedAt, targetMin }: { startedAt: string | null; targetMin: number }) {
+const NO_CLOCK: Clock = { codingStartedAt: null, pausedMs: 0, pausedAt: null, pauseReason: null };
+
+function Timer({ clock, targetMin, onToggle }: { clock: Clock; targetMin: number; onToggle: () => void }) {
+  const startedAt = clock.codingStartedAt;
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    if (!startedAt) return;
+    if (!startedAt || clock.pausedAt) return;
     setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [startedAt]);
+  }, [startedAt, clock.pausedAt]);
   if (!startedAt)
     return (
       <div
@@ -595,7 +674,8 @@ function Timer({ startedAt, targetMin }: { startedAt: string | null; targetMin: 
         <span>Starts when you type</span>
       </div>
     );
-  const elapsed = now - Date.parse(startedAt);
+  const end = clock.pausedAt ? Date.parse(clock.pausedAt) : Math.max(now, Date.now());
+  const elapsed = Math.max(0, end - Date.parse(startedAt) - clock.pausedMs);
   const frac = Math.min(1, elapsed / (targetMin * 60_000));
   const over = elapsed > targetMin * 60_000;
   const r = 8;
@@ -616,7 +696,15 @@ function Timer({ startedAt, targetMin }: { startedAt: string | null; targetMin: 
           strokeLinecap="round"
         />
       </svg>
-      <span className={over ? "text-warn" : "text-ink-2"}>{fmtClock(elapsed)}</span>
+      <span className={clock.pausedAt ? "text-muted" : over ? "text-warn" : "text-ink-2"}>{fmtClock(elapsed)}</span>
+      <button
+        className="btn btn-ghost h-7 w-7 justify-center p-0"
+        onClick={onToggle}
+        title={clock.pausedAt ? "Resume the clock" : "Pause the clock (it also pauses when you leave this tab)"}
+        aria-label={clock.pausedAt ? "Resume" : "Pause"}
+      >
+        <Icon name={clock.pausedAt ? "play" : "pause"} size={14} />
+      </button>
     </div>
   );
 }

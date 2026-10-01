@@ -210,6 +210,31 @@ app.post("/api/challenges/:lang/:slug/begin", (c) => {
   return c.json({ codingStartedAt: a.codingStartedAt });
 });
 
+// Pause / resume the clock. Both are idempotent; the client fires "away" pauses on tab hide and close.
+app.post("/api/challenges/:lang/:slug/pause", (c) => {
+  const ch = findChallenge(c);
+  const a = ch && activeAttempt(ch.id);
+  if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
+  const reason = c.req.query("reason") === "away" ? "away" : "manual";
+  if (a.codingStartedAt && !a.pausedAt) {
+    a.pausedAt = new Date().toISOString();
+    a.pauseReason = reason;
+    save(load());
+  } else if (a.pausedAt && reason === "manual" && a.pauseReason !== "manual") {
+    a.pauseReason = "manual"; // a deliberate pause shouldn't auto-resume on return
+    save(load());
+  }
+  return c.json(clock(a));
+});
+
+app.post("/api/challenges/:lang/:slug/resume", (c) => {
+  const ch = findChallenge(c);
+  const a = ch && activeAttempt(ch.id);
+  if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
+  if (resumeClock(a)) save(load());
+  return c.json(clock(a));
+});
+
 app.post("/api/challenges/:lang/:slug/hint", (c) => {
   const ch = findChallenge(c);
   const a = ch && activeAttempt(ch.id);
@@ -232,8 +257,24 @@ app.post("/api/challenges/:lang/:slug/run", async (c) => {
   return c.json(result);
 });
 
+function resumeClock(a: Attempt) {
+  if (!a.pausedAt) return false;
+  a.pausedMs = (a.pausedMs ?? 0) + Math.max(0, Date.now() - Date.parse(a.pausedAt));
+  delete a.pausedAt;
+  delete a.pauseReason;
+  return true;
+}
+
+const clock = (a: Attempt) => ({
+  codingStartedAt: a.codingStartedAt ?? null,
+  pausedMs: a.pausedMs ?? 0,
+  pausedAt: a.pausedAt ?? null,
+  pauseReason: a.pauseReason ?? null,
+});
+
 function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: string) {
   const data = load();
+  resumeClock(a);
   const solvedTodayBefore = data.attempts.some((x) => x.status === "solved" && x.date === today());
   a.status = status;
   a.finishedAt = new Date().toISOString();

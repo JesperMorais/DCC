@@ -14,9 +14,13 @@ export const START_RATING: Record<Experience, number> = {
 const DAY = 86_400_000;
 const TARGET_MINUTES = 10;
 
-/** Minutes spent coding: from the first edit (older attempts: from opening) to finishing. */
+/** Time spent paused (ms), including a pause that is still running. */
+export const pausedMs = (a: Attempt, now = Date.now()) =>
+  (a.pausedMs ?? 0) + (a.pausedAt ? Math.max(0, Date.parse(a.finishedAt ?? new Date(now).toISOString()) - Date.parse(a.pausedAt)) : 0);
+
+/** Minutes spent coding: from the first edit (older attempts: from opening) to finishing, minus pauses. */
 export const codingMinutes = (a: Attempt) =>
-  Math.max(0, (Date.parse(a.finishedAt ?? new Date().toISOString()) - Date.parse(a.codingStartedAt ?? a.startedAt)) / 60_000);
+  Math.max(0, (Date.parse(a.finishedAt ?? new Date().toISOString()) - Date.parse(a.codingStartedAt ?? a.startedAt) - pausedMs(a)) / 60_000);
 
 export const ratingFor = (data: Data, lang: Lang) => data.profile?.languages[lang]?.rating ?? null;
 
