@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { isLang, LANGUAGES, type Lang } from "../shared/languages";
 
@@ -19,6 +20,13 @@ export function useActiveLang(): Lang {
     last = localStorage.getItem("lang") ?? undefined;
   } catch {}
   return isLang(last) ? last : "typescript";
+}
+
+/** Tints the whole UI for a language (see the data-lang rules in styles.css). */
+export function useLangColors(lang: Lang) {
+  useEffect(() => {
+    document.documentElement.dataset.lang = lang;
+  }, [lang]);
 }
 
 export function LangBadge({ lang, size = 22 }: { lang: Lang; size?: number }) {

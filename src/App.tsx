@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api, isOnboarded, type Dashboard } from "./api";
 import { Mascot, TessLoading } from "./components/Mascot";
-import { LangBadge, LANGUAGES, useActiveLang, type Lang } from "./lang";
+import { LangBadge, LANGUAGES, useActiveLang, useLangColors, type Lang } from "./lang";
 import ChallengePage from "./pages/Challenge";
 import DashboardPage from "./pages/Dashboard";
 import LanguageStart from "./pages/LanguageStart";
@@ -19,6 +19,7 @@ export default function App() {
   const [state, setState] = useState<Dashboard | null | "loading" | "error">("loading");
   const location = useLocation();
   const lang = useActiveLang();
+  useLangColors(lang);
   // Requests for different languages can overlap (e.g. onboarding refreshes before the
   // navigation to the chosen language lands). Only the latest request may update state.
   const latest = useRef(0);

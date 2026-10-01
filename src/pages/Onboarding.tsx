@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api, type Experience } from "../api";
 import { ExperiencePicker } from "../components/ExperiencePicker";
 import { Mascot } from "../components/Mascot";
-import { LangBadge, LANGUAGES, type Lang } from "../lang";
+import { LangBadge, LANGUAGES, useLangColors, type Lang } from "../lang";
 import { Icon } from "../ui";
 
 const PICK_LINE: Record<Experience, string> = {
@@ -17,6 +17,7 @@ const PICK_LINE: Record<Experience, string> = {
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState("");
   const [lang, setLang] = useState<Lang>("typescript");
+  useLangColors(lang);
   const [exp, setExp] = useState<Experience | null>(null);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();

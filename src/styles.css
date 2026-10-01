@@ -97,6 +97,73 @@
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
 }
 
+/* Each language nudges the accent hue (TypeScript keeps the default blue) and tints the background
+   a hair, so you can tell at a glance which track you're in. Set via <html data-lang>. */
+:root[data-lang="python"] {
+  --accent: #0d8070;
+  --accent-strong: #0a5f54;
+  --accent-soft: #e0f3ef;
+  --heat-1: #b3e2da;
+  --heat-2: #5cbfb0;
+  --heat-3: #0d8070;
+  --heat-4: #095a4f;
+  --bg: #f4f7f6;
+}
+:root[data-lang="c"] {
+  --accent: #5457cf;
+  --accent-strong: #3d3fa6;
+  --accent-soft: #ecebfb;
+  --heat-1: #cdcdf5;
+  --heat-2: #9496e8;
+  --heat-3: #5457cf;
+  --heat-4: #34358f;
+  --bg: #f6f6f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-lang="python"]:not([data-theme="light"]) {
+    --accent: #198f7e;
+    --accent-strong: #5cd0bd;
+    --accent-soft: #0e2925;
+    --heat-1: #123d37;
+    --heat-2: #17766a;
+    --heat-3: #198f7e;
+    --heat-4: #7fdccd;
+    --bg: #090d0c;
+  }
+}
+:root[data-theme="dark"][data-lang="python"] {
+  --accent: #198f7e;
+  --accent-strong: #5cd0bd;
+  --accent-soft: #0e2925;
+  --heat-1: #123d37;
+  --heat-2: #17766a;
+  --heat-3: #198f7e;
+  --heat-4: #7fdccd;
+  --bg: #090d0c;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-lang="c"]:not([data-theme="light"]) {
+    --accent: #6366e6;
+    --accent-strong: #a2a4f3;
+    --accent-soft: #1b1c3a;
+    --heat-1: #232552;
+    --heat-2: #3c3f9a;
+    --heat-3: #6366e6;
+    --heat-4: #a9abf3;
+    --bg: #0b0b11;
+  }
+}
+:root[data-theme="dark"][data-lang="c"] {
+  --accent: #6366e6;
+  --accent-strong: #a2a4f3;
+  --accent-soft: #1b1c3a;
+  --heat-1: #232552;
+  --heat-2: #3c3f9a;
+  --heat-3: #6366e6;
+  --heat-4: #a9abf3;
+  --bg: #0b0b11;
+}
+
 @theme inline {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
@@ -132,6 +199,7 @@ body {
   font-family: var(--font-sans);
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms ease;
 }
 
 .card {
