@@ -9,6 +9,7 @@ import { isLang, LANGUAGES, LEVEL_BANDS, type Lang } from "../shared/languages.t
 import { loadChallenges, type Challenge } from "./challenges.ts";
 import {
   applyResult,
+  codingMinutes,
   currentStreak,
   dailyChallenge,
   dashboard,
@@ -197,6 +198,18 @@ app.post("/api/challenges/:lang/:slug/start", (c) => {
   return c.json(challengeView(ch));
 });
 
+// First keystroke: start the clock (idempotent, so the first call wins).
+app.post("/api/challenges/:lang/:slug/begin", (c) => {
+  const ch = findChallenge(c);
+  const a = ch && activeAttempt(ch.id);
+  if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
+  if (!a.codingStartedAt) {
+    a.codingStartedAt = new Date().toISOString();
+    save(load());
+  }
+  return c.json({ codingStartedAt: a.codingStartedAt });
+});
+
 app.post("/api/challenges/:lang/:slug/hint", (c) => {
   const ch = findChallenge(c);
   const a = ch && activeAttempt(ch.id);
@@ -234,7 +247,7 @@ function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: s
     rated: a.rated,
     ratingBefore: a.ratingBefore ?? rating,
     ratingAfter: a.ratingAfter ?? rating,
-    minutes: (Date.parse(a.finishedAt) - Date.parse(a.startedAt)) / 60_000,
+    minutes: codingMinutes(a),
     hintsUsed: a.hintsUsed,
     solution: ch.solution,
     levelBefore: levelForRating(ch.language, a.ratingBefore ?? rating).level,

@@ -93,6 +93,7 @@ export const api = {
   library: (lang: Lang) => call<Library>(`/challenges?lang=${lang}`),
   challenge: (id: string) => call<ChallengeView>(`/challenges/${id}`),
   start: (id: string) => call<ChallengeView>(`/challenges/${id}/start`, { method: "POST", body: {} }),
+  begin: (id: string) => call<{ codingStartedAt: string }>(`/challenges/${id}/begin`, { method: "POST", body: {} }),
   hint: (id: string) => call<{ hints: string[] }>(`/challenges/${id}/hint`, { method: "POST", body: {} }),
   run: (id: string, code: string) => call<RunResult>(`/challenges/${id}/run`, { method: "POST", body: { code } }),
   submit: (id: string, code: string) => call<FinishResult>(`/challenges/${id}/submit`, { method: "POST", body: { code } }),

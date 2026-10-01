@@ -25,7 +25,10 @@ export interface Attempt {
   language: Lang;
   /** Local calendar day (YYYY-MM-DD) the attempt started. */
   date: string;
+  /** When the challenge was opened. */
   startedAt: string;
+  /** First edit in the editor. The clock runs from here, so reading the task is free. */
+  codingStartedAt?: string;
   finishedAt?: string;
   status: "in-progress" | "solved" | "gave-up";
   hintsUsed: number;

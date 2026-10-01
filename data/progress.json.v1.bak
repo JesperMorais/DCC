@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "profile": {
+    "name": "jesper",
+    "experience": "other-lang",
+    "createdAt": "2026-09-30T08:00:57.363Z",
+    "rating": 985
+  },
+  "attempts": [
+    {
+      "id": "2498eb3b-90e5-4382-844e-79df151b5ab9",
+      "challengeId": "l2-largest-in-array",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T08:01:15.538Z",
+      "status": "solved",
+      "hintsUsed": 0,
+      "runs": 1,
+      "isDaily": true,
+      "rated": true,
+      "finishedAt": "2026-09-30T08:02:59.527Z",
+      "code": "function largest(nums: number[]): number {\n  let longest = nums[0];\n  for(const t of nums) {\n    if (t > longest) {\n      longest = t;\n    }\n\n  }\n  return longest;\n}\n",
+      "score": 1,
+      "ratingBefore": 880,
+      "ratingAfter": 914
+    },
+    {
+      "id": "5ae55d26-9443-4817-8ecd-e4d320a163b0",
+      "challengeId": "l2-rock-paper-scissors",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T08:04:00.222Z",
+      "status": "solved",
+      "hintsUsed": 3,
+      "runs": 8,
+      "isDaily": false,
+      "rated": true,
+      "finishedAt": "2026-09-30T08:16:38.605Z",
+      "code": "type Move = \"rock\" | \"paper\" | \"scissors\";\ntype Result = \"player1\" | \"player2\" | \"draw\" | \"wrong\";\n\nfunction playRound(p1: Move, p2: Move): Result {\n  if (p1 === p2) return \"draw\";\nif ((p1 === \"rock\" && p2 === \"scissors\") || (p1 === \"scissors\" && p2 === \"paper\") || (p1 === \"paper\" && p2 === \"rock\")) return \"player1\"; return \"player2\";\n  return \"draw\";\n}\n",
+      "score": 0.6136028333333333,
+      "ratingBefore": 914,
+      "ratingAfter": 925
+    },
+    {
+      "id": "f5bccd10-4438-43e3-92e8-b8d700a57aa8",
+      "challengeId": "l3-cart-total",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T08:22:57.205Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 0,
+      "isDaily": false,
+      "rated": true
+    },
+    {
+      "id": "b91704ee-592c-405e-a4c8-8232c6b9275a",
+      "challengeId": "l2-map-and-filter",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T08:23:26.138Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 0,
+      "isDaily": false,
+      "rated": true
+    },
+    {
+      "id": "a88c9f99-7bc6-4aa6-9b3b-605d69c48db8",
+      "challengeId": "l2-person-object",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T08:25:28.502Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 0,
+      "isDaily": false,
+      "rated": true
+    },
+    {
+      "id": "b8a6d2eb-ffaf-42df-8c57-8a21b63bf5ff",
+      "challengeId": "l3-user-settings",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T08:25:31.113Z",
+      "status": "solved",
+      "hintsUsed": 0,
+      "runs": 1,
+      "isDaily": false,
+      "rated": true,
+      "finishedAt": "2026-09-30T08:40:12.923Z",
+      "code": "const themeDefault = \"light\";\nconst frontSizeDefault = 14;\nconst emailAlertsDefault = true;\n\ninterface UserSettings {\n  theme?: \"light\" | \"dark\";\n  fontSize?: number;\n  emailAlerts?: boolean;\n}\n\ninterface ResolvedSettings {\n  theme: \"light\" | \"dark\";\n  fontSize: number;\n  emailAlerts: boolean;\n}\n\nfunction resolveSettings(saved: UserSettings): ResolvedSettings {\n  const t = saved.theme ?? \"light\";\n  const f = saved.fontSize ?? 14;\n  const e = saved.emailAlerts ?? true;\n  return {theme: t, fontSize: f, emailAlerts: e};\n}\n",
+      "score": 0.9530316666666666,
+      "ratingBefore": 925,
+      "ratingAfter": 963
+    },
+    {
+      "id": "05b957fa-7bd7-4504-b624-df7a17d7495a",
+      "challengeId": "l3-word-frequency",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T10:04:26.129Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 2,
+      "isDaily": false,
+      "rated": true
+    },
+    {
+      "id": "23255310-25ae-4e50-964e-e1a3d4b56b34",
+      "challengeId": "l3-format-cell",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T10:11:28.917Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 0,
+      "isDaily": false,
+      "rated": true
+    },
+    {
+      "id": "7912318e-3aa2-405d-8f1a-129393b91770",
+      "challengeId": "l3-min-max",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T10:11:35.466Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 0,
+      "isDaily": false,
+      "rated": true
+    },
+    {
+      "id": "7b051811-2d3c-4bf5-a8e5-22016491b442",
+      "challengeId": "l2-shopping-list",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T10:28:02.151Z",
+      "status": "solved",
+      "hintsUsed": 0,
+      "runs": 10,
+      "isDaily": false,
+      "rated": true,
+      "finishedAt": "2026-09-30T10:46:47.948Z",
+      "code": "function hasItem(list: string[], item: string): boolean {\n  for (const t in list){\n    if (list[t] === item){\n      return true;\n    }\n  }\n  return false;\n}\n\nfunction positionOf(list: string[], item: string): number {\n  for (const t in list){\n    if(list[t] === item){\n      return Number(t);\n    }\n  }\n  return -1;\n}\n\nfunction addIfMissing(list: string[], item: string): string[] {\n  let found = false;\n  let size = 0;\n  let new_list: Array<string>;\n  new_list = [...list];\n  for(const t in list){\n    if(list[t] === item){\n      found = true;\n      break;\n    }\n    size+=1;\n  }\n  if (!found){\n    new_list[size++] = item;\n  }\n  return new_list;\n}\n",
+      "score": 0.9123671666666666,
+      "ratingBefore": 963,
+      "ratingAfter": 985
+    },
+    {
+      "id": "e99f8189-45e5-4003-b86f-f2a9f7833f2c",
+      "challengeId": "l3-parse-log-line",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T11:25:17.959Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 1,
+      "isDaily": false,
+      "rated": true
+    },
+    {
+      "id": "224a931e-e69a-4b8f-b2c5-c2786263b94c",
+      "challengeId": "l3-payment-label",
+      "date": "2026-09-30",
+      "startedAt": "2026-09-30T14:19:19.310Z",
+      "status": "in-progress",
+      "hintsUsed": 0,
+      "runs": 15,
+      "isDaily": false,
+      "rated": true
+    }
+  ],
+  "dailies": {
+    "2026-09-30": "l2-largest-in-array"
+  },
+  "ratingHistory": [
+    {
+      "at": "2026-09-30T08:00:57.363Z",
+      "rating": 880
+    },
+    {
+      "at": "2026-09-30T08:02:59.527Z",
+      "rating": 914,
+      "challengeId": "l2-largest-in-array"
+    },
+    {
+      "at": "2026-09-30T08:16:38.605Z",
+      "rating": 925,
+      "challengeId": "l2-rock-paper-scissors"
+    },
+    {
+      "at": "2026-09-30T08:40:12.923Z",
+      "rating": 963,
+      "challengeId": "l3-user-settings"
+    },
+    {
+      "at": "2026-09-30T10:46:47.948Z",
+      "rating": 985,
+      "challengeId": "l2-shopping-list"
+    }
+  ]
+}

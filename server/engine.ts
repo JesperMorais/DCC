@@ -14,6 +14,10 @@ export const START_RATING: Record<Experience, number> = {
 const DAY = 86_400_000;
 const TARGET_MINUTES = 10;
 
+/** Minutes spent coding: from the first edit (older attempts: from opening) to finishing. */
+export const codingMinutes = (a: Attempt) =>
+  Math.max(0, (Date.parse(a.finishedAt ?? new Date().toISOString()) - Date.parse(a.codingStartedAt ?? a.startedAt)) / 60_000);
+
 export const ratingFor = (data: Data, lang: Lang) => data.profile?.languages[lang]?.rating ?? null;
 
 /** Probability the learner "beats" a challenge, classic Elo curve. */
@@ -25,7 +29,7 @@ export const expectedScore = (rating: number, difficulty: number) => 1 / (1 + 10
  */
 export function performanceScore(a: Attempt, c: Challenge): number {
   if (a.status !== "solved") return 0;
-  const minutes = (Date.parse(a.finishedAt!) - Date.parse(a.startedAt)) / 60_000;
+  const minutes = codingMinutes(a);
   const overtime = Math.max(0, minutes - Math.max(TARGET_MINUTES, c.estMinutes));
   const timePenalty = Math.min(0.2, (overtime / 20) * 0.2);
   const hintPenalty = Math.min(c.hints.length, a.hintsUsed) * 0.12;
@@ -213,7 +217,7 @@ export function dashboard(data: Data, challenges: Challenge[], lang: Lang) {
   const todayStr = today();
   const dailyAttempt = daily ? [...data.attempts].reverse().find((a) => a.challengeId === daily.id && a.date === todayStr) : undefined;
 
-  const solveMinutes = solved.map((a) => (Date.parse(a.finishedAt!) - Date.parse(a.startedAt)) / 60_000);
+  const solveMinutes = solved.map(codingMinutes);
   const weekAgo = Date.now() - 7 * DAY;
   const ratingWeekAgo = [...history].reverse().find((p) => Date.parse(p.at) <= weekAgo)?.rating ?? history[0]?.rating ?? rating;
 
@@ -286,7 +290,7 @@ export function dashboard(data: Data, challenges: Challenge[], lang: Lang) {
         level: byId.get(a.challengeId)?.level ?? 0,
         status: a.status,
         finishedAt: a.finishedAt!,
-        minutes: (Date.parse(a.finishedAt!) - Date.parse(a.startedAt)) / 60_000,
+        minutes: codingMinutes(a),
         hintsUsed: a.hintsUsed,
         ratingChange: a.ratingAfter !== undefined && a.ratingBefore !== undefined ? a.ratingAfter - a.ratingBefore : null,
         isDaily: a.isDaily,

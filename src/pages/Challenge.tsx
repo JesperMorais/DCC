@@ -49,6 +49,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
   const [confirmGiveUp, setConfirmGiveUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<EditorInstance | null>(null);
+  const codeRef = useRef("");
+  const currentCode = () => editorRef.current?.getValue() ?? codeRef.current;
   const voice = useTessVoice();
   const tipsOn = useConceptTips();
 
@@ -58,6 +60,9 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
   const [hintAsk, setHintAsk] = useState(false);
   const [conceptSeen, setConceptSeen] = useState(false);
   const runs = useRef({ prevPassing: null as number | null, runNo: 0, fails: 0 });
+  // The clock starts on the first real edit, not on opening the page.
+  const [codingStartedAt, setCodingStartedAt] = useState<string | null>(null);
+  const beginning = useRef(false);
 
   const active = view?.attempt ?? null;
   const reviewing = !!view && !active;
@@ -97,6 +102,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
         setReaction(null);
         setNudge(null);
         setConceptSeen(!!v.attempt && readConceptOpened(v.attempt.id));
+        setCodingStartedAt(v.attempt?.codingStartedAt ?? null);
+        beginning.current = false;
         runs.current = { prevPassing: null, runNo: 0, fails: 0 };
       } catch (e) {
         setError((e as Error).message);
@@ -124,7 +131,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
     if (!view || running) return;
     setRunning(true);
     try {
-      const r = await api.run(view.id, code);
+      // Read straight from the editor: a keypress right after an edit can beat React's re-render.
+      const r = await api.run(view.id, currentCode());
       const h = runs.current;
       const cat = categorize(r, h.prevPassing);
       setReaction(runReaction(r, cat, h.prevPassing, h.runNo, lang));
@@ -151,7 +159,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
     if (!view || !active) return;
     setRunning(true);
     try {
-      const f = await api.submit(view.id, code);
+      const f = await api.submit(view.id, currentCode());
       if (f.result) setResult(f.result);
       setFinish(f);
       localStorage.removeItem(draftKey(active.id));
@@ -167,7 +175,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
   const giveUp = async () => {
     if (!view) return;
     setConfirmGiveUp(false);
-    const f = await api.giveUp(view.id, code);
+    const f = await api.giveUp(view.id, currentCode());
     setFinish(f);
     onFinished();
   };
@@ -272,7 +280,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {active && <Timer startedAt={active.startedAt} targetMin={Math.max(10, view.estMinutes)} />}
+          {active && <Timer startedAt={codingStartedAt} targetMin={Math.max(10, view.estMinutes)} />}
           {active && (
             <>
               <div className="relative">
@@ -416,7 +424,18 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                 path={`file:///your-code.${info.ext}`}
                 language={info.monaco}
                 value={code}
-                onChange={(v) => setCode(v ?? "")}
+                onChange={(v) => {
+                  setCode(v ?? "");
+                  codeRef.current = v ?? "";
+                  if (active && !codingStartedAt && !beginning.current) {
+                    beginning.current = true;
+                    setCodingStartedAt(new Date().toISOString()); // start the display instantly
+                    api
+                      .begin(view.id)
+                      .then((r) => setCodingStartedAt(r.codingStartedAt))
+                      .catch(() => (beginning.current = false));
+                  }
+                }}
                 onMount={onMount}
                 theme={theme === "dark" ? "daily-dark" : "daily-light"}
                 options={{
@@ -558,12 +577,24 @@ function HintAsk({ onConcept, onHint }: { onConcept: () => void; onHint: () => v
 }
 
 /* ---------- Timer ---------- */
-function Timer({ startedAt, targetMin }: { startedAt: string; targetMin: number }) {
+function Timer({ startedAt, targetMin }: { startedAt: string | null; targetMin: number }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
+    if (!startedAt) return;
+    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [startedAt]);
+  if (!startedAt)
+    return (
+      <div
+        className="mr-1 hidden items-center gap-2 text-sm text-muted sm:flex"
+        title="Take your time reading the task and the Concept tab. The clock starts on your first keystroke."
+      >
+        <Icon name="clock" size={16} />
+        <span>Starts when you type</span>
+      </div>
+    );
   const elapsed = now - Date.parse(startedAt);
   const frac = Math.min(1, elapsed / (targetMin * 60_000));
   const over = elapsed > targetMin * 60_000;
