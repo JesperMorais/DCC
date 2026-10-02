@@ -1,11 +1,12 @@
 import { Worker } from "node:worker_threads";
 import type { Lang } from "../../shared/languages.ts";
-import { runC } from "./c.ts";
+import { runC, type CProfile } from "./c.ts";
 import { typeCheck, transpile } from "./check.ts";
 import { runPython } from "./python.ts";
 import { verdict, type RunResult } from "./types.ts";
 
-export type { Diagnostic, RunResult, TestResult } from "./types.ts";
+export type { Diagnostic, RunResult, SimTrace, TestResult } from "./types.ts";
+export type { CProfile } from "./c.ts";
 
 const WORKER_URL = new URL("./worker.mjs", import.meta.url);
 const HARD_KILL_MS = 6000;
@@ -41,13 +42,19 @@ async function runTypeScript(userCode: string, testsCode: string, mode: "runtime
   return { ...r, passed: verdict(r, mode === "types"), durationMs: Math.round(performance.now() - started) };
 }
 
-export function runChallenge(language: Lang, userCode: string, testsCode: string, mode: "runtime" | "types" = "runtime"): Promise<RunResult> {
+export function runChallenge(
+  language: Lang,
+  userCode: string,
+  testsCode: string,
+  mode: "runtime" | "types" = "runtime",
+  profile: CProfile = "c",
+): Promise<RunResult> {
   switch (language) {
     case "typescript":
       return runTypeScript(userCode, testsCode, mode);
     case "python":
       return runPython(userCode, testsCode);
     case "c":
-      return runC(userCode, testsCode);
+      return runC(userCode, testsCode, profile);
   }
 }

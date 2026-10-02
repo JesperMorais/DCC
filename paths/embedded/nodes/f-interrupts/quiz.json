@@ -1,0 +1,47 @@
+[
+  {
+    "type": "number",
+    "q": "A UART runs at **115200 baud, 8N1**: 1 start bit, 8 data bits and 1 stop bit, so 10 bits per byte. With a continuous stream, how many **microseconds** are there between bytes?",
+    "answer": 86.8,
+    "tolerance": 1,
+    "unit": "µs",
+    "explain": "115200 bits/s ÷ 10 bits per byte = 11520 bytes/s, so one byte every 1/11520 s ≈ **86.8 µs**. The UART's receive register holds just *one* byte, so your code has under 87 µs to fetch each one. A main loop that polls every 1 ms would lose about 11 of every 12 bytes. That's why RX is interrupt-driven."
+  },
+  {
+    "type": "single",
+    "q": "Which ISR is acceptable on a bare-metal system?",
+    "options": [
+      "`void EXTI_IRQHandler(void) { EXTI->PR = PIN; button_events++; }`",
+      "`void EXTI_IRQHandler(void) { delay_ms(20); if (pressed()) toggle_led(); EXTI->PR = PIN; }`",
+      "`void USART1_IRQHandler(void) { printf(\"got %c\\n\", USART1->DR); }`",
+      "`void USART1_IRQHandler(void) { while (!(USART1->SR & USART_SR_RXNE)) {} buf[i++] = USART1->DR; }`"
+    ],
+    "answer": 0,
+    "explain": "The first one acknowledges the source and records the event in a few cycles, and the main loop does the rest. The **delay** holds every lower-priority interrupt off for 20 ms (and if `delay_ms` relies on SysTick, it may never return). **printf** in an ISR is slow, usually not reentrant, and may itself wait for a UART. The **busy-wait** blocks inside an ISR, and it also has no bounds check on `i`."
+  },
+  {
+    "type": "multi",
+    "q": "A UART ISR pushes into a ring buffer and `main()` pops from it, with **no** critical sections. Which design choices make that safe? Select all that apply.",
+    "options": [
+      "Only the ISR writes `head`, and only `main` writes `tail`",
+      "The ISR stores the byte into `buf[head]` *before* advancing `head`",
+      "A shared `count` that the ISR increments and `main` decrements",
+      "`head` and `tail` are `volatile`",
+      "When it's full, the ISR advances `tail` to overwrite the oldest byte"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "Single-producer/single-consumer works lock-free because **each index has exactly one writer**. Filling the slot *before* publishing `head` means `main` never reads a slot that isn't written yet. `volatile` stops each side from caching the other's index. A shared `count` has two writers, and `count--` in main can be interrupted mid read-modify-write, which is exactly the race in the next node. Moving `tail` from the ISR gives `tail` two writers too, so drop-newest is the lock-free policy."
+  },
+  {
+    "type": "order",
+    "q": "A byte arrives on the wire while `main()` is updating the display. Put the events in order.",
+    "items": [
+      "The UART shifts the byte into DR and sets RXNE",
+      "The interrupt controller signals the CPU, which finishes its current instruction and stacks registers",
+      "The ISR reads DR, acknowledges the flag and pushes the byte into the ring buffer",
+      "The ISR returns and `main()` resumes the display update exactly where it was",
+      "Later, the main loop pops the byte from the ring buffer and parses it"
+    ],
+    "explain": "Hardware event, then **latency** (finishing the instruction and stacking context, about 12 cycles on Cortex-M), then a *short* ISR that grabs the data and leaves, then main resumes without noticing. The slow work (parsing) happens later in the main loop. If interrupts were disabled at the start, the second step waits, and if a second byte arrives first, ORE tells you one was lost."
+  }
+]

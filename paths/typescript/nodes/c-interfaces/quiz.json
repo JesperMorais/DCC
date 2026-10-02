@@ -1,0 +1,71 @@
+[
+  {
+    "type": "multi",
+    "q": "`saved` is `{ volume: 0, shuffle: false, name: \"\" }`. Which expressions keep the user's saved value instead of the default? Select all that apply.",
+    "options": [
+      "`saved.volume ?? 50`",
+      "`saved.volume || 50`",
+      "`saved.shuffle ?? true`",
+      "`saved.name || \"Untitled\"`"
+    ],
+    "answer": [
+      0,
+      2
+    ],
+    "explain": "`??` only falls back when the left side is `undefined` or `null`, so `0` and `false` are kept. `||` falls back on any **falsy** value, so `0 || 50` gives `50` and `\"\" || \"Untitled\"` gives `\"Untitled\"`. Sometimes that's what you want for an empty name, but it isn't \"keeping the saved value\"."
+  },
+  {
+    "type": "single",
+    "q": "A teammate merges saved settings over the defaults. What is `b`?",
+    "code": "const defaults = { volume: 50, shuffle: false };\nconst saved = { volume: 20 };\n\nconst b = { ...saved, ...defaults };",
+    "options": [
+      "`{ volume: 50, shuffle: false }`",
+      "`{ volume: 20, shuffle: false }`",
+      "`{ volume: 20 }`",
+      "`{ volume: 20, volume: 50, shuffle: false }`"
+    ],
+    "answer": 0,
+    "explain": "Spread copies properties left to right, and **later wins**. `volume` is first set to 20 from `saved`, then overwritten with 50 from `defaults`, so the user's choice is lost. An object can't hold the same key twice; the last write is the value. Defaults go first, overrides last: `{ ...defaults, ...saved }` gives `{ volume: 20, shuffle: false }`."
+  },
+  {
+    "type": "single",
+    "q": "Why is the last line a compile error?",
+    "code": "interface Track { title: string; rating?: number }\n\nfunction stars(t: Track): string {\n  return \"★\".repeat(t.rating);\n}",
+    "options": [
+      "`t.rating` is `number | undefined`, and `repeat` needs a `number`",
+      "Optional properties can't be read, only written",
+      "`?` makes `rating` default to `0`, which `repeat` rejects",
+      "Interfaces can't have optional properties; that needs `type`"
+    ],
+    "answer": 0,
+    "explain": "`rating?: number` means the property may be missing, so reading it gives `number | undefined`. TypeScript won't pass a maybe-`undefined` into a parameter that needs a `number`. Fix it at the point of use: `\"★\".repeat(t.rating ?? 0)`. `?` doesn't create a default value, and both `interface` and `type` support optional properties."
+  },
+  {
+    "type": "single",
+    "q": "A playlist editor shows the new track in the *old* playlist too. Which line is the bug?",
+    "code": "interface Playlist { name: string; tracks: string[] }\n\nfunction addTrack(p: Playlist, t: string): Playlist {\n  const copy = { ...p };   // line 1\n  copy.tracks.push(t);     // line 2\n  return copy;             // line 3\n}",
+    "options": [
+      "Line 2: the spread copy shares the same `tracks` array, so `push` changes the original",
+      "Line 1: spread doesn't copy anything, `copy` is `p`",
+      "Line 3: returning `copy` returns `p`",
+      "None, `push` on a copy is always safe"
+    ],
+    "answer": 0,
+    "explain": "Spread is **shallow**. `copy` is a new object, so changing `copy.name` wouldn't affect `p`. But `copy.tracks` is the same array as `p.tracks`, and `push` modifies that shared array. Build a new array instead: `return { ...p, tracks: [...p.tracks, t] };`."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these can you write with `type` but **not** with `interface`? Select all that apply.",
+    "options": [
+      "`Size = \"small\" | \"medium\" | \"large\"`",
+      "An object shape `{ id: number; title: string }`",
+      "`Id = number | string`",
+      "A shape that has everything another shape has, plus one field"
+    ],
+    "answer": [
+      0,
+      2
+    ],
+    "explain": "An interface always describes an object shape, so unions like `\"small\" | \"medium\"` or `number | string` need a `type` alias. Plain object shapes work with both. Extending works with both too: `interface B extends A { … }` or `type B = A & { … }`."
+  }
+]

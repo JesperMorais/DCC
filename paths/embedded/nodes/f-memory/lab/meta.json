@@ -1,0 +1,11 @@
+{
+  "title": "A message pool with no malloc",
+  "profile": "embedded",
+  "estMinutes": 15,
+  "topics": ["static memory", "memory pools", "free lists", "double free"],
+  "hints": [
+    "Storage is a static 2-D array, `static _Alignas(8) uint8_t storage[POOL_BLOCKS][POOL_BLOCK_SIZE];`, plus a `static bool in_use[POOL_BLOCKS];`. `pool_init` resets the bookkeeping, alloc finds a free block, marks it used and returns `storage[i]`, and free does the reverse. Keep a counter for `pool_free_count`.",
+    "The tricky part is `pool_free`, which has to turn a pointer back into an index. Compare as integers: `uintptr_t off = (uintptr_t)p - (uintptr_t)storage;`. It must be below `sizeof storage` and an exact multiple of `POOL_BLOCK_SIZE`, so `off % POOL_BLOCK_SIZE == 0`. Then `i = off / POOL_BLOCK_SIZE`, and `in_use[i]` must be true, or it's a double free.",
+    "For O(1) alloc, keep a stack of free indices: `static size_t free_stack[POOL_BLOCKS]; static size_t free_top;`. Init: `for (i...) free_stack[i] = POOL_BLOCKS - 1 - i; free_top = POOL_BLOCKS;`. Alloc: `if (free_top == 0) return NULL; size_t i = free_stack[--free_top]; in_use[i] = true; return storage[i];`. Free (after validating): `in_use[i] = false; free_stack[free_top++] = i; return true;`. The free count is `free_top`."
+  ]
+}

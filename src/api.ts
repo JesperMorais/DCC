@@ -1,12 +1,20 @@
 // Typed client for the local API. Types come straight from the server code,
 // so a change on one side is a compile error on the other.
-import type { Dashboard } from "../server/engine.ts";
+import type { Dashboard as EngineDashboard } from "../server/engine.ts";
+import type { Focus } from "../server/weakness.ts";
 import type { RunResult } from "../server/runner/index.ts";
 import type { Attempt } from "../server/store.ts";
 import type { Experience, Lang } from "../shared/languages.ts";
 
-export type { Dashboard, RunResult, Attempt, Experience, Lang };
-export type { Diagnostic } from "../server/runner/index.ts";
+/** The dashboard plus the skill-tree nodes a rough daily pointed at. */
+export type Dashboard = EngineDashboard & { focus: Focus[] };
+export type { Focus, RunResult, Attempt, Experience, Lang };
+export type { Diagnostic, SimTrace } from "../server/runner/index.ts";
+import type { nodeView, pathView, submitQuiz } from "../server/pathProgress.ts";
+export type PathView = ReturnType<typeof pathView>;
+export type NodeView = ReturnType<typeof nodeView>;
+export type QuizResult = ReturnType<typeof submitQuiz>;
+export type PublicQuestion = NodeView["quiz"][number];
 
 /** The challenge clock as the server sees it. */
 export interface Clock {
@@ -42,6 +50,8 @@ export interface ChallengeView {
   expected: number | null;
   /** Topics in this challenge the learner hasn't met before. */
   newTopics: string[];
+  profile: "c" | "embedded" | "linux";
+  pathNode: { path: string; node: string } | null;
 }
 
 export interface LibraryItem {
@@ -78,6 +88,7 @@ export interface FinishResult {
   levelName: string;
   streak: number;
   firstSolveToday: boolean;
+  tree: { completed: boolean; xpGained: number; unlocked: string[]; path: string; node: string } | null;
   result?: RunResult;
 }
 
@@ -110,6 +121,11 @@ export const api = {
   run: (id: string, code: string) => call<RunResult>(`/challenges/${id}/run`, { method: "POST", body: { code } }),
   submit: (id: string, code: string) => call<FinishResult>(`/challenges/${id}/submit`, { method: "POST", body: { code } }),
   giveUp: (id: string, code: string) => call<FinishResult>(`/challenges/${id}/giveup`, { method: "POST", body: { code } }),
+  paths: () => call<{ id: string; title: string; tagline: string; language: Lang; xp: number; rank: PathView["rank"]; stars: number; maxStars: number }[]>("/paths"),
+  path: (id: string) => call<PathView>(`/paths/${id}`),
+  node: (path: string, node: string) => call<NodeView>(`/paths/${path}/nodes/${node}`),
+  submitQuiz: (path: string, node: string, answers: unknown[]) => call<QuizResult>(`/paths/${path}/nodes/${node}/quiz`, { method: "POST", body: { answers } }),
+  chooseBranch: (path: string, branch: string) => call(`/paths/${path}/branch`, { method: "POST", body: { branch } }),
   harness: () => fetch("/api/harness").then((r) => r.text()),
 };
 

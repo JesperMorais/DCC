@@ -1,0 +1,56 @@
+[
+  {
+    "type": "single",
+    "q": "What is the type of `id` on the marked line?",
+    "code": "function label(id: number | string | null): string {\n  if (id === null) return \"none\";\n  if (typeof id === \"number\") return `#${id}`;\n  return id; // ← here\n}",
+    "options": [
+      "`string`",
+      "`number | string | null`",
+      "`number | string`",
+      "`any`"
+    ],
+    "answer": 0,
+    "explain": "TypeScript follows the control flow. The first `if` returns for `null`, so after it `id` is `number | string`. The second returns for `number`, so only `string` can reach the last line. No `else` needed: an early `return` narrows everything after it."
+  },
+  {
+    "type": "single",
+    "q": "As plain JavaScript, `size(null)` crashes with `Cannot read properties of null`. In TypeScript, `x.length` is flagged as `'x' is possibly 'null'`. Why didn't the check rule `null` out?",
+    "code": "function size(x: string[] | null): number {\n  if (typeof x === \"object\") return x.length;\n  return 0;\n}\nsize(null);",
+    "options": [
+      "`typeof null` is `\"object\"`, so `null` passes the check",
+      "`typeof` doesn't work on arrays",
+      "`x.length` should be `x.size`",
+      "The check works; TypeScript is being overly cautious"
+    ],
+    "answer": 0,
+    "explain": "`typeof` returns `\"object\"` for arrays, plain objects **and** `null`, a famous JavaScript quirk. TypeScript knows this, so inside the `if` the type is still `string[] | null`, and it refuses `x.length`. It isn't being cautious: the JavaScript version really does crash. Check `x === null` (or use `Array.isArray(x)`) instead. `typeof` works fine on arrays, it just can't tell them apart from `null`."
+  },
+  {
+    "type": "multi",
+    "q": "`type Pet = { meow: () => void; lives: number } | { bark: () => void }`. Inside `if (\"meow\" in pet) { … }`, which are fine? Select all that apply.",
+    "options": [
+      "`pet.meow()`",
+      "`pet.lives`",
+      "`pet.bark()`",
+      "Reading `pet.lives` *before* the `if`"
+    ],
+    "answer": [
+      0,
+      1
+    ],
+    "explain": "`\"meow\" in pet` is true only for the first shape, so inside the `if` TypeScript narrows `pet` to it, and both `meow` and `lives` are available. `bark` belongs to the other shape, so it's an error there. Before the `if`, `pet` could be either shape, and the dog shape has no `lives`, so reading it is an error too."
+  },
+  {
+    "type": "single",
+    "q": "`count` is `number | null`, and `0` is a valid count. Which check prints the right thing for `0`, `5` and `null`?",
+    "code": "// A\nif (count) console.log(`${count} items`); else console.log(\"loading\");\n\n// B\nif (count !== null) console.log(`${count} items`); else console.log(\"loading\");",
+    "options": [
+      "B. A treats `0` as falsy and prints \"loading\" for an empty cart",
+      "A, because truthiness is the idiomatic way to remove `null`",
+      "Both, they narrow `count` to `number` the same way",
+      "Neither, you need `typeof count === \"number\"`"
+    ],
+    "answer": 0,
+    "explain": "Both checks narrow `count` to `number` inside the `if`, but A also sends a real `0` to the `else` branch, because `0` is falsy. B only removes `null`. (`typeof count === \"number\"` would work as well, so \"neither\" is wrong.) When `0` or `\"\"` are real answers, compare against `null`/`undefined` explicitly."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "title": "Settings, derived",
+  "level": 4,
+  "estMinutes": 12,
+  "topics": ["utility types", "Partial", "Omit", "mapped types", "modifiers"],
+  "hints": [
+    "`Resolved<T>` is a mapped type over `keyof T` that adds `readonly` in front and removes `?` with `-?` after the brackets. `SettingsPatch` and `PublicSettings` are each one line of `Partial`, `Omit` and `Resolved` combined.",
+    "`resolve` fills each optional field with `??` and the matching `DEFAULTS` value. `applyPatch` must drop the patch's `undefined` values before spreading. `toPublic` can't rely on the type: pull `apiToken` out with destructuring, `const { apiToken, ...rest } = settings;`, and return `rest`.",
+    "type Resolved<T> = { readonly [K in keyof T]-?: T[K] }; type SettingsPatch = Partial<Omit<Settings, \"userId\">>; type PublicSettings = Omit<Resolved<Settings>, \"apiToken\">; and in applyPatch: const defined = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)); return { ...settings, ...defined };"
+  ]
+}

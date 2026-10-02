@@ -1,0 +1,41 @@
+[
+  {
+    "type": "number",
+    "q": "A loop does `work(); nanosleep(10 ms);`. `work()` takes 2 ms, and assume zero wakeup latency. After **100 cycles**, how many milliseconds **behind** the ideal 10 ms grid (100 × 10 = 1000 ms) is it?",
+    "answer": 200,
+    "tolerance": 0,
+    "unit": "ms",
+    "explain": "Each cycle takes 2 + 10 = 12 ms, so 100 cycles take 1200 ms: **200 ms** of drift, growing by 2 ms every cycle. With an absolute deadline (`clock_nanosleep(TIMER_ABSTIME)` or an interval timerfd), cycle k starts at start + k·10 ms however long the work takes, as long as the work stays under 10 ms. The drift is zero, and lateness only shows up as jitter on individual cycles."
+  },
+  {
+    "type": "single",
+    "q": "Your 5 ms timerfd loop reads `expirations = 4` from the timerfd. What happened?",
+    "options": [
+      "The timer fired 4 times while the loop was busy: it missed 3 periods and is now 4 periods along the grid",
+      "The kernel queued 4 separate wakeups that will arrive one by one",
+      "The period was silently changed to 20 ms",
+      "It's a spurious count. Treat it as 1"
+    ],
+    "answer": 0,
+    "explain": "The timerfd counter counts **every** expiration since the last `read()`, and reading resets it to 0. A value of 4 means 3 periods passed with nobody waiting, so there are 3 **overruns**. There are no queued wakeups to come: the next read blocks until the next grid point. Treating it as 1 throws away exactly the information that tells you your real-time loop failed."
+  },
+  {
+    "type": "single",
+    "q": "A data logger sleeps until `deadline = REALTIME now + 1 s` using `clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, …)`. At boot, NTP steps the clock **back** 1 hour. What does the logger do?",
+    "options": [
+      "Sleeps about one extra hour before the next sample",
+      "Nothing changes: absolute sleeps are immune to clock changes",
+      "Wakes up immediately and samples very quickly for an hour",
+      "Crashes with EINVAL"
+    ],
+    "answer": 0,
+    "explain": "An absolute sleep on `CLOCK_REALTIME` waits until the *wall clock* reads the deadline. When the clock steps back an hour, the deadline is suddenly an hour in the future, so the logger goes silent. A forward step does the opposite: deadlines in the past fire immediately. `CLOCK_MONOTONIC` never steps, which is why periodic work and timeouts belong on it, and REALTIME is only for human-readable timestamps."
+  },
+  {
+    "type": "single",
+    "q": "What does `ts_add_ns({ .tv_sec = 3, .tv_nsec = 200 }, -500)` have to return?",
+    "options": ["`{3, -300}`", "`{2, 999999700}`", "`{2, -300}`", "`{3, 999999700}`"],
+    "answer": 1,
+    "explain": "3 s + 200 ns − 500 ns = 2.9999997 s. A normalised `timespec` keeps `0 <= tv_nsec < 1e9`, so you borrow a second: `{2, 999999700}`. `{3, -300}` is the same instant but **invalid**, and `clock_nanosleep` and `timerfd_settime` reject it with `EINVAL`. `{3, 999999700}` forgets the borrow, which puts it almost a second in the future. In C, `ns % 1000000000` keeps the sign of `ns`, so a negative remainder is exactly the case your carry code must handle."
+  }
+]

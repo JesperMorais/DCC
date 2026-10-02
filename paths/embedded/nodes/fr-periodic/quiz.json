@@ -1,0 +1,42 @@
+[
+  {
+    "type": "single",
+    "q": "Each cycle takes 3 ms of work, nothing preempts it, and it starts at tick 0. When does the 5th cycle (index 4) start?",
+    "code": "for (;;) {\n    do_work();               // 3 ms\n    vTaskDelay(pdMS_TO_TICKS(10));\n}",
+    "options": ["40", "52", "43", "13"],
+    "answer": 1,
+    "explain": "`vTaskDelay` is relative to when the work **finished**, so each cycle lasts 3 + 10 = 13 ms. The cycles start at 0, 13, 26, 39, **52**. 40 is what `xTaskDelayUntil` would give, because it's locked to the 10 ms grid. 43 assumes the work only delays the first cycle. 13 is when the second cycle starts."
+  },
+  {
+    "type": "single",
+    "q": "This loop was \"fixed\" to use xTaskDelayUntil. Does it stay on a 10 ms grid?",
+    "code": "for (;;) {\n    do_work();               // 3 ms\n    TickType_t last = xTaskGetTickCount();\n    xTaskDelayUntil(&last, pdMS_TO_TICKS(10));\n}",
+    "options": [
+      "Yes: xTaskDelayUntil is always drift-free",
+      "No: re-reading the tick count each cycle makes it relative to the end of the work, exactly like vTaskDelay",
+      "No: it never blocks, so it spins at 100% CPU",
+      "Yes, but only if do_work() is shorter than 10 ms"
+    ],
+    "answer": 1,
+    "explain": "The grid lives in `last_wake`. Here it is reset to *now* after the work every cycle, so the wake time becomes `end of work + 10`, which drifts by 3 ms per cycle just like `vTaskDelay`. Initialise it **once**, before the loop, and let `xTaskDelayUntil` advance it. The loop does block each time (now + 10 is in the future), and drift-freedom is lost whatever the work length."
+  },
+  {
+    "type": "number",
+    "q": "A 10 ms `xTaskDelayUntil` loop normally does 2 ms of work, starting at 0. Cycle 3 starts at 30 and takes **25 ms**. Counting `pdFALSE` returns from xTaskDelayUntil, how many overruns are reported in total?",
+    "answer": 2,
+    "tolerance": 0,
+    "explain": "Cycle 3 ends at 55. Its next wake time is 40, already past, so that's overrun #1 (`last_wake` becomes 40). The next cycle runs immediately, 55→57. Its wake time is 50, also past, so that's overrun #2 (`last_wake` = 50). The cycle after runs 57→59, and its wake time of 60 is in the future, so it blocks and the loop is back on the grid. A stall of *k* periods is reported as about *k* overruns, plus a short burst of catch-up cycles."
+  },
+  {
+    "type": "single",
+    "q": "A drift-free 10 ms control loop shows start times of 10, 21, 30, 42, 50… What's the most likely cause?",
+    "options": [
+      "It uses vTaskDelay instead of xTaskDelayUntil",
+      "A higher-priority task or a long critical section sometimes runs at the moment control becomes ready (jitter)",
+      "The tick rate is wrong",
+      "A lower-priority task is hogging the CPU"
+    ],
+    "answer": 1,
+    "explain": "The starts keep coming back to the grid (30, 50), so there's **no drift**, only **jitter**. Control becomes ready on time but sometimes has to wait for something more urgent, or for interrupts to be re-enabled. vTaskDelay would drift and never return to the grid. A wrong tick rate would scale every period. A lower-priority hog can't delay a higher-priority task: that's what preemption is for."
+  }
+]

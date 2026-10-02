@@ -1,0 +1,11 @@
+{
+  "title": "The drifting vibration sampler",
+  "profile": "embedded",
+  "estMinutes": 10,
+  "topics": ["rtos_delay_until", "periodic tasks", "drift", "jitter", "overrun"],
+  "hints": [
+    "Write down the tick of each sample with the starter: 0, 12, 24, 36... Every period is 10 ticks *plus* the filtering time. What should the sleep be measured from instead?",
+    "Use `rtos_delay_until(&next_wake, SAMPLE_PERIOD)`. It sleeps until an absolute tick and moves `next_wake` forward by exactly one period, however long the work took.",
+    "Before the loop: `rtos_tick_t next_wake = rtos_now();`. At the end of each iteration, replace `rtos_delay(SAMPLE_PERIOD)` with `rtos_delay_until(&next_wake, SAMPLE_PERIOD);`. Don't reset `next_wake` inside the loop."
+  ]
+}

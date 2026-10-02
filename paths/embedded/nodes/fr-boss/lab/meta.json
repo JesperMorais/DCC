@@ -1,0 +1,11 @@
+{
+  "title": "Boss: the conveyor motor controller",
+  "profile": "embedded",
+  "estMinutes": 25,
+  "topics": ["freertos", "xTaskDelayUntil", "FromISR", "mutex", "software timers", "watchdog"],
+  "hints": [
+    "Take it one block at a time, and use the Timeline tab after each step. Start with the control loop (priority 7, `xTaskDelayUntil`), then the ISR and cmd_task, then the telemetry review comment, and finish with the watchdog timer.",
+    "Telemetry should copy `g_setpoint` under the lock, release it, and only then call `send_telemetry_frame()`. The ISR is the standard pattern: `xQueueSendFromISR(g_cmd_q, cmd, &woken)` followed by `portYIELD_FROM_ISR(woken)`. The watchdog wraps its read-and-clear in `taskENTER_CRITICAL()`/`taskEXIT_CRITICAL()`.",
+    "The control loop ends with `if (xTaskDelayUntil(&last_wake, CONTROL_PERIOD) == pdFALSE) { g_ctrl_overruns++; last_wake = xTaskGetTickCount(); }`. In app_start, write `g_wdog_timer = xTimerCreate(\"wdog\", WDOG_PERIOD, pdTRUE, NULL, wdog_cb); xTimerStart(g_wdog_timer, 0);` and set `PRIO_CONTROL` to `configMAX_PRIORITIES - 1`."
+  ]
+}

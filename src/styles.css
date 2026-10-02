@@ -474,3 +474,19 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .tess-bob, .tess-blink, .tess-hop, .pop-in { animation: none !important; }
 }
+
+/* Skill tree: available nodes breathe */
+@keyframes tree-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.6; }
+}
+.tree-pulse { animation: tree-pulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tree-pulse { animation: none; }
+}
+
+/* Show the real characters in code: `->` and `==` matter when you're learning. */
+pre, code, .font-mono, .monaco-editor {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}

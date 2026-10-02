@@ -8,6 +8,8 @@ import DashboardPage from "./pages/Dashboard";
 import LanguageStart from "./pages/LanguageStart";
 import LibraryPage from "./pages/Library";
 import MascotGallery from "./pages/MascotGallery";
+import NodePage from "./pages/NodePage";
+import PathPage from "./pages/PathPage";
 import Onboarding from "./pages/Onboarding";
 import SettingsPage from "./pages/Settings";
 import { sidebarStreakLine } from "./tess/lines";
@@ -69,7 +71,10 @@ export default function App() {
   const inChallenge = location.pathname.startsWith("/solve/");
   // The state may briefly belong to the previous language while switching.
   const ready = state.language === lang;
-  const gate = (el: React.ReactNode) => (!ready ? <TessLoading /> : state.started ? el : <LanguageStart lang={lang} onStarted={refresh} />);
+  // Skill-tree labs (slug "<path>.<node>") don't require starting that language's track.
+  const isTreeLab = /^\/solve\/[^/]+\/[^/]+\.[^/]+/.test(location.pathname);
+  const gate = (el: React.ReactNode) =>
+    !ready && !isTreeLab ? <TessLoading /> : state.started || isTreeLab ? el : <LanguageStart lang={lang} onStarted={refresh} />;
 
   return (
     <div className="flex h-full">
@@ -78,6 +83,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to={`/${lang}`} replace />} />
           <Route path="/mascot" element={<MascotGallery />} />
+          <Route path="/paths/:pathId" element={<PathPage />} />
+          <Route path="/paths/:pathId/:nodeId" element={<NodePage />} />
           <Route path="/settings" element={<SettingsPage state={state} onChange={refresh} />} />
           <Route path="/solve/:lang/:slug" element={gate(<ChallengePage onFinished={refresh} />)} />
           <Route path="/:lang" element={gate(<DashboardPage state={state} />)} />
@@ -120,12 +127,16 @@ function LanguageSwitcher({ state, lang }: { state: Dashboard; lang: Lang }) {
   );
 }
 
+/** The skill tree the sidebar opens for each language. */
+const TREE_FOR: Partial<Record<Lang, string>> = { typescript: "typescript", c: "embedded" };
+
 function Sidebar({ state, lang }: { state: Dashboard; lang: Lang }) {
   const { theme } = useTheme();
   const voice = useTessVoice();
   const items: { to: string; icon: IconName; label: string; end?: boolean }[] = [
     { to: `/${lang}`, icon: "dashboard", label: "Dashboard", end: true },
     { to: `/${lang}/library`, icon: "library", label: "Library" },
+    { to: `/paths/${TREE_FOR[lang] ?? "embedded"}`, icon: "tree", label: "Skill tree" },
     { to: "/settings", icon: "settings", label: "Settings" },
   ];
   return (

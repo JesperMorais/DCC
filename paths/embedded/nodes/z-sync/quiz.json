@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "Which bug is this? The \"link down\" alarm never fires. Instead, the device logs a phantom packet every 100 ms when the line is silent.",
+    "code": "for (;;) {\n    k_sem_take(&rx_sem, K_MSEC(100));\n    handle_packet();\n}",
+    "options": [
+      "`k_sem_take` can't have a timeout in a thread",
+      "The return value is ignored: a timeout (-EAGAIN) is handled exactly like a real packet (0)",
+      "The semaphore limit is too low",
+      "100 ms is too short for a timeout"
+    ],
+    "answer": 1,
+    "explain": "`k_sem_take` returns 0 when it got a token and **-EAGAIN** when the timeout expired (**-EBUSY** with `K_NO_WAIT`). Without checking it, every 100 ms of silence looks like a packet. Branch on the return code: `if (rc == -EAGAIN) { link_down(); continue; }`. A timeout in a thread is perfectly legal (it's only ISRs that must use `K_NO_WAIT`), and the semaphore limit has nothing to do with phantom packets."
+  },
+  {
+    "type": "number",
+    "q": "`K_SEM_DEFINE(evt, 0, 1)`. An ISR calls `k_sem_give(&evt)` **4 times** while the handler thread is busy elsewhere. Then the thread loops on `k_sem_take(&evt, K_NO_WAIT) == 0`. How many events does it see?",
+    "answer": 1,
+    "tolerance": 0,
+    "unit": "events",
+    "explain": "The limit is 1, so the count saturates at 1: three of the four gives are lost silently. That's fine for \"something happened, go look\" signalling, and wrong when every event matters. For counting, raise the limit (`K_SEM_DEFINE(evt, 0, 16)` or `K_SEM_MAX_LIMIT`), or move the data itself through a `k_msgq`."
+  },
+  {
+    "type": "single",
+    "q": "`log_card()` locks `log_lock` and then calls `log_touch()`, which locks `log_lock` again. What happens with each kind of lock?",
+    "options": [
+      "Both work: Zephyr detects the nesting",
+      "With `K_MUTEX_DEFINE` it works, because the owner can re-lock (it's recursive). With a `K_SEM_DEFINE(log_lock, 1, 1)` \"lock\", the thread blocks on itself forever",
+      "Both deadlock: never nest locks",
+      "The mutex returns -EPERM, the semaphore works"
+    ],
+    "answer": 1,
+    "explain": "A Zephyr `k_mutex` tracks its owner and a lock count. Re-locking by the owner just increments the count, and the mutex is released when the count returns to zero. A semaphore has no owner: the second take sees a count of 0 and waits for a give that can never come, because the only thread that would give is the one waiting. -EPERM is what `k_mutex_unlock` returns when a *non-owner* unlocks."
+  },
+  {
+    "type": "multi",
+    "q": "Why should a shared struct be protected by a `k_mutex` rather than a semaphore initialised to 1? Select all that apply.",
+    "options": [
+      "The mutex applies priority inheritance, so a medium-priority thread can't cause unbounded inversion",
+      "The mutex is recursive, so nested helpers can lock it again",
+      "The mutex can be locked from an ISR",
+      "The mutex rejects unlocks from a thread that doesn't own it (-EPERM)"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "Ownership is what makes a mutex a lock: it enables inheritance (the owner borrows the waiter's priority), recursion and ownership checks. It also means **ISRs can't use it**: an ISR can't own a lock or wait for one. For data shared with an ISR, use `irq_lock()`, atomics, or hand the data over through a semaphore or `k_msgq`."
+  }
+]

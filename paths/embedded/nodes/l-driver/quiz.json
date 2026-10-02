@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "A user sometimes passes a buffer that crosses into an unmapped page. Afterwards, samples are silently missing from the stream. Which bug is this?",
+    "code": "n = min(count / sizeof(s), dev->count);\nmemcpy(tmp, ring_slice(dev, n), n * sizeof(s));\ndev->head = (dev->head + n) % RING;\ndev->count -= n;\ncopy_to_user(buf, tmp, n * sizeof(s));\nreturn n * sizeof(s);",
+    "options": [
+      "The driver should use `memcpy` straight into `buf` instead",
+      "It consumes the samples *before* the copy, and it ignores `copy_to_user`'s return value. A partial copy should give `-EFAULT` with nothing consumed",
+      "`count / sizeof(s)` should round up",
+      "`dev->head` needs to be `volatile`"
+    ],
+    "answer": 1,
+    "explain": "`copy_to_user` returns the bytes it **couldn't** copy. Here that value is ignored, and the ring has already been advanced, so the faulting samples are gone. The fix: copy first, `return -EFAULT` if the result is non-zero, and only then consume. `memcpy` into a user pointer is exactly what you must never do (SMAP oops, or a security hole). Rounding up would hand out half a sample. `volatile` doesn't fix ordering bugs."
+  },
+  {
+    "type": "single",
+    "q": "An epoll-based daemon opens `/dev/sensor` with `O_NONBLOCK`. The buffer is empty. What must `.read` return?",
+    "options": ["0", "-EAGAIN", "-EINTR", "It should sleep in `wait_event_interruptible` until data arrives"],
+    "answer": 1,
+    "explain": "Non-blocking means \"never sleep\": return `-EAGAIN` (also called `EWOULDBLOCK`), and the daemon goes back to `epoll_wait`. Returning **0** means end of file, and most programs then close the device. `-EINTR` and `-ERESTARTSYS` are for a *blocking* sleep that a signal interrupted. Sleeping here would freeze the daemon's whole event loop."
+  },
+  {
+    "type": "order",
+    "q": "Put the life of `cat /dev/sensor` in order, from loading the driver to the end.",
+    "items": [
+      "`module_init` runs and the driver calls `misc_register()`",
+      "udev sees the uevent and creates the `/dev/sensor` node",
+      "`open()` → the VFS calls `.open`, which allocates `private_data`",
+      "`read()` → `.read` uses `copy_to_user` to copy whole samples",
+      "`close()` → `.release` frees `private_data`"
+    ],
+    "explain": "Registration comes first: `module_init` hands the kernel the `file_operations`, either through `misc_register` or through `cdev_add` + `device_create`. That raises a uevent, and udev or mdev makes the node in `/dev`. From then on, every syscall on the fd goes through the table. `.release` runs on the **last** close of that `struct file`, so per-open allocations are freed exactly once."
+  },
+  {
+    "type": "multi",
+    "q": "Your real driver's IRQ handler pushes samples into the ring, and `.read` pops them. Which of these are correct in kernel space?",
+    "options": [
+      "Protect the ring with a spinlock taken with `spin_lock_irqsave` in `.read`",
+      "Allocate a new sample buffer with `kmalloc(..., GFP_KERNEL)` inside the IRQ handler",
+      "Call `copy_to_user` while holding the spinlock, so the read is atomic",
+      "Copy the samples to a local buffer under the lock, drop the lock, then `copy_to_user`",
+      "Use `printf` to debug the IRQ handler"
+    ],
+    "answer": [0, 3],
+    "explain": "The IRQ and `.read` really do run concurrently, so they need a spinlock. Taking it with `_irqsave` in `.read` stops the IRQ from deadlocking on the same CPU. `GFP_KERNEL` may sleep, which is forbidden in interrupt context: use `GFP_ATOMIC`, or better, preallocate. `copy_to_user` can fault and sleep, so never call it under a spinlock. Snapshot under the lock, then copy. There's no libc in the kernel, so it's `pr_info`/`dev_dbg`, not `printf`."
+  }
+]

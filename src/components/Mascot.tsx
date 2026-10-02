@@ -98,6 +98,7 @@ export function Mascot({
   className = "",
   title,
   animated = false,
+  hat,
 }: {
   mood?: Mood;
   size?: number;
@@ -105,6 +106,8 @@ export function Mascot({
   title?: string;
   /** Gentle idle bob + blink. Only for calm, non-coding surfaces. */
   animated?: boolean;
+  /** Accessory: a hard hat for the hardware side of the house. */
+  hat?: "hardhat";
 }) {
   const uid = useId().replace(/:/g, "");
   const gid = `sg${uid}`;
@@ -251,6 +254,15 @@ export function Mascot({
       <ellipse cx={80} cy={77} rx={4.6} ry={3.3} fill={C.nose} />
       <circle cx={81.6} cy={75.9} r={1.1} fill="#fff" opacity={0.6} />
       {mouth}
+
+      {hat === "hardhat" && (
+        <g>
+          <path d="M50 30 C50 12 64 4 80 4 C96 4 110 12 110 30Z" fill="#f5c02e" stroke={C.outline} strokeWidth={2.4} strokeLinejoin="round" />
+          <path d="M78 5 L78 29 M82 5 L82 29" stroke="#d99b0f" strokeWidth={2} />
+          <path d="M43 30 Q80 38 117 30 L117 34 Q80 42 43 34Z" fill="#f5c02e" stroke={C.outline} strokeWidth={2.2} strokeLinejoin="round" />
+          <circle cx={68} cy={16} r={3} fill="#fff6c9" opacity={0.8} />
+        </g>
+      )}
 
       {/* extras */}
       {mood === "happy" && (

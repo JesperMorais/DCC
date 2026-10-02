@@ -1,0 +1,46 @@
+[
+  {
+    "type": "single",
+    "q": "Which bug is this? The gatekeeper sometimes prints the *same* text twice, or half-overwritten text.",
+    "code": "QueueHandle_t q = xQueueCreate(8, sizeof(char *));\n\nvoid log_value(int v) {\n    char buf[24];\n    snprintf(buf, sizeof buf, \"v=%d\", v);\n    char *p = buf;\n    xQueueSend(q, &p, pdMS_TO_TICKS(5));\n}",
+    "options": [
+      "The queue is too short",
+      "It queues a pointer to a stack buffer that's gone (or reused) by the time the gatekeeper reads it",
+      "snprintf isn't thread-safe",
+      "The timeout should be portMAX_DELAY"
+    ],
+    "answer": 1,
+    "explain": "The queue copies the **pointer**, not the text. `buf` dies when `log_value` returns, and the next call reuses the same stack slot, so the gatekeeper reads whatever is there now. Fix it by queuing a struct with `char text[24]`, so the bytes themselves are copied. A longer queue or a longer timeout doesn't change ownership. `snprintf` into a local buffer is fine."
+  },
+  {
+    "type": "single",
+    "q": "Motor (priority 5) logs bursts of up to 6 messages. The UART gatekeeper runs at priority 2. Producers use a 0 timeout. What's the smallest queue length that never drops during a burst?",
+    "options": ["1", "3", "6", "12"],
+    "answer": 2,
+    "explain": "While the motor is producing its burst, the lower-priority gatekeeper **can't run**, so all 6 messages must fit at once. With fewer slots, the 0-timeout sends fail. With a short timeout instead, the motor would block, the gatekeeper would run and free a slot, and the burst could squeeze through at the cost of motor latency. 12 works, but it isn't the minimum."
+  },
+  {
+    "type": "multi",
+    "q": "Why is a gatekeeper task often better than a mutex around a slow UART driver?",
+    "options": [
+      "High-priority callers never wait for the slow I/O, only for a queue copy",
+      "There's no lock to invert or deadlock on",
+      "It makes the UART transmit faster",
+      "Formatting and rate-limiting policy live in one place"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "With a mutex, the motor task waits for whoever holds the lock to finish **their whole line** on the wire. With a gatekeeper, it waits only for a few-µs copy. Nothing is shared, so there's no lock to suffer inversion or deadlock, and policy is centralised. The bytes still leave at the same baud rate: a gatekeeper moves the waiting, it doesn't make the wire faster."
+  },
+  {
+    "type": "single",
+    "q": "A producer logs with `xQueueSend(log_q, &m, portMAX_DELAY)`. The gatekeeper task crashes into a hard loop on a malformed message. What happens to the producer, which is the motor control task?",
+    "options": [
+      "Nothing: sends always succeed",
+      "It loses that message and continues",
+      "Once the queue fills, it blocks forever, and motor control stops because of logging",
+      "FreeRTOS deletes the gatekeeper and restarts it"
+    ],
+    "answer": 2,
+    "explain": "`portMAX_DELAY` means \"wait forever for space\". When the consumer stops, the queue fills and the next send never returns, so a logging bug has stopped the motor. A bounded timeout (a few ms) plus a drop counter keeps the failure contained. FreeRTOS never restarts tasks for you, and sends to a full queue don't magically succeed."
+  }
+]

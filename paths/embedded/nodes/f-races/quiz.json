@@ -1,0 +1,47 @@
+[
+  {
+    "type": "number",
+    "q": "`count` is 5. `main` runs `count++`, which compiles to load, add, store. Right after `main`'s **load**, an ISR fires and does `count += 10`. When `main`'s store finishes, what is `count`?",
+    "answer": 6,
+    "tolerance": 0,
+    "explain": "`main` loaded 5. The ISR then wrote 15, but `main` still holds the stale 5 in a register, adds 1 and stores **6**. The ISR's +10 vanished. The right answer is 16. This is the *lost update*, and `volatile` can't prevent it, because the problem is the gap between the load and the store, not whether they happen."
+  },
+  {
+    "type": "multi",
+    "q": "`main` and a timer ISR both modify `uint32_t flags` with read-modify-writes. Which changes actually remove the race on a single-core Cortex-M? Select all that apply.",
+    "options": [
+      "Wrap `main`'s read-modify-write in `__disable_irq()` / restore",
+      "Declare `flags` as `volatile`",
+      "Use a C11 atomic, `atomic_fetch_and(&flags, ~bit)`, which compiles to an `LDREX`/`STREX` retry loop",
+      "Give each bit its own variable with a single writer, for example one `volatile bool` the ISR sets and a separate counter `main` owns",
+      "Add a short delay before the write so the ISR has time to finish"
+    ],
+    "answer": [0, 2, 3],
+    "explain": "A critical section closes the window. An atomic RMW makes the whole operation indivisible, because `STREX` fails and retries if anything touched the location in between. Restructuring to **one writer per variable** removes the sharing entirely. `volatile` only forces the accesses. A delay just moves the window around: interrupts are asynchronous, so they can land in any gap you leave."
+  },
+  {
+    "type": "single",
+    "q": "Your `events_take()` disables interrupts, swaps the flags, and ends with `__enable_irq()`. It's called from inside a driver that had **already** disabled interrupts for its own critical section. What happens?",
+    "options": [
+      "Interrupts come back on in the middle of the driver's critical section, so the driver's own shared access is now racy",
+      "Nothing: `__disable_irq` calls nest, and the CPU counts them",
+      "The CPU faults on the second `__disable_irq()`",
+      "The pending interrupt is lost"
+    ],
+    "answer": 0,
+    "explain": "`PRIMASK` is a single bit, not a counter, so `__enable_irq()` means *on*, whatever the caller wanted. The fix is **save and restore**: remember whether interrupts were on (`__get_PRIMASK()`, or `dts_irq_enabled()` in the sim) and only re-enable if they were. Linux's `local_irq_save`/`restore` and Zephyr's `irq_lock` key exist for this reason. Disabling twice is harmless, and pending interrupts aren't lost, they're just delayed."
+  },
+  {
+    "type": "single",
+    "q": "Which critical section is better, and why?",
+    "code": "/* A */\n__disable_irq();\nuint32_t ev = pending; pending = 0;\n__enable_irq();\nhandle_events(ev);          /* ~2 ms */\n\n/* B */\n__disable_irq();\nhandle_events(pending);     /* ~2 ms */\npending = 0;\n__enable_irq();",
+    "options": [
+      "A: it protects only the shared swap, so interrupts are held off for a few cycles instead of 2 ms",
+      "B: it's safer because more code is protected",
+      "They're equivalent: pending interrupts aren't lost either way",
+      "B, because `handle_events` might read `pending` again"
+    ],
+    "answer": 0,
+    "explain": "Protect the **shared data**, not the work. A copies the flags out atomically and then processes the private copy with interrupts on. B holds every interrupt off for 2 ms: a 115200-baud UART receives about 23 bytes in that time but holds only one (ORE), and only one SysTick can stay pending, so ticks are lost too. B also has a real bug: an event that arrives *while* `handle_events` runs is cleared by `pending = 0` without ever being handled."
+  }
+]

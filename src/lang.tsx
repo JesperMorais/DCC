@@ -9,7 +9,9 @@ export function useActiveLang(): Lang {
   const { pathname } = useLocation();
   const parts = pathname.split("/").filter(Boolean);
   const fromUrl = parts[0] === "solve" ? parts[1] : parts[0];
-  if (isLang(fromUrl)) {
+  // Skill-tree labs are C under the hood, but visiting one shouldn't switch your language track.
+  const treeLab = parts[0] === "solve" && (parts[2] ?? "").includes(".");
+  if (isLang(fromUrl) && !treeLab) {
     try {
       localStorage.setItem("lang", fromUrl);
     } catch {}

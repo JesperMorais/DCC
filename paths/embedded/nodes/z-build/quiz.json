@@ -1,0 +1,64 @@
+[
+  {
+    "type": "order",
+    "q": "Put the Zephyr build pipeline in order, from the inputs to the image.",
+    "items": [
+      "Merge the board devicetree with your overlays",
+      "Generate devicetree_generated.h (DT_* macros)",
+      "Resolve Kconfig: defaults + board defconfig + prj.conf into .config",
+      "Generate autoconf.h (CONFIG_* defines)",
+      "CMake selects which source files to compile",
+      "Compile and link zephyr.elf, then convert to .hex/.bin"
+    ],
+    "explain": "Devicetree comes first, because Kconfig depends on it: many driver symbols default to `y` only if a matching enabled node exists (`DT_HAS_<compat>_ENABLED`). Kconfig then produces `.config` / `autoconf.h`, and CMake uses those `CONFIG_*` symbols to choose sources (`zephyr_library_sources_ifdef`). Only then does any C get compiled. Hardware description and feature selection are both settled before your code is."
+  },
+  {
+    "type": "single",
+    "q": "You add `CONFIG_BME280=y` to `prj.conf`. The build succeeds, but `device_is_ready(bme)` returns false at boot. In `build/zephyr/.config` you find `# CONFIG_BME280 is not set`. What is the most likely cause?",
+    "code": "config BME280\n    bool \"BME280 sensor\"\n    depends on DT_HAS_BOSCH_BME280_ENABLED\n    depends on SENSOR",
+    "options": [
+      "prj.conf is ignored when an overlay exists",
+      "A `depends on` isn't satisfied (e.g. `CONFIG_SENSOR` is off, or there's no enabled bosch,bme280 node), so Kconfig silently dropped your `=y`",
+      "You need `select BME280` in prj.conf instead of `=y`",
+      "The driver is compiled but the linker removed it as unused"
+    ],
+    "answer": 1,
+    "explain": "A `=y` in prj.conf is a *request*. If a `depends on` is false, Kconfig drops the assignment and only prints a warning (\"assigned the value y but got the value n\"). Fix the dependency: enable `CONFIG_SENSOR`, and make sure the devicetree has an enabled node with `compatible = \"bosch,bme280\"`. `select` only exists inside Kconfig files, not prj.conf. prj.conf and overlays work together, and the linker isn't the problem here: the driver was never compiled at all."
+  },
+  {
+    "type": "multi",
+    "q": "Which statements about `west` are true?",
+    "options": [
+      "`west.yml` (the manifest) pins every repository in the workspace (Zephyr, HALs, MCUboot...) to a revision",
+      "`west update` checks out all manifest projects at their pinned revisions",
+      "`west build` replaces CMake: Zephyr doesn't use CMake",
+      "`west flash` programs the board using a runner such as J-Link, pyOCD or OpenOCD"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "west is the meta-tool: a multi-repo workspace manager driven by the manifest (`west init` / `west update`), plus a command runner. `west build` is a *wrapper around* CMake (and Ninja), not a replacement. Because the manifest pins every dependency, committing `west.yml` makes the whole firmware's dependency tree reproducible."
+  },
+  {
+    "type": "single",
+    "q": "What's the difference between `depends on` and `select` in Kconfig?",
+    "options": [
+      "They are synonyms; `select` is just the newer spelling",
+      "`depends on X` means this symbol can only be enabled if X is; `select X` forces X on whenever this symbol is on (even overriding X's own dependencies)",
+      "`depends on` is evaluated at runtime, `select` at build time",
+      "`select` makes a symbol user-visible in menuconfig, `depends on` hides it"
+    ],
+    "answer": 1,
+    "explain": "`depends on` is a precondition: when it's false, the symbol is forced to `n`. `select` is a push: turning this symbol on turns the selected one on too. `select` ignores the selected symbol's own dependencies, which can create broken configurations, so it's mostly used for small library-like symbols (e.g. a sensor driver selecting `I2C`). Both are evaluated at build time. Kconfig has no runtime component."
+  },
+  {
+    "type": "single",
+    "q": "Your team ships the same app on two boards and wants a debug variant with logging and asserts. Which layout is idiomatic Zephyr?",
+    "options": [
+      "Edit `build/zephyr/.config` by hand for each variant",
+      "Copy the board's `.dts` into the app and edit it per variant",
+      "`prj.conf` for the common config, `boards/<board>.overlay` + `boards/<board>.conf` per board, and a `debug.conf` fragment added with `-DEXTRA_CONF_FILE=debug.conf`",
+      "Use `#ifdef DEBUG` everywhere and pass `-DDEBUG` to gcc"
+    ],
+    "answer": 2,
+    "explain": "Layering is the Zephyr way: common Kconfig in `prj.conf`, per-board hardware and config next to it in `boards/`, and build-variant fragments on the command line. CI can then build the matrix. `.config` is regenerated on every build, so hand edits vanish. Forking the board `.dts` stops you from getting upstream fixes. Ad-hoc `-D` flags bypass Kconfig, so subsystems (logging, asserts) never get configured."
+  }
+]

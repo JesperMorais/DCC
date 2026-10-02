@@ -1,0 +1,11 @@
+{
+  "title": "Checkout text cleanup",
+  "level": 1,
+  "estMinutes": 10,
+  "topics": ["strings", "string indexing", "string methods"],
+  "hints": [
+    "Every string method returns a **new** string, so chain them: `title.trim().toLowerCase()…`. Annotate each parameter as `string`.",
+    "`slugify`: trim, lowercase, then `replaceAll(\" \", \"-\")`. `maskCard`: take the last four with `slice(-4)`, then fill the front with `*` up to the original length; `padStart(length, \"*\")` does exactly that. `isPdf`: lowercase first, then `endsWith`.",
+    "function maskCard(card: string): string { return card.slice(-4).padStart(card.length, \"*\"); }  ·  slugify returns `title.trim().toLowerCase().replaceAll(\" \", \"-\")`  ·  isPdf returns `filename.toLowerCase().endsWith(\".pdf\")`."
+  ]
+}

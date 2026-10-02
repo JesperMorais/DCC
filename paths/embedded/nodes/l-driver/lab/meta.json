@@ -1,0 +1,11 @@
+{
+  "title": "/dev/sensor: a ring-buffer character driver",
+  "profile": "linux",
+  "estMinutes": 15,
+  "topics": ["file_operations", "copy_to_user", "private_data", "-EAGAIN", "ioctl"],
+  "hints": [
+    "`open` does three things: reject any minor except 0 (`-ENODEV`), `kzalloc` a `struct sensor_reader` (`-ENOMEM` if that returns NULL), and store it in `filp->private_data` with `dev = &sensor0`. `release` is just `kfree(filp->private_data)`. Every other op starts from `struct sensor_reader *r = filp->private_data;`.",
+    "`read` checks things in this order: `count < sizeof(struct sensor_sample)` gives `-EINVAL`. Then `while (dev->count == 0)`: with `O_NONBLOCK` in `filp->f_flags` return `-EAGAIN`, otherwise `rc = wait_for_samples()` and return `rc` if it's non-zero. Then `n = min(count / sizeof sample, dev->count)`, which counts whole samples only.",
+    "Copy the `n` samples out of the ring into a local `struct sensor_sample out[SENSOR_RING]`, then do **one** `copy_to_user(buf, out, n * sizeof out[0])`. If it returns non-zero, `return -EFAULT` *before* you touch `head`/`count`, so nothing is lost. Only after a successful copy should you advance `head`, decrement `count`, add `n` to `r->samples_read` and return the byte count. In `ioctl`, `SENSOR_IOC_COUNT` is `copy_to_user((void __user *)arg, &n, sizeof n) ? -EFAULT : 0`, and an unknown `cmd` gives `-ENOTTY`."
+  ]
+}

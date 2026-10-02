@@ -1,0 +1,387 @@
+{
+  "id": "typescript",
+  "title": "TypeScript",
+  "language": "typescript",
+  "tagline": "From your first typed function to generics and mapped types. Your dailies show what's shaky, and the tree is where you fix it.",
+  "sections": [
+    {
+      "id": "fundamentals",
+      "title": "Fundamentals",
+      "color": "#3987e5",
+      "blurb": "Values, decisions, loops, arrays and objects: the everyday building blocks."
+    },
+    {
+      "id": "core",
+      "title": "Core TypeScript",
+      "color": "#2fa36b",
+      "blurb": "Interfaces, unions and narrowing: describing real data and letting the compiler check it."
+    },
+    {
+      "id": "generics",
+      "title": "Generics & type tools",
+      "color": "#8a5cf6",
+      "blurb": "Code that works for any type without losing it: generics, constraints, keyof and mapped types."
+    }
+  ],
+  "ranks": [
+    {
+      "xp": 0,
+      "title": "Hello, World",
+      "blurb": "Your first typed function. Everyone starts here."
+    },
+    {
+      "xp": 300,
+      "title": "Type Annotator",
+      "blurb": "Values, loops and arrays, with types on everything."
+    },
+    {
+      "xp": 800,
+      "title": "Shape Shifter",
+      "blurb": "Interfaces and unions describe your data."
+    },
+    {
+      "xp": 1300,
+      "title": "Narrowing Ninja",
+      "blurb": "The compiler knows what you know."
+    },
+    {
+      "xp": 1900,
+      "title": "Generic Wizard",
+      "blurb": "One function, any type, nothing lost."
+    },
+    {
+      "xp": 2600,
+      "title": "Type Alchemist",
+      "blurb": "You build new types out of old ones."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "f-values",
+      "section": "fundamentals",
+      "row": 0,
+      "col": 0,
+      "kind": "lab",
+      "title": "Values, types & functions",
+      "requires": [],
+      "covers": [
+        "variables",
+        "type annotations",
+        "numbers",
+        "arithmetic",
+        "remainder operator",
+        "functions"
+      ]
+    },
+    {
+      "id": "f-strings",
+      "section": "fundamentals",
+      "row": 1,
+      "col": -1,
+      "kind": "lab",
+      "title": "Strings",
+      "requires": [
+        "f-values"
+      ],
+      "covers": [
+        "strings",
+        "string indexing",
+        "string methods"
+      ]
+    },
+    {
+      "id": "f-decisions",
+      "section": "fundamentals",
+      "row": 1,
+      "col": 1,
+      "kind": "lab",
+      "title": "Decisions",
+      "requires": [
+        "f-values"
+      ],
+      "covers": [
+        "if/else",
+        "if/else chains",
+        "comparison",
+        "logical operators",
+        "booleans"
+      ]
+    },
+    {
+      "id": "f-loops",
+      "section": "fundamentals",
+      "row": 2,
+      "col": 0,
+      "kind": "lab",
+      "title": "Loops",
+      "requires": [
+        "f-strings",
+        "f-decisions"
+      ],
+      "covers": [
+        "for loops",
+        "for...of",
+        "accumulator"
+      ]
+    },
+    {
+      "id": "f-arrays",
+      "section": "fundamentals",
+      "row": 3,
+      "col": -1,
+      "kind": "lab",
+      "title": "Arrays without mutation",
+      "requires": [
+        "f-loops"
+      ],
+      "covers": [
+        "arrays",
+        "includes",
+        "indexOf",
+        "spread",
+        "slice",
+        "immutability"
+      ]
+    },
+    {
+      "id": "f-objects",
+      "section": "fundamentals",
+      "row": 3,
+      "col": 1,
+      "kind": "lab",
+      "title": "Objects & type aliases",
+      "requires": [
+        "f-loops"
+      ],
+      "covers": [
+        "objects",
+        "type aliases",
+        "object types",
+        "literal union types"
+      ]
+    },
+    {
+      "id": "f-callbacks",
+      "section": "fundamentals",
+      "row": 4,
+      "col": -1,
+      "kind": "lab",
+      "title": "Arrow functions, map & filter",
+      "requires": [
+        "f-arrays"
+      ],
+      "covers": [
+        "map",
+        "filter",
+        "arrow functions",
+        "callbacks"
+      ]
+    },
+    {
+      "id": "f-boss",
+      "section": "fundamentals",
+      "row": 5,
+      "col": 0,
+      "kind": "boss",
+      "title": "Boss: the grade book",
+      "requires": [
+        "f-callbacks",
+        "f-objects"
+      ],
+      "covers": []
+    },
+    {
+      "id": "c-interfaces",
+      "section": "core",
+      "row": 6.4,
+      "col": -1,
+      "kind": "lab",
+      "title": "Interfaces & optional properties",
+      "requires": [
+        "f-boss"
+      ],
+      "covers": [
+        "interfaces",
+        "optional properties",
+        "nullish coalescing",
+        "object spread"
+      ]
+    },
+    {
+      "id": "c-unions",
+      "section": "core",
+      "row": 6.4,
+      "col": 1,
+      "kind": "lab",
+      "title": "Unions & narrowing",
+      "requires": [
+        "f-boss"
+      ],
+      "covers": [
+        "union types",
+        "literal unions",
+        "typeof narrowing",
+        "in narrowing",
+        "narrowing"
+      ]
+    },
+    {
+      "id": "c-pipelines",
+      "section": "core",
+      "row": 7.4,
+      "col": -1,
+      "kind": "lab",
+      "title": "reduce & data pipelines",
+      "requires": [
+        "c-interfaces"
+      ],
+      "covers": [
+        "reduce",
+        "filter/sort/map pipelines",
+        "readonly arrays",
+        "number formatting"
+      ]
+    },
+    {
+      "id": "c-tuples",
+      "section": "core",
+      "row": 7.4,
+      "col": 1,
+      "kind": "lab",
+      "title": "Tuples & return types",
+      "requires": [
+        "c-unions"
+      ],
+      "covers": [
+        "tuples",
+        "return types"
+      ]
+    },
+    {
+      "id": "c-records",
+      "section": "core",
+      "row": 8.4,
+      "col": 0,
+      "kind": "lab",
+      "title": "Records, Maps & Sets",
+      "requires": [
+        "c-pipelines",
+        "c-tuples"
+      ],
+      "covers": [
+        "Record",
+        "objects as maps",
+        "Map",
+        "Set",
+        "regular expressions",
+        "string parsing"
+      ]
+    },
+    {
+      "id": "c-boss",
+      "section": "core",
+      "row": 9.4,
+      "col": 0,
+      "kind": "boss",
+      "title": "Boss: the log analyser",
+      "requires": [
+        "c-records"
+      ],
+      "covers": []
+    },
+    {
+      "id": "g-generics",
+      "section": "generics",
+      "row": 10.8,
+      "col": -1,
+      "kind": "lab",
+      "title": "Generics",
+      "requires": [
+        "c-boss"
+      ],
+      "covers": [
+        "generics"
+      ]
+    },
+    {
+      "id": "g-discriminated",
+      "section": "generics",
+      "row": 10.8,
+      "col": 1,
+      "kind": "lab",
+      "title": "Discriminated unions & never",
+      "requires": [
+        "c-boss"
+      ],
+      "covers": [
+        "discriminated unions",
+        "exhaustive switch",
+        "never"
+      ]
+    },
+    {
+      "id": "g-constraints",
+      "section": "generics",
+      "row": 11.8,
+      "col": -1,
+      "kind": "lab",
+      "title": "Generic constraints & keyof",
+      "requires": [
+        "g-generics"
+      ],
+      "covers": [
+        "generic constraints",
+        "keyof",
+        "indexed access types"
+      ]
+    },
+    {
+      "id": "g-classes",
+      "section": "generics",
+      "row": 11.8,
+      "col": 1,
+      "kind": "lab",
+      "title": "Classes & errors",
+      "requires": [
+        "g-generics"
+      ],
+      "covers": [
+        "classes",
+        "private fields",
+        "errors"
+      ]
+    },
+    {
+      "id": "g-utility",
+      "section": "generics",
+      "row": 12.8,
+      "col": -1,
+      "kind": "lab",
+      "title": "Utility & mapped types",
+      "requires": [
+        "g-constraints"
+      ],
+      "covers": [
+        "utility types",
+        "Partial",
+        "Omit",
+        "mapped types",
+        "modifiers"
+      ]
+    },
+    {
+      "id": "g-boss",
+      "section": "generics",
+      "row": 13.8,
+      "col": 0,
+      "kind": "boss",
+      "title": "Boss: the typed store",
+      "requires": [
+        "g-utility",
+        "g-discriminated",
+        "g-classes"
+      ],
+      "covers": []
+    }
+  ]
+}

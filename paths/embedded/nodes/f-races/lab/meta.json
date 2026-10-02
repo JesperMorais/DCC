@@ -1,0 +1,11 @@
+{
+  "title": "Three races in the shipped firmware",
+  "profile": "embedded",
+  "estMinutes": 15,
+  "topics": ["race conditions", "critical sections", "interrupts", "torn reads"],
+  "hints": [
+    "Each function's read and write sit on either side of `interrupt_window()`, and that's the race. Put the *whole* read…window…write sequence inside one critical section, `__disable_irq()` … `__enable_irq()`. The interrupt isn't lost: it's held pending and runs when you re-enable.",
+    "Two tests go further. One checks that interrupts are back **on** afterwards. The other calls your functions while the caller has already disabled interrupts, and checks that they're still **off** afterwards. Write a pair of helpers: `static bool irq_save(void) { bool was = dts_irq_enabled(); __disable_irq(); return was; }` and `static void irq_restore(bool was) { if (was) __enable_irq(); }`.",
+    "`uint64_t uptime_ticks(void) { bool s = irq_save(); uint32_t lo = ticks_lo; interrupt_window(); uint32_t hi = ticks_hi; irq_restore(s); return ((uint64_t)hi << 32) | lo; }`. Use the same shape in `events_take` (around `ev = pending_events; window; pending_events = 0;`) and in `events_clear` (around the read, window and masked write). Keep the critical sections that small, with nothing else inside."
+  ]
+}

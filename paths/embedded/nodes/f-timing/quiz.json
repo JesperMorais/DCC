@@ -1,0 +1,42 @@
+[
+  {
+    "type": "single",
+    "q": "Predict the timeline. This task starts at tick 0. At which tick does it take its **4th** sample?",
+    "code": "for (;;) {\n    sample();          // zero time\n    rtos_busy(3);      // 3 ticks of filtering\n    rtos_delay(10);\n}",
+    "options": ["30", "33", "39", "40"],
+    "answer": 2,
+    "explain": "Each iteration takes 3 ticks of work **plus** 10 ticks of delay, so the samples are 13 ticks apart: 0, 13, 26, **39**. That's drift: 3 ticks lost every period, forever. 30 is what you wanted (and what `rtos_delay_until` gives you). 33 would mean the work is only counted once, and 40 would be one period too many."
+  },
+  {
+    "type": "number",
+    "q": "A sampler uses `rtos_delay(10)` after 2 ticks of work, so it really runs every 12 ticks instead of 10. How many samples does it **lose** compared to a drift-free 10-tick sampler over one minute (60 000 ticks)?",
+    "answer": 1000,
+    "tolerance": 1,
+    "unit": "samples",
+    "explain": "Drift-free: 60 000 / 10 = 6000 samples. Drifting: 60 000 / 12 = 5000 samples. You lose **1000 samples a minute**, about 17 %. A unit test that runs for 50 ticks will never notice."
+  },
+  {
+    "type": "single",
+    "q": "With `rtos_delay_until(&next, 10)` and the grid at 0, 10, 20, ..., the iteration released at tick 20 overruns and finishes at tick 34. What happens next?",
+    "options": [
+      "The task sleeps until 44, so the grid moves to 34 + 10",
+      "The release at 30 has already passed, so it runs again immediately at 34, then sleeps until 40",
+      "The kernel kills the task for missing its deadline",
+      "It sleeps until 50, skipping both 30 and 40"
+    ],
+    "answer": 1,
+    "explain": "`delay_until` advances `next` to 30, sees that 30 is in the past and returns at once (an *overrun*). That late iteration runs at 34, then the task sleeps until 40, **back on the original grid**. Option A is re-anchoring, which is drift. An RTOS doesn't kill tasks for lateness (that's your job, with a watchdog or overrun counter). Option D would be a *skip* policy, which you'd have to write yourself."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are **jitter** rather than **drift**? (Select all that apply.)",
+    "options": [
+      "A higher-priority ISR delays one sample by 3 ticks, and the next is on time",
+      "Every sample is 2 ticks later than the one before",
+      "Samples land anywhere from 0 to 1 tick after their ideal time, because of tick quantisation",
+      "After a sensor glitch the code does `next = rtos_now()`, and all later samples shift by 7 ticks"
+    ],
+    "answer": [0, 2],
+    "explain": "Jitter is a **bounded** deviation of individual releases, and the grid survives it (options A and C). Drift **accumulates**: option B loses 2 ticks per period, and option D re-anchors the grid so the error becomes permanent. That's drift, just in one step instead of many."
+  }
+]

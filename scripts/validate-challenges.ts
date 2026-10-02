@@ -4,16 +4,17 @@
 //  - the starter compiles/parses on its own but does NOT pass (so the tests test something)
 // usage: npm run validate [-- filter ...]   e.g. `-- python/ c/l3`
 import { loadChallenges, LEVEL_BANDS, type Challenge } from "../server/challenges.ts";
+import { loadPaths } from "../server/paths.ts";
 import { runChallenge } from "../server/runner/index.ts";
 
 const only = process.argv.slice(2);
-const all = loadChallenges().filter((c) => only.length === 0 || only.some((o) => c.id.includes(o)));
+const all = [...loadChallenges(), ...loadPaths().labs].filter((c) => only.length === 0 || only.some((o) => c.id.includes(o)));
 
 async function check(c: Challenge): Promise<string[]> {
   const problems: string[] = [];
   const band = LEVEL_BANDS[c.level];
   if (!band) problems.push(`invalid level ${c.level}`);
-  else if (c.rating < band[0] || c.rating > band[1]) problems.push(`rating ${c.rating} outside level ${c.level} band ${band.join("–")}`);
+  else if (c.bank !== "path" && (c.rating < band[0] || c.rating > band[1])) problems.push(`rating ${c.rating} outside level ${c.level} band ${band.join("–")}`);
   if (!c.title || !c.topics?.length || !c.hints?.length) problems.push("missing title/topics/hints");
   if (c.hints && c.hints.length < 2) problems.push("want at least 2 hints");
   if (!c.learn.trim() || !c.prompt.trim()) problems.push("empty prompt.md or learn.md");
@@ -22,7 +23,7 @@ async function check(c: Challenge): Promise<string[]> {
   if (c.language === "c" && /\bint\s+main\s*\(/.test(c.starter + c.solution)) problems.push("starter/solution must not define main()");
   if (c.language === "python" && /^\s*(from\s+\S+\s+)?import\s+(pytest|unittest)\b/m.test(c.tests)) problems.push("tests use the built-in harness (raises/approx), not pytest imports");
 
-  const sol = await runChallenge(c.language, c.solution, c.tests, c.mode);
+  const sol = await runChallenge(c.language, c.solution, c.tests, c.mode, c.profile);
   if (!sol.passed) {
     problems.push("reference solution FAILS");
     for (const e of sol.diagnostics.filter((d) => d.severity === "error")) problems.push(`  ${e.tool} [${e.file}:${e.line}] ${e.message}`);
@@ -33,7 +34,7 @@ async function check(c: Challenge): Promise<string[]> {
   for (const w of warnings) problems.push(`solution warning ${w.tool} [${w.file}:${w.line}] ${w.message}`);
   if (c.mode === "runtime" && sol.passed && sol.tests.length < 3) problems.push(`only ${sol.tests.length} tests (want ≥3)`);
 
-  const start = await runChallenge(c.language, c.starter, c.tests, c.mode);
+  const start = await runChallenge(c.language, c.starter, c.tests, c.mode, c.profile);
   if (start.passed) problems.push("starter code already passes — tests are too weak");
   const starterErrors = start.diagnostics.filter((e) => e.file === "your-code" && e.severity === "error");
   if (starterErrors.length) problems.push(`starter has errors: ${starterErrors.map((e) => e.message).join("; ")}`);

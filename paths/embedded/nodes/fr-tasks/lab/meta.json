@@ -1,0 +1,11 @@
+{
+  "title": "Port the conveyor controller to FreeRTOS",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["freertos", "xTaskCreate", "priorities", "vTaskDelete"],
+  "hints": [
+    "Write it as `xTaskCreate(fn, \"name\", depth_in_words, param, priority, &handle)`. A bytes budget of 1024 becomes 1024 / sizeof(StackType_t) = 256 words.",
+    "Any strictly decreasing set of numbers in 1..7 works, for example boot 7, estop 5, sensor 3, logger 1. Leave 0 for the idle task. In the sensor, cast the parameter back: `sensor_cfg_t *cfg = pvParameters;`.",
+    "Boot ends with `g_boot_done = true; vTaskDelete(NULL);`. Sensor loops on `vSimulateWork(2); cfg->samples++; vTaskDelay(pdMS_TO_TICKS(cfg->period_ms));`. In app_main, write `if (xTaskCreate(sensor_task, \"sensor\", 256, &g_sensor_cfg, 3, &g_sensor_handle) != pdPASS) return pdFAIL;` and the same for the others."
+  ]
+}

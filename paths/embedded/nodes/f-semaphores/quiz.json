@@ -1,0 +1,48 @@
+[
+  {
+    "type": "single",
+    "q": "Which bug is this? The handler task has priority 1. A busy UI task runs at priority 2. Frames are never lost, but the handler only ever runs while the UI is waiting for its display DMA, sometimes 40 ms after the interrupt.",
+    "code": "void rx_isr(void) { rtos_sem_give(rx_sem); }\nvoid rx_task(void *a) {\n    for (;;) { rtos_sem_take(rx_sem, RTOS_WAIT_FOREVER); parse(); }\n}\n// rtos_task_create(\"rx\", rx_task, NULL, 1);",
+    "options": [
+      "The semaphore should be binary",
+      "The handler's priority is too low: deferring work out of the ISR doesn't mean making it wait. It should be above the UI",
+      "`rtos_sem_give` isn't ISR-safe",
+      "The ISR should call `parse()` itself"
+    ],
+    "answer": 1,
+    "explain": "The give makes `rx` ready, but a ready priority-1 task doesn't run while a priority-2 task wants the CPU. Raise the handler above the UI and it runs on the same tick as the interrupt. A binary semaphore would make things *worse* (lost frames). Give *is* ISR-safe, which is the whole point. Parsing in the ISR would freeze the scheduler for the whole parse."
+  },
+  {
+    "type": "number",
+    "q": "Frames arrive at ticks 0, 1, 2, 3, 4, 5 (six interrupts). Each give goes to a **binary** semaphore, and the handler (highest priority, waiting at tick 0) needs **3 ticks** per frame. How many frames get parsed?",
+    "answer": 3,
+    "tolerance": 0,
+    "unit": "frames",
+    "explain": "Tick 0: the token is handed straight to the waiting handler (frame 1, busy 0–2). Tick 1: count = 1. Tick 2: count is already 1, so this give is lost. Tick 3: the handler finishes and frame 4's give arrives at the same boundary. The count is still 1, so it's lost, and then the handler takes (count 0). Tick 4: count = 1. Tick 5: lost. The handler parses frames 1, 2 and 5, so **3 of 6**. With a counting semaphore (max ≥ 6), all 6 are parsed."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are fine to do **inside an ISR**? (Select all that apply.)",
+    "options": [
+      "Read the peripheral's data register and clear its interrupt flag",
+      "`rtos_sem_give(sem)` to wake a handler task",
+      "`rtos_sem_take(sem, 10)` to wait for the DMA to finish",
+      "Run a 2 KB CRC over the received frame",
+      "Lock a mutex to update the shared config"
+    ],
+    "answer": [0, 1],
+    "explain": "An ISR should do the minimum the hardware needs (read, clear) and then **signal**. Give never blocks, so it's ISR-safe. `take` with a timeout and mutex locks may block, and an ISR has no task context to put to sleep. A long CRC is legal, but it freezes every task, so defer it to the handler."
+  },
+  {
+    "type": "single",
+    "q": "When is a **binary** semaphore the right choice for an ISR → task signal?",
+    "options": [
+      "Never: always use a counting semaphore",
+      "When each give carries one event that must be processed exactly once",
+      "When the task drains the source completely on each wake-up (e.g. empties the UART FIFO in a loop), so a lost give doesn't matter",
+      "When the ISR needs to pass the received byte to the task"
+    ],
+    "answer": 2,
+    "explain": "A binary semaphore means \"there is work\". If the handler loops until the hardware FIFO is empty, one wake-up covers any number of pending interrupts, and coalescing gives is a feature. When each give is one event (option B), you need counting. Passing data (option D) needs a queue. Semaphores carry no payload."
+  }
+]

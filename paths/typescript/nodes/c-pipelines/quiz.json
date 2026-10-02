@@ -1,0 +1,43 @@
+[
+  {
+    "type": "single",
+    "q": "What does this print?",
+    "code": "const prices = [30, 5, 12];\nconst sorted = prices.sort((a, b) => a - b);\nconsole.log(prices);",
+    "options": ["`[5, 12, 30]`", "`[30, 5, 12]`", "`[30, 12, 5]`", "It throws, because `prices` is a `const`"],
+    "answer": 0,
+    "explain": "`sort` sorts the array **in place** and returns that same array, so `sorted` and `prices` are the same array, now `[5, 12, 30]`. To keep the original, sort a copy: `[...prices].sort(...)` or `prices.toSorted(...)`. `const` only stops you reassigning the variable. It doesn't freeze the array's contents."
+  },
+  {
+    "type": "multi",
+    "q": "`function f(items: readonly number[])`. Which lines compile inside `f`? Select all that apply.",
+    "options": [
+      "`items.filter((n) => n > 0)`",
+      "`items.sort((a, b) => a - b)`",
+      "`[...items].sort((a, b) => a - b)`",
+      "`items.push(4)`",
+      "`items.map((n) => n.toFixed(2))`"
+    ],
+    "answer": [0, 2, 4],
+    "explain": "A `readonly` array type keeps only the methods that **don't** change the array. `filter` and `map` return new arrays, so they're fine. `sort` and `push` mutate, so they're removed from the type. `[...items]` makes a fresh, normal array, and sorting that is allowed."
+  },
+  {
+    "type": "single",
+    "q": "Why does this fail to compile?",
+    "code": "const stats = orders.reduce(\n  (acc, o) => ({ count: acc.count + 1, biggest: o.amount }),\n  { count: 0, biggest: null },\n);",
+    "options": [
+      "The accumulator's type is inferred from the start value, so `biggest` is typed `null` and a number can't go there",
+      "`reduce` can only return numbers",
+      "The start value must be the first item of the array",
+      "You can't return an object literal from an arrow function"
+    ],
+    "answer": 0,
+    "explain": "TypeScript infers the accumulator from the starting value `{ count: 0, biggest: null }`, so `biggest` has type `null`. The fix is to give the accumulator a type: `orders.reduce<Stats>(…, { count: 0, biggest: null })` with `biggest: number | null` in `Stats`. `reduce` can return anything, and object literals work fine from arrow functions when wrapped in parentheses, as here."
+  },
+  {
+    "type": "single",
+    "q": "`const avg = 37 / 3;` is `12.333333333333334`. What does `avg.toFixed(1)` return?",
+    "options": ["The string `\"12.3\"`", "The number `12.3`", "The string `\"12.4\"`", "The number `12`"],
+    "answer": 0,
+    "explain": "`toFixed` returns a **string** with exactly that many decimals, rounded: `\"12.3\"`. That's why you format at the end of a pipeline: once it's a string, `+` concatenates instead of adding."
+  }
+]

@@ -21,21 +21,27 @@ interface Proc {
   stdout: string;
   stderr: string;
   fd3: string;
+  fd4: string;
   timedOut: boolean;
 }
 
-export function runProcess(cmd: string, args: string[], opts: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; fd3?: boolean } = {}) {
+export function runProcess(
+  cmd: string,
+  args: string[],
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; fd3?: boolean; fd4?: boolean } = {},
+) {
   return new Promise<Proc>((resolve) => {
     const child = spawn(cmd, args, {
       cwd: opts.cwd,
       env: opts.env ?? process.env,
-      stdio: opts.fd3 ? ["ignore", "pipe", "pipe", "pipe"] : ["ignore", "pipe", "pipe"],
+      stdio: opts.fd4 ? ["ignore", "pipe", "pipe", "pipe", "pipe"] : opts.fd3 ? ["ignore", "pipe", "pipe", "pipe"] : ["ignore", "pipe", "pipe"],
     });
-    const chunks = { stdout: "", stderr: "", fd3: "" };
+    const chunks = { stdout: "", stderr: "", fd3: "", fd4: "" };
     const cap = 256 * 1024;
     child.stdout!.on("data", (d) => chunks.stdout.length < cap && (chunks.stdout += d));
     child.stderr!.on("data", (d) => chunks.stderr.length < cap && (chunks.stderr += d));
-    if (opts.fd3) (child.stdio[3] as NodeJS.ReadableStream).on("data", (d) => (chunks.fd3 += d));
+    if (opts.fd3 || opts.fd4) (child.stdio[3] as NodeJS.ReadableStream).on("data", (d) => (chunks.fd3 += d));
+    if (opts.fd4) (child.stdio[4] as NodeJS.ReadableStream).on("data", (d) => chunks.fd4.length < 4 * 1024 * 1024 && (chunks.fd4 += d));
     let timedOut = false;
     const t = setTimeout(() => {
       timedOut = true;
@@ -47,7 +53,7 @@ export function runProcess(cmd: string, args: string[], opts: { cwd?: string; en
     });
     child.on("error", (err) => {
       clearTimeout(t);
-      resolve({ code: -1, signal: null, stdout: "", stderr: String(err.message), fd3: "", timedOut });
+      resolve({ code: -1, signal: null, stdout: "", stderr: String(err.message), fd3: "", fd4: "", timedOut });
     });
   });
 }

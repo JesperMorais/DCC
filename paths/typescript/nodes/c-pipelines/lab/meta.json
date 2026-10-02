@@ -1,0 +1,11 @@
+{
+  "title": "Race results",
+  "level": 3,
+  "estMinutes": 12,
+  "topics": ["reduce", "filter/sort/map pipelines", "readonly arrays", "number formatting"],
+  "hints": [
+    "`runs` is `readonly`, so the compiler won't let you call `sort` on it. That's the point: build new arrays with `filter`, sort a copy, then `slice` and `map`.",
+    "`podium`: `runs.filter((r) => r.finished)`, then `.sort((a, b) => a.seconds - b.seconds)` (filter already made a copy), then `.slice(0, 3)` and `.map((r, i) => ...)`, using `r.seconds.toFixed(2)`. `raceStats`: `reduce<Acc>` over the runs with a start value like `{ finishers: 0, dnf: 0, total: 0 }`, then compute the average at the end.",
+    "const acc = runs.reduce((a, r) => r.finished ? { ...a, finishers: a.finishers + 1, total: a.total + r.seconds } : { ...a, dnf: a.dnf + 1 }, { finishers: 0, dnf: 0, total: 0 }); return { finishers: acc.finishers, dnf: acc.dnf, average: acc.finishers === 0 ? null : acc.total / acc.finishers };"
+  ]
+}

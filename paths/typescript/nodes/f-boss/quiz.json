@@ -1,0 +1,39 @@
+[
+  {
+    "type": "single",
+    "q": "What does `averageOf([])` return?",
+    "code": "function averageOf(scores: number[]): number {\n  let total = 0;\n  for (const s of scores) total += s;\n  return total / scores.length;\n}",
+    "options": ["`NaN`", "`0`", "`undefined`", "It throws a division-by-zero error"],
+    "answer": 0,
+    "explain": "`total` is `0` and `scores.length` is `0`, and in JavaScript `0 / 0` is `NaN` (\"not a number\"). Nothing throws, and the return type still says `number`, because `NaN` *is* a `number`. That's why you check for the empty list first: `if (scores.length === 0) return 0;`."
+  },
+  {
+    "type": "single",
+    "q": "A teacher curves a class by 5 points, and afterwards the *original* spreadsheet shows the curved scores too. Which version caused it?",
+    "code": "// A\nfunction curve(s: Student): Student {\n  for (let i = 0; i < s.scores.length; i++) s.scores[i] += 5;\n  return s;\n}\n\n// B\nfunction curve(s: Student): Student {\n  return { name: s.name, scores: s.scores.map((x) => x + 5) };\n}",
+    "options": [
+      "A, because it writes into the `scores` array it was given",
+      "B, because `map` changes the array in place",
+      "Both, because `Student` objects are always shared",
+      "Neither, because TypeScript copies objects passed to functions"
+    ],
+    "answer": 0,
+    "explain": "Passing an object to a function passes a reference to **the same** object, not a copy. A writes into that shared array, so every holder of it sees the change. B builds a new object with a new array from `map`, and leaves the original alone. TypeScript never copies values for you; types only exist at compile time."
+  },
+  {
+    "type": "multi",
+    "q": "With `type Grade = \"A\" | \"B\" | \"C\" | \"D\" | \"F\"`, which lines are compile errors? Select all that apply.",
+    "code": "const g1: Grade = \"A\";\nconst g2: Grade = \"E\";\nconst g3: Grade = \"a\";\nlet g4: Grade = \"B\";\ng4 = \"F\";",
+    "options": ["`g1`", "`g2`", "`g3`", "`g4 = \"F\"`"],
+    "answer": [1, 2],
+    "explain": "A literal union allows exactly the listed strings, spelled exactly the same. `\"E\"` isn't in the list, and `\"a\"` is a different string from `\"A\"`, because comparison is case-sensitive. Reassigning `g4` to `\"F\"` is fine: it's declared as `Grade`, and `\"F\"` is a `Grade`."
+  },
+  {
+    "type": "single",
+    "q": "Which grade does this give a student whose scores are `[89.94, 90]`?",
+    "code": "const avg = (89.94 + 90) / 2;            // 89.97\nconst shown = Math.round(avg * 10) / 10; // ?\nconst grade = shown >= 90 ? \"A\" : \"B\";",
+    "options": ["`\"A\"`, because `shown` is `90`", "`\"B\"`, because `avg` is below 90", "`\"B\"`, because `Math.round` always rounds down", "It depends on the order of the scores"],
+    "answer": 0,
+    "explain": "`89.97 * 10` is `899.7`, which rounds to `900`, and `900 / 10` is `90`. The grade is picked from the **rounded** number, so it's an A. If you graded with the raw `avg` instead, the report card would show `90` next to a B. Round once, then make every decision from that value. (`Math.round` rounds to the nearest whole number, not down.)"
+  }
+]

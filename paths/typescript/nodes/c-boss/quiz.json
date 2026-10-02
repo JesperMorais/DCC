@@ -1,0 +1,36 @@
+[
+  {
+    "type": "single",
+    "q": "The regex has already checked that the method is one of the four allowed words. Why does `method: m[2]` still not compile as a `Method`?",
+    "code": "type Method = \"GET\" | \"POST\" | \"PUT\" | \"DELETE\";\nconst m = line.match(/^(\\S+) (GET|POST|PUT|DELETE) /);\nif (m) { const req: { method: Method } = { method: m[2] }; }",
+    "options": [
+      "Regex captures are typed `string`. The compiler can't read the pattern, so you assert with `as Method` after the regex has checked it",
+      "`match` returns numbers for capture groups",
+      "`Method` is only available at runtime",
+      "`m[2]` is the whole match, not the second group"
+    ],
+    "answer": 0,
+    "explain": "TypeScript doesn't analyse regular expressions, so every capture is just `string`. Here the regex really does guarantee one of the four words, so `m[2] as Method` is a safe, justified assertion. Types don't exist at runtime, and `m[0]` (not `m[2]`) is the whole match."
+  },
+  {
+    "type": "multi",
+    "q": "Which containers are a good fit for these jobs? Select all that apply.",
+    "options": [
+      "`Record<\"2xx\" | \"3xx\" | \"4xx\" | \"5xx\", number>` for counts per status class",
+      "`Set<string>` for counting distinct paths",
+      "`[path: string, ms: number] | null` for the slowest request",
+      "`string[]` with `includes` for the distinct-path count",
+      "`any` for the report, so it's flexible"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "A `Record` over the literal union guarantees all four buckets exist. A `Set` dedupes for free, and its `.size` is the count. A tuple-or-`null` says \"two values, or nothing\" exactly. A `string[]` with `includes` works, but it gets slower as it grows and you have to remember to check before every push. `any` throws away all the checking you'd want in a tool people rely on at 2 a.m."
+  },
+  {
+    "type": "single",
+    "q": "What is `lines.length`?",
+    "code": "const text = \"09:15:03 GET / 200 5ms\\n\\n09:15:04 GET / 200 7ms\\n\";\nconst lines = text.split(\"\\n\");",
+    "options": ["4", "3", "2", "5"],
+    "answer": 0,
+    "explain": "`split` cuts at **every** `\\n`: the first request, an empty string (the blank line), the second request, and a final empty string after the trailing newline. That's 4. That's why the analyser trims each line and treats empty ones as blank, rather than counting them as unreadable."
+  }
+]

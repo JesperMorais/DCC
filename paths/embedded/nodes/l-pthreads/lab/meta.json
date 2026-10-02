@@ -1,0 +1,11 @@
+{
+  "title": "A bounded queue with a PI mutex and condition variables",
+  "profile": "linux",
+  "estMinutes": 14,
+  "topics": ["pthreads", "condition variables", "spurious wakeups", "PTHREAD_PRIO_INHERIT", "producer/consumer"],
+  "hints": [
+    "Start with `bq_init`. Make a `pthread_mutexattr_t`, call `pthread_mutexattr_setprotocol(&attr, PTHREAD_PRIO_INHERIT)`, then `pthread_mutex_init(&q->lock, &attr)`. Destroy the attr afterwards, because the mutex keeps its own copy. That's the Fundamentals `rtos_mutex_create(true)`, spelled the POSIX way.",
+    "Every operation follows the same shape: lock, **`while`** (the condition isn't true) `pthread_cond_wait(&cv, &lock)`, do the work, signal the *other* condition variable, unlock. The condition is re-checked after every wakeup, because a wakeup only means \"something may have changed\". For `pop` the wait condition is `count == 0 && !closed`, and for `push` it's `count == BQ_CAP && !closed`.",
+    "After the wait loop in `pop`, `if (q->count == 0)` means the queue is closed and drained, so unlock and `return -EPIPE`. Otherwise take `buf[head]`, advance `head = (head + 1) % BQ_CAP`, decrement `count` and `pthread_cond_signal(&q->not_full)`. `push` writes at `(head + count) % BQ_CAP`. `bq_close` sets `closed` under the lock and calls `pthread_cond_broadcast` on **both** condition variables. A plain `signal` would wake only one of the blocked consumers."
+  ]
+}

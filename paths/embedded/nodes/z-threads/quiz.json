@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "Predict the timeline. Both threads exist at boot. At which tick does `ctl` **wake from its sleep** and record the time?",
+    "code": "static void boot_fn(void *a, void *b, void *c) {\n    k_busy_wait(5000);   /* 5 ms of radio init */\n    k_msleep(100);\n}\nstatic void ctl_fn(void *a, void *b, void *c) {\n    k_msleep(1);\n    woke_at = k_uptime_get();\n}\nK_THREAD_DEFINE(boot, 1024, boot_fn, NULL, NULL, NULL, -1, 0, 0);\nK_THREAD_DEFINE(ctl,  1024, ctl_fn,  NULL, NULL, NULL,  0, 0, 0);",
+    "options": ["1", "5", "6", "105"],
+    "answer": 2,
+    "explain": "`boot` (-1) is more urgent **and cooperative**, so it runs first and keeps the CPU through its 5 ms busy-wait. `ctl` doesn't even get to execute its first line until `boot` sleeps at tick 5. Only then does it call `k_msleep(1)`, so it wakes at **6**. Tick 1 assumes `ctl` ran at boot. Tick 5 is when it *starts*, not when it wakes. 105 would mean waiting for `boot`'s sleep to end, but sleeping releases the CPU."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are **cooperative** threads in Zephyr?",
+    "options": [
+      "A thread at priority -1",
+      "A thread at `K_PRIO_COOP(3)`",
+      "A thread at priority 0",
+      "A thread at `K_PRIO_PREEMPT(14)`",
+      "The system workqueue thread (default configuration)"
+    ],
+    "answer": [0, 1, 4],
+    "explain": "Negative priorities are cooperative. `K_PRIO_COOP(x)` expands to `-(CONFIG_NUM_COOP_PRIORITIES - x)`, which is always negative. The system workqueue defaults to -1 (`CONFIG_SYSTEM_WORKQUEUE_PRIORITY`). Priority 0 is the most urgent *preemptible* level (where `main()` runs), and `K_PRIO_PREEMPT(14)` is simply 14, the least urgent preemptible level."
+  },
+  {
+    "type": "single",
+    "q": "A data logger writes 25 ms flash pages. A motor control thread must run within 1 ms of its 10 ms release. Which priority assignment is right?",
+    "options": [
+      "control = 14, logger = 2: control is most important, so it gets the biggest number",
+      "control = 2, logger = K_PRIO_COOP(14): the logger mustn't be interrupted mid-page",
+      "control = 2, logger = 10: both preemptible, control more urgent",
+      "control = 2, logger = 2: time slicing will sort it out"
+    ],
+    "answer": 2,
+    "explain": "Lower number = more urgent, so control gets the smaller number and the long, deadline-free job gets the largest. Option A is the FreeRTOS habit, and in Zephyr it makes control the *least* urgent. Option B makes the logger cooperative: it can't be preempted, so control waits up to 25 ms. (Flash drivers protect their own critical parts; the *thread* doesn't need to be coop.) Option D round-robins at tick granularity, so control can still be a tick late, and it hides your intent."
+  },
+  {
+    "type": "single",
+    "q": "A cooperative thread (-3) calls `k_yield()` while a preemptible thread at priority 5 is ready. What happens?",
+    "options": [
+      "The priority-5 thread runs until it blocks",
+      "The priority-5 thread runs for one tick",
+      "Nothing changes: `k_yield()` only gives way to ready threads of equal or higher urgency, so the coop thread keeps running",
+      "The kernel reports an error: coop threads can't yield"
+    ],
+    "answer": 2,
+    "explain": "`k_yield()` puts the caller at the back of the queue *for its own priority*. Only threads at the same or a more urgent priority can run before it. A preemptible thread at 5 is less urgent than -3, so the coop thread is picked again immediately. To let less urgent threads run, a coop thread must actually sleep or block. That's a classic reason a \"polite\" coop thread still starves the system."
+  }
+]

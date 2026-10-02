@@ -1,0 +1,64 @@
+[
+  {
+    "type": "single",
+    "q": "A 12-hour cyclictest run under load reports `Min: 2  Avg: 5  Max: 412` µs. Your control loop needs every wakeup within 100 µs. What do you conclude?",
+    "options": [
+      "Ship it: the average is 20× better than required",
+      "Not good enough: the bound is the **max**. Find what caused the 412 µs outlier (ftrace/trace-cmd) before you ship",
+      "Run it again for 10 seconds on an idle board to confirm",
+      "Lower the cyclictest priority so the result is more representative"
+    ],
+    "answer": 1,
+    "explain": "Real-time means **bounded worst case**, so the average is irrelevant to a deadline. A single 412 µs wakeup in 12 hours is a single missed 100 µs deadline, and in a servo loop that may be a jerk or a fault trip. Typical culprits are an SMI, a `raw_spinlock` section, a deep C-state, or an IRQ thread running at higher priority. A short idle run hides exactly the rare events you care about. Lowering the priority makes the latency **worse** and measures a different thing."
+  },
+  {
+    "type": "multi",
+    "q": "What does **PREEMPT_RT** change in the kernel? (Select all.)",
+    "options": [
+      "Most interrupt handlers run as schedulable kernel threads with an RT priority",
+      "`spinlock_t` becomes a sleeping, priority-inheriting `rt_mutex`",
+      "It makes the CPU execute instructions faster",
+      "Softirq work moves into threads instead of running wherever it happens to be raised",
+      "It removes the need for `mlockall` in your application"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "PREEMPT_RT is about **preemptibility**: threaded IRQs and softirqs mean your priority-80 thread can outrank the network driver, and sleeping spinlocks remove most of the long non-preemptible sections, with PI built in. It does nothing for raw speed, and throughput usually drops a little. It doesn't change how userspace memory works either: a page fault in your loop still costs as much as before, so `mlockall` and prefaulting are still your job."
+  },
+  {
+    "type": "single",
+    "q": "Your SCHED_FIFO priority-90 thread spins in a busy-wait loop. Every second it mysteriously stops for about 50 ms. Why?",
+    "options": [
+      "The garbage collector",
+      "RT throttling: `sched_rt_runtime_us=950000` per `sched_rt_period_us=1000000` lets RT tasks use at most 95 % of each second",
+      "A priority inversion with a lower-priority thread",
+      "The timer tick is 50 ms"
+    ],
+    "answer": 1,
+    "explain": "**RT throttling** is the kernel's safety net: if RT threads use their 950 ms budget, they're paused for the remaining 50 ms of the period so that normal tasks (your shell, sshd, the watchdog daemon) can run. A busy-spinning RT thread hits it every second. C has no garbage collector. Inversion requires a shared lock, and a spinner doesn't block. Linux ticks are 1–4 ms, and tickless besides. The fix is to **block** (timerfd, clock_nanosleep) instead of spinning, not to disable throttling."
+  },
+  {
+    "type": "single",
+    "q": "Look at the first playground. With `inheritance: false`, why does `control` miss its deadline even though `telemetry` never touches the mutex?",
+    "options": [
+      "`control` has a lower priority than `telemetry`",
+      "`logger` holds the mutex, and `telemetry` preempts `logger`, so `control` waits for the whole of `telemetry`'s 10 ticks: unbounded priority inversion",
+      "The mutex is held by `telemetry`",
+      "SCHED_FIFO time-slices equal priorities"
+    ],
+    "answer": 1,
+    "explain": "This is the Mars Pathfinder pattern in userspace. The high task blocks on a lock that a *low* task holds, and a *medium* task that needs no lock at all keeps the low task from running, so the wait is as long as the medium task's work. **Priority inheritance** (`PTHREAD_PRIO_INHERIT`) temporarily raises `logger` to `control`'s priority, so `telemetry` can't preempt it while it holds the lock. `control` has the *highest* priority, `telemetry` never takes the lock, and FIFO doesn't time-slice at all (that's `SCHED_RR`)."
+  },
+  {
+    "type": "multi",
+    "q": "You're setting up a 2 kHz EtherCAT loop on a 4-core ARM board running PREEMPT_RT. Which steps belong in the plan?",
+    "options": [
+      "`mlockall(MCL_CURRENT | MCL_FUTURE)`, and preallocate and touch all buffers before the loop",
+      "Isolate core 3 (`isolcpus=3 nohz_full=3`, or a cpuset), pin the loop thread there, and move IRQs off it",
+      "Log every cycle with `printf` to the serial console for debugging",
+      "Use absolute-time wakeups (`clock_nanosleep(TIMER_ABSTIME)` or a timerfd) on CLOCK_MONOTONIC",
+      "Run the loop at priority 99, and the Ethernet NIC's IRQ thread at a priority above it"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "Locked memory, an isolated core and an absolute-deadline periodic loop are the core recipe. `printf` to a serial console blocks for milliseconds and can take locks in the tty layer, so hand log data to a normal-priority thread through a ring buffer instead. The last option has the priorities backwards: the NIC's IRQ thread *preempting* your loop adds latency. On the other hand, if the loop depends on that NIC's packets, its IRQ thread must not be starved either. Put it just **below** the loop, at a deliberate priority."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "title": "The UART gatekeeper",
+  "profile": "embedded",
+  "estMinutes": 15,
+  "topics": ["freertos", "queues", "gatekeeper", "timeouts"],
+  "hints": [
+    "A gatekeeper serialises access by design. Only one task ever touches the resource, and everyone else sends it messages. No mutex is needed, because nothing is shared.",
+    "In `log_send`, build `log_msg_t msg = {.source = source};` and copy the text with `snprintf(msg.text, sizeof msg.text, \"%s\", text)`. Then call `xQueueSend(g_log_q, &msg, LOG_SEND_TIMEOUT)`. The queue copies the whole struct. Set `LOG_QUEUE_LEN` to 8.",
+    "The gatekeeper loop is: `log_msg_t msg; xQueueReceive(g_log_q, &msg, portMAX_DELAY); char line[LOG_TEXT_LEN + 4]; snprintf(line, sizeof line, \"%c: %s\", source_letter(msg.source), msg.text); uart_write_line(line);`. In log_send, write `if (xQueueSend(...) != pdPASS) { g_log_dropped++; return pdFAIL; }`."
+  ]
+}

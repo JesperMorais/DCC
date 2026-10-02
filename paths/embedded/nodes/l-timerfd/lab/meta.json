@@ -1,0 +1,11 @@
+{
+  "title": "A drift-free 5 ms control loop",
+  "profile": "linux",
+  "estMinutes": 14,
+  "topics": ["timerfd", "CLOCK_MONOTONIC", "absolute deadlines", "timespec arithmetic", "overruns"],
+  "hints": [
+    "For `ts_add_ns`, split `ns` into whole seconds (`ns / 1000000000`) and the remainder (`ns % 1000000000`), add each to its own field, then fix `tv_nsec` **once**. If it's ≥ 1e9, subtract 1e9 and add a second. If it's < 0, add 1e9 and borrow a second. In C, `%` of a negative number is negative, and that's the case the borrow is for. Do all the arithmetic in `int64_t`.",
+    "The starter's loop sleeps one period **after** the work, so every cycle takes period + work and the schedule drifts. Use a `timerfd_create(CLOCK_MONOTONIC, 0)` timer instead. Arm it with `timerfd_settime(fd, TFD_TIMER_ABSTIME, &spec, NULL)`, where `spec.it_value = now + period` (your `ts_add_ns`) and `spec.it_interval = period`. The kernel then fires on a fixed grid, however long `fn` takes.",
+    "Each cycle, `read(tfd, &expired, sizeof(uint64_t))` blocks until the next tick and returns **how many periods elapsed** since the last read. Normally that's 1, and anything more means you were late. Then `st->expirations += expired; st->overruns += expired - 1; fn(st->cycles, ctx); st->cycles++;`. Finally, `close(tfd)`, including when a call fails."
+  ]
+}

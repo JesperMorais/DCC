@@ -1,0 +1,11 @@
+{
+  "title": "The log analyser",
+  "level": 3,
+  "estMinutes": 20,
+  "topics": ["literal unions", "narrowing", "regular expressions", "Record", "Set", "tuples", "optional properties", "number formatting"],
+  "hints": [
+    "Build it bottom-up. Make `Method` a literal union, then write `statusClass` (four `if`s), then `parseRequest` (one anchored regex with five capture groups), and only then `analyse`, which calls `parseRequest` on each trimmed line.",
+    "Regex: `/^(\\d\\d:\\d\\d:\\d\\d) (GET|POST|PUT|DELETE) (\\/\\S*) ([2-5]\\d\\d) (\\d+)ms$/`. In `analyse`, loop with `text.split(\"\\n\").entries()` so you have the index for line numbers. Keep a running total of `ms`, a `Set` of paths, a `Record` with all four status classes at 0, and a `[path, ms] | null` for the slowest, replacing it only when `req.ms > slowest[1]`.",
+    "for (const [i, raw] of text.split(\"\\n\").entries()) { const line = raw.trim(); if (line === \"\") continue; const req = parseRequest(line); if (!req) { unreadable.push(i + 1); continue; } if (ignored.has(req.path)) continue; requests++; totalMs += req.ms; paths.add(req.path); byStatus[statusClass(req.status)]++; if (slowest === null || req.ms > slowest[1]) slowest = [req.path, req.ms]; }  then averageMs = requests === 0 ? \"n/a\" : (totalMs / requests).toFixed(1)"
+  ]
+}

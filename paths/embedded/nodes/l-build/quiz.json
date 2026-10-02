@@ -1,0 +1,62 @@
+[
+  {
+    "type": "single",
+    "q": "Two projects. (A) a 3-person startup making one smart thermostat with a fixed feature set. (B) a company with 6 boards on NXP i.MX parts, whose vendor ships its BSP as `meta-imx`, and a 10-year support contract. Which build system fits each best?",
+    "options": [
+      "A: Yocto, B: Buildroot",
+      "A: Buildroot, B: Yocto",
+      "Both: Ubuntu from the vendor's SD card image",
+      "Both: Buildroot, because it's simpler"
+    ],
+    "answer": 1,
+    "explain": "**Buildroot** shines when one small team builds one fixed-function image: it's quick to learn, and you can understand all of it. **Yocto** pays off with many boards, vendor BSP *layers* you can plug in directly, SDK generation, package feeds and long maintenance. Swapping them around gives the small team weeks of Yocto learning curve for nothing, and fights the vendor's BSP on the big project. A vendor SDK image is a demo, not a product: it isn't reproducible and you can't audit it."
+  },
+  {
+    "type": "single",
+    "q": "Cross-compiling for an ARM64 board, the link fails with `skipping incompatible /usr/lib/x86_64-linux-gnu/libssl.so when searching for -lssl`. What went wrong?",
+    "options": [
+      "OpenSSL doesn't support ARM",
+      "The cross-compiler is searching the **host's** library paths: the sysroot isn't set, so it never sees the target's libssl",
+      "You need to compile with -m64",
+      "The target board is missing libssl"
+    ],
+    "answer": 1,
+    "explain": "The linker found an **x86-64** library and correctly refused it. It looked in host paths because nobody told it where the target's libraries are: pass `--sysroot=<sdk sysroot>` (the Yocto SDK's environment script sets this up), and make `pkg-config` sysroot-aware too. OpenSSL supports ARM fine. `-m64` selects x86-64, which is the wrong architecture entirely. What the board has installed doesn't matter at build time: linking happens against the sysroot on your machine."
+  },
+  {
+    "type": "multi",
+    "q": "You added a TMP102 node to your board's DTS, but no `hwmon` device appears and `dmesg` says nothing about tmp102. What could explain it? (Select all.)",
+    "options": [
+      "The node says `compatible = \"tmp102\"`, but the driver matches `\"ti,tmp102\"`",
+      "The parent `&i2c2` bus is still `status = \"disabled\"`",
+      "U-Boot is loading a different DTB file from the one you edited",
+      "The I²C address in `reg` is wrong, which makes the driver silently skip probing"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "Binding happens on an **exact `compatible` match**. A mismatch means the driver's `probe()` is never called, and nothing is logged. A disabled parent bus means its children never get devices created. A different DTB from the one you edited is a classic: check the live tree in `/proc/device-tree`. A **wrong `reg`** is different. The driver *does* bind and `probe()` runs, but its first I²C transfer fails, so you'd see a probe error in dmesg (for example `-EREMOTEIO`/`-ENXIO`), not silence."
+  },
+  {
+    "type": "single",
+    "q": "You need to add a kernel patch and a config fragment to the vendor's `linux-imx` recipe. Where does the change belong?",
+    "options": [
+      "Edit `linux-imx_6.6.bb` directly in the vendor's `meta-imx` layer",
+      "In a `linux-imx_%.bbappend` in your own `meta-acme` layer, adding the files to `SRC_URI`",
+      "Patch the kernel source in `tmp/work/…` and rebuild",
+      "Copy the whole recipe into your layer under a new name"
+    ],
+    "answer": 1,
+    "explain": "A **bbappend in your own layer** keeps your change separate. The vendor layer stays pristine, so you can upgrade it, and `%` matches any version. Editing the vendor layer means your change is lost (or conflicts) at the next BSP update. `tmp/work` is a build scratch directory: the next clean build or sstate rebuild wipes it out, and it's not in git. Copying the recipe forks it, so you stop receiving the vendor's fixes."
+  },
+  {
+    "type": "single",
+    "q": "Your product ships with optional plug-in boards (a CAN module or an LTE module). Same base board, same kernel. What's the cleanest way to describe the optional hardware?",
+    "options": [
+      "Build a separate kernel for each combination",
+      "Device tree overlays (`.dtbo`), one per add-on, applied by the bootloader at boot",
+      "Hard-code both modules into the base DTS and let the probes fail",
+      "Detect them in a userspace script and write register values through /dev/mem"
+    ],
+    "answer": 1,
+    "explain": "**Overlays** patch the base tree at boot: U-Boot (or the Pi's firmware) applies `can-module.dtbo` when that board is fitted, which it can detect from an ID EEPROM or a GPIO strap. The kernel doesn't change at all. Separate kernels per combination multiply your test matrix. Describing absent hardware produces probe errors and can drive pins that are floating. Poking `/dev/mem` from userspace bypasses the driver model entirely and is a security hole."
+  }
+]

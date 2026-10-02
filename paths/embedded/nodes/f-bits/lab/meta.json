@@ -1,0 +1,11 @@
+{
+  "title": "The bit toolkit under a GPIO driver",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["bit masks", "shifts", "register fields", "undefined behaviour"],
+  "hints": [
+    "Every single-bit operation starts from the same mask, `1u << bit`. The `u` matters: `1 << 31` shifts into the sign bit of an `int`, and UBSan stops the test. Set is `|`, clear is `& ~`, toggle is `^`, and test is `&` followed by `!= 0`.",
+    "Write one helper, `field_mask(width)`, and build both field functions on it. Get: `(reg >> pos) & mask`. Set: clear the field first with `reg & ~(mask << pos)`, then OR in `(value & mask) << pos`. Treat `width == 32` as a special case, because `1u << 32` is undefined, not zero.",
+    "`static uint32_t field_mask(unsigned w) { return w >= 32 ? 0xFFFFFFFFu : (1u << w) - 1u; }` and then `return (reg & ~(m << pos)) | ((value & m) << pos);`. The pin-mode helpers are one line each: `reg_set_field(moder, pin * 2u, 2u, mode)` and `reg_get_field(moder, pin * 2u, 2u)`."
+  ]
+}

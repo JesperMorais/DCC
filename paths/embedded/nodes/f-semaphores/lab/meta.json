@@ -1,0 +1,11 @@
+{
+  "title": "Lost CAN frames",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["deferred interrupt processing", "binary semaphore", "counting semaphore", "ISR latency"],
+  "hints": [
+    "Run the starter first: the simulator stops it because the ISR burns CPU. Move the work to the task. The ISR should only *signal*. Then look at what happens in a burst.",
+    "The ISR calls `rtos_sem_give(rx_sem)`. One slot (`max = 1`) forgets frames that arrive while the handler is busy, so make it a counting semaphore with room for `MAX_BURST`. Then give the handler a priority above the display (2).",
+    "`void can_rx_isr(void) { rtos_sem_give(rx_sem); }`, `rx_sem = rtos_sem_create(0, MAX_BURST);` and `rtos_task_create(\"can_rx\", can_rx_task, NULL, 3);`"
+  ]
+}

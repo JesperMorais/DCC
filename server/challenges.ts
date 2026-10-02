@@ -20,6 +20,11 @@ export interface ChallengeMeta {
   /** "types" = judged by the TypeScript compiler alone (TypeScript only). */
   mode: Mode;
   hints: string[];
+  /** "daily" = the adaptive daily bank (default); "path" = a skill-tree lab (unrated, not picked as a daily). */
+  bank?: "daily" | "path";
+  /** C build profile: plain C17, the embedded simulator, or Linux userspace. */
+  profile?: "c" | "embedded" | "linux";
+  pathNode?: { path: string; node: string };
 }
 
 export interface Challenge extends ChallengeMeta {

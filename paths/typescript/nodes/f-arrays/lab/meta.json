@@ -1,0 +1,11 @@
+{
+  "title": "Edit the play queue",
+  "level": 2,
+  "estMinutes": 12,
+  "topics": ["arrays", "spread", "slice", "indexOf", "immutability"],
+  "hints": [
+    "Never call `push`, `splice`, `unshift` or `sort` on `queue`. Build a new array with spread (`[...]`) and `slice`, and return it. Typing the parameter as `readonly string[]` makes the compiler enforce this.",
+    "`upNext` is a single `slice`. `playNext`: find the song with `indexOf`; if it's `-1`, return `[song, ...queue]`, otherwise put it in front of everything *except* that index. `moveDown`: if `index` is out of range or the last one, return a copy; otherwise rebuild the array with the two items swapped.",
+    "playNext: `const i = queue.indexOf(song); if (i === -1) return [song, ...queue]; return [song, ...queue.slice(0, i), ...queue.slice(i + 1)];`  ·  moveDown: `return [...queue.slice(0, index), queue[index + 1], queue[index], ...queue.slice(index + 2)];` after the range check."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "title": "UART RX: ISR into a lock-free ring",
+  "profile": "embedded",
+  "estMinutes": 15,
+  "topics": ["interrupts", "ISR", "ring buffers", "UART", "overrun"],
+  "hints": [
+    "Keep two `static volatile uint32_t` indices. The ISR is the only writer of `head` and `uart_read` is the only writer of `tail`. Empty is `head == tail`, and full is `((head + 1) & (RX_BUF_SIZE - 1)) == tail`. In the ISR, first check RXNE (return if it's clear), then read DR, then clear the flags, then push or drop.",
+    "ISR order: `uint32_t sr = USART1->SR; if (!(sr & USART_SR_RXNE)) return; uint8_t b = (uint8_t)USART1->DR;`. If `sr & USART_SR_ORE`, bump the overrun counter. Then clear both flags with `USART1->SR &= ~(USART_SR_RXNE | USART_SR_ORE);`. Do that *before* the full check: even a dropped byte must be acknowledged.",
+    "Push: `uint32_t next = (rx_head + 1) & (RX_BUF_SIZE - 1); if (next == rx_tail) { rx_dropped++; return; } rx_buf[rx_head] = b; rx_head = next;`. Pop: `if (rx_tail == rx_head) return false; *out = rx_buf[rx_tail]; rx_tail = (rx_tail + 1) & (RX_BUF_SIZE - 1); return true;`. Available: `(rx_head - rx_tail) & (RX_BUF_SIZE - 1)`. `uart_init` zeroes all four variables and does `USART1->CR1 |= USART_CR1_UE | USART_CR1_RE | USART_CR1_RXNEIE;`."
+  ]
+}

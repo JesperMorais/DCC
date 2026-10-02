@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "Predict the timeline, with **no** priority inheritance. `low` (prio 1) locks the bus at tick 0 and needs it for 4 ticks. At tick 1, `high` (prio 3) wants the bus. At tick 2, `med` (prio 2) becomes ready with 8 ticks of pure CPU work. When does `high` **get** the bus?",
+    "code": "tick:  0 1 2 3 4 5 6 7 8 9 10 11 12 13\nlow:   L ? ? ...\nhigh:    X\nmed:       ^ ready (8 ticks)",
+    "options": ["Tick 1", "Tick 4", "Tick 12", "Never"],
+    "answer": 2,
+    "explain": "low runs ticks 0 and 1 (high is blocked from 1). At 2, med preempts low and runs 2–9, so low is frozen with the bus. low then runs 10 and 11, finishes its 4 ticks and unlocks, and high gets the bus at **tick 12**. With inheritance, low would run at prio 3 from tick 1, med couldn't cut in, and high would get the bus at tick 4. That's the whole difference between unbounded and bounded inversion."
+  },
+  {
+    "type": "single",
+    "q": "Which bug is this? A FreeRTOS project protects its SPI bus like this. Under load, a high-priority task occasionally misses deadlines by tens of milliseconds while a medium-priority task runs.",
+    "code": "SemaphoreHandle_t spi = xSemaphoreCreateBinary();\nxSemaphoreGive(spi);          // make it \"unlocked\"\n...\nxSemaphoreTake(spi, portMAX_DELAY);\nspi_write(buf, n);\nxSemaphoreGive(spi);",
+    "options": [
+      "Deadlock: two tasks take the semaphore in a different order",
+      "Unbounded priority inversion: a binary semaphore has no owner, so there's no priority inheritance",
+      "The semaphore should be counting",
+      "`xSemaphoreGive` can't be called from a task"
+    ],
+    "answer": 1,
+    "explain": "A binary semaphore works as a lock, but it has no owner, so the kernel can't boost whoever is holding it. Medium-priority tasks can preempt the holder indefinitely. That's Pathfinder all over again. `xSemaphoreCreateMutex()` has an owner and inheritance. It's not a deadlock (it eventually recovers), counting would let two tasks onto the bus at once, and give is fine from tasks."
+  },
+  {
+    "type": "multi",
+    "q": "Priority inheritance is on. Which of these still make the high-priority task wait longer for the mutex? (Select all that apply.)",
+    "options": [
+      "The low task formats a 3 ms log line while holding the mutex",
+      "A medium task that never touches the mutex becomes ready",
+      "The low task takes a second mutex inside the first, and that one is held by another task for 10 ms",
+      "An ISR fires during the critical section"
+    ],
+    "answer": [0, 2, 3],
+    "explain": "Inheritance stops **medium** tasks from cutting in (B is the one it fixes). It can't shorten the critical section itself (A: move the formatting out of the lock), it can't make a nested lock free (C: the wait now includes the second mutex's holder, which is why you avoid nested locks), and ISRs still run above every task (D). Keep the section short, keep it flat, keep ISRs short."
+  },
+  {
+    "type": "single",
+    "q": "Why can a **mutex** offer priority inheritance when a **semaphore** can't?",
+    "options": [
+      "Mutexes are implemented in hardware",
+      "A mutex has an owner: the kernel knows exactly which task to boost while someone important waits",
+      "Semaphores can only be used from ISRs",
+      "Mutexes disable interrupts while held"
+    ],
+    "answer": 1,
+    "explain": "Inheritance means \"boost whoever is holding this\". A semaphore token can be given by anyone (even an ISR), so there's no \"holder\" to boost. A mutex records its owner on lock, and only the owner may unlock, which is also how kernels catch \"unlock from the wrong task\" bugs. Mutexes don't disable interrupts (that's a critical section), and they're a software construct."
+  }
+]

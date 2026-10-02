@@ -1,0 +1,47 @@
+[
+  {
+    "type": "number",
+    "q": "Fixed-priority preemptive scheduling. `control` (priority 3) is released at ticks 0, 10, 20… and runs 2 ticks each time. `logger` (priority 1) becomes ready at tick 0 and needs **10 ticks** of CPU. At which tick does the logger **finish**, meaning the boundary after its last tick of work?",
+    "answer": 14,
+    "tolerance": 0,
+    "unit": "tick",
+    "explain": "Control runs at ticks 0–1. The logger runs 2–9, which is 8 ticks. At tick 10 control is released and **preempts** it (10–11). The logger resumes at 12 and does its last 2 ticks (12–13), finishing at **14**. Its work was split in two, and it never noticed: the kernel saved and restored its context."
+  },
+  {
+    "type": "order",
+    "q": "A tick interrupt wakes a higher-priority task while a low-priority one is running. Put the context-switch steps in order.",
+    "items": [
+      "The tick interrupt fires and the kernel's tick handler runs",
+      "The kernel saves the running task's registers on its stack and stores its stack pointer in its TCB",
+      "The scheduler picks the highest-priority ready task",
+      "The kernel loads that task's stack pointer from its TCB and restores its registers",
+      "Returning from the interrupt lands in the new task, right where it last stopped"
+    ],
+    "explain": "A context switch is \"save everything, pick, restore everything\". Each task's state lives on **its own stack** plus a pointer in its TCB. That's why each task needs its own stack, and why switching costs a microsecond or two rather than nothing. On Cortex-M the hardware stacks half the registers automatically on interrupt entry, and the kernel (in PendSV) does the rest."
+  },
+  {
+    "type": "multi",
+    "q": "The logger runs at the **lowest** priority and waits for the flash with `while (!flash_ready) rtos_busy(1);`. The higher-priority tasks still meet their deadlines. What's still wrong? Select all that apply.",
+    "options": [
+      "The CPU never goes idle, so the MCU can't sleep and the battery drains",
+      "Any task at the logger's priority or below gets no CPU",
+      "CPU-load measurements read about 100%, hiding how much headroom you really have",
+      "The higher-priority tasks will eventually be starved too",
+      "Nothing: low-priority busy-waiting is harmless"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "A busy-waiting task is **running**, not blocked. Higher priorities still preempt it, so they're fine, but it soaks up every spare cycle. The idle task never runs (no `WFI`, no sleep), equal or lower tasks starve, and your load metric is useless. With `rtos_delay(1)` (or better, a semaphore) the task is **blocked** while it waits and costs nothing."
+  },
+  {
+    "type": "single",
+    "q": "A task calls `rtos_delay(50)`. For the next 50 ticks, what state is it in, and how much CPU does it use?",
+    "options": [
+      "Blocked: the scheduler skips it entirely, so it uses no CPU until the delay expires and it becomes Ready",
+      "Ready: it's waiting for its turn, so it uses a little CPU",
+      "Running: it's counting down the ticks",
+      "Suspended: it has to be resumed by another task"
+    ],
+    "answer": 0,
+    "explain": "**Blocked** means waiting for time or an event. The kernel doesn't even consider it when scheduling, and the tick handler just checks its wake-up time. When the delay expires it moves to **Ready**, and it runs as soon as it's the highest-priority ready task. *Ready* means it wants the CPU right now. *Suspended* is a separate, explicit state in some RTOSes that only another call can undo."
+  }
+]

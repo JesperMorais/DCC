@@ -1,0 +1,52 @@
+[
+  {
+    "type": "order",
+    "q": "Put the stages of a typical ARM embedded Linux boot in order, from power-on to your application.",
+    "items": [
+      "Boot ROM reads the boot pins and loads the first stage into on-chip SRAM",
+      "SPL initialises DRAM and loads full U-Boot",
+      "U-Boot runs `bootcmd`: loads the FIT image (kernel + DTB + initramfs)",
+      "The kernel parses the device tree and probes drivers",
+      "The initramfs finds and mounts the real root filesystem",
+      "systemd (PID 1) starts your services"
+    ],
+    "explain": "Each stage exists because the one before it can't do the job alone. The **ROM** is fixed in silicon and only has on-chip SRAM, so it can load just a tiny **SPL**. SPL's main job is bringing up **DRAM**, which full U-Boot needs before it can load. **U-Boot** has the drivers to read filesystems and verify the FIT, so it loads the kernel and **DTB** together. The kernel needs the DTB to know what hardware exists. The **initramfs** (if you have one) runs after the kernel and before the real root, and **init/systemd** comes last, as PID 1."
+  },
+  {
+    "type": "single",
+    "q": "A new board revision prints `Starting kernel ...` and then nothing, ever. U-Boot's hash checks passed. What's the **most likely** cause?",
+    "options": [
+      "The DRAM isn't initialised",
+      "The kernel is booting, but `console=`/`stdout-path` names the wrong UART, or the DTB is for the old revision",
+      "The Boot ROM can't find SPL",
+      "systemd has a failing unit"
+    ],
+    "answer": 1,
+    "explain": "`Starting kernel ...` is **U-Boot's last line**, so everything up to the handoff worked. If DRAM were broken, U-Boot (which runs *from* DRAM) would never have got this far. A missing SPL means a completely silent board. A failing systemd unit happens much later and prints plenty of kernel log first. Silence right after the handoff almost always means the kernel can't talk to you: a wrong `console=` or `stdout-path`, or a missing serial driver. Or it means the kernel crashed very early because the **DTB doesn't match the board**, or a load address clobbered the DTB. Add `earlycon` to bootargs to see the earliest output."
+  },
+  {
+    "type": "multi",
+    "q": "You're cutting boot time on a camera product from 9 s towards 2 s. Which changes actually help?",
+    "options": [
+      "Set `bootdelay=0` and lock the U-Boot environment",
+      "Build the drivers needed for the camera path into the kernel instead of as modules loaded by udev",
+      "Add more systemd units so things start in parallel",
+      "Start the camera service early, with minimal dependencies, before networking and logging",
+      "Use Falcon mode: SPL loads the kernel directly and skips full U-Boot"
+    ],
+    "answer": [0, 1, 3, 4],
+    "explain": "A default `bootdelay` of 2–3 s is free time to win back. Built-in drivers avoid waiting for udev to find and load modules. Ordering the critical service first is how real head units meet the 2 s rule, and Falcon mode removes an entire boot stage. Simply **adding units** doesn't make anything faster: every unit costs time to start and adds dependencies. What helps is *removing* units, or reordering the critical path."
+  },
+  {
+    "type": "single",
+    "q": "Your secure-boot chain verifies SPL, U-Boot and a signed FIT. A pentester still boots their own kernel in 30 seconds. How?",
+    "options": [
+      "They broke RSA-2048",
+      "They interrupted autoboot on the serial console and changed `bootcmd`/`bootargs` (for example `init=/bin/sh`), or loaded an unsigned image",
+      "The Boot ROM doesn't check signatures",
+      "Secure boot only protects the rootfs"
+    ],
+    "answer": 1,
+    "explain": "A chain of trust is only as strong as its **weakest link**, and an interactive U-Boot shell is a huge one. Nobody breaks RSA. ROM verification is the root of the chain, and it worked. The rootfs is actually the stage that's often *not* protected without dm-verity. Production builds disable the console or require a password, use a compiled-in, read-only environment, require signed FIT configurations (`required` key in U-Boot's DTB), and keep `bootargs` inside the signed config."
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "type": "single",
+    "q": "What does this log?",
+    "code": "function addJam(list: string[]): string[] {\n  list.push(\"jam\");\n  return list;\n}\nconst mine = [\"milk\"];\nconst theirs = addJam(mine);\nconsole.log(mine);",
+    "options": [
+      "`[\"milk\", \"jam\"]`",
+      "`[\"milk\"]`",
+      "`2`",
+      "It's a compile error, because `mine` is a `const`"
+    ],
+    "answer": 0,
+    "explain": "`list` is not a copy. It points at the same array as `mine`, so `push` changes the caller's array, and `mine` and `theirs` are the same array. `const` only stops you reassigning `mine`; it doesn't freeze the contents. To leave `mine` alone, return `[...list, \"jam\"]`. (`2` is what `push` itself returns: the new length.)"
+  },
+  {
+    "type": "multi",
+    "q": "`list` is the caller's array. Which of these leave it **unchanged**? Select all that apply.",
+    "options": [
+      "`const next = [...list, \"tea\"];`",
+      "`const part = list.slice(1);`",
+      "`list.splice(1, 1);`",
+      "`const found = list.includes(\"tea\");`",
+      "`list.sort();`"
+    ],
+    "answer": [
+      0,
+      1,
+      3
+    ],
+    "explain": "Spread builds a **new** array, `slice` returns a **new** array, and `includes` only reads. `splice` cuts items out of the original, and `sort` reorders the original in place. Both mutate. If you need a sorted copy, use `[...list].sort()` or `list.toSorted()`."
+  },
+  {
+    "type": "single",
+    "q": "A task says: *\"Return the list without `item`. Don't modify the input.\"* Which solution is right?",
+    "options": [
+      "Find the index, then return `[...list.slice(0, i), ...list.slice(i + 1)]`",
+      "Return `list` unchanged, because removing the item would modify it",
+      "Call `list.splice(i, 1)` and return `list`",
+      "Make `list` a `const` and then call `splice`"
+    ],
+    "answer": 0,
+    "explain": "\"Don't modify the input\" doesn't mean \"don't remove anything\". It means the removal happens in a **new** array that you return, while the caller's array stays as it was. Returning `list` unchanged doesn't do the task. `splice` mutates the input, and `const` doesn't prevent that."
+  },
+  {
+    "type": "single",
+    "q": "What's the bug in this function?",
+    "code": "function without(list: readonly string[], item: string): string[] {\n  const i = list.indexOf(item);\n  return [...list.slice(0, i), ...list.slice(i + 1)];\n}",
+    "options": [
+      "If `item` isn't in the list, `i` is `-1`, and the result is wrong instead of an unchanged copy",
+      "`slice` mutates the readonly list",
+      "`readonly string[]` can't be spread",
+      "There is no bug"
+    ],
+    "answer": 0,
+    "explain": "`indexOf` returns `-1` for a missing item, and negative indices count from the end. For `without([\"a\", \"b\"], \"z\")`: `slice(0, -1)` is `[\"a\"]` and `slice(0)` is `[\"a\", \"b\"]`, so you get `[\"a\", \"a\", \"b\"]`, a duplicated item. Check `i === -1` first and return `[...list]`. The other options are false: `slice` never mutates, and readonly arrays spread fine."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "title": "The motor that stuttered every time it logged",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["K_THREAD_DEFINE", "cooperative threads", "preemptive threads", "Zephyr priorities"],
+  "hints": [
+    "Open the Timeline with the starter. Who is holding the CPU when `control` should wake at tick 10? Is that thread cooperative or preemptive, and what does that mean for anyone who wakes up while it runs?",
+    "Three rules: a long job (25 ms flash writes) must be **preemptible** (priority >= 0) and the least urgent, so give it the biggest number. `control` must be a more urgent preemptible thread, so a smaller number. The radio's 3-step burst must not be split, so either make it cooperative (negative) or make it more urgent than `control`.",
+    "One working set: `#define RADIO_PRIO K_PRIO_COOP(14)` (that's -2), `#define CONTROL_PRIO 2`, `#define LOGGER_PRIO 10`. The radio's 3 ms coop burst delays control by 2 ms at most, which is inside the 3 ms budget."
+  ]
+}

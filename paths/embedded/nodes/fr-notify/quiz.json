@@ -1,0 +1,46 @@
+[
+  {
+    "type": "single",
+    "q": "Three interrupts each call `vTaskNotifyGiveFromISR(worker, &w)` while `worker` is busy. Then the worker reaches this loop. How many times does `handle_event()` run before it blocks again?",
+    "code": "for (;;) {\n    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);\n    handle_event();\n}",
+    "options": ["3", "1", "0", "It depends on the priority of the ISR"],
+    "answer": 1,
+    "explain": "`pdTRUE` returns 3 and **clears** the value to 0. The code ignores the 3 and handles one event, then blocks, because the value is 0. Two events are lost. With `pdFALSE`, the take decrements, so it would run three times. Alternatively, keep `pdTRUE` and loop `n` times over the return value. ISR priority has no effect on the count."
+  },
+  {
+    "type": "single",
+    "q": "`ulTaskNotifyTake(pdFALSE, pdMS_TO_TICKS(50))` returns 0. What does that mean?",
+    "options": [
+      "An event arrived with value 0",
+      "50 ms passed with no notification: it's a timeout",
+      "The notification was cleared by another task",
+      "The task handle was NULL"
+    ],
+    "answer": 1,
+    "explain": "Take only returns once the value is non-zero, and it returns the value **before** decrementing. So a successful take returns ≥ 1, and **0 can only mean timeout**. That's why `if (ulTaskNotifyTake(...) == 0)` is the timeout check. Other tasks can't clear your notification for you, and a NULL handle is a bug on the *sender's* side."
+  },
+  {
+    "type": "multi",
+    "q": "In which situations should you keep a semaphore or queue instead of switching to a task notification?",
+    "options": [
+      "Two worker tasks should share a pool of incoming jobs",
+      "A DMA-complete ISR wakes the single driver task that started the transfer",
+      "The ISR must pass a 64-byte sensor frame to the task",
+      "Several tasks must take turns using the SPI bus (mutual exclusion)"
+    ],
+    "answer": [0, 2, 3],
+    "explain": "A notification goes to **one specific task**. It can't be shared by two receivers (A), it carries at most 32 bits so a frame needs a queue (C), and it has no owner or priority inheritance, so locking needs a mutex (D). B is the textbook notification use case: one giver, one known taker, just \"it's done\"."
+  },
+  {
+    "type": "single",
+    "q": "At boot, `main()` enables the EXTI0 interrupt, *then* creates the IMU task that its ISR notifies. Occasionally the board crashes at power-up. Why?",
+    "options": [
+      "Notifications can't be sent before the scheduler starts",
+      "If the interrupt fires before xTaskCreate fills in the handle, the ISR notifies a NULL task handle",
+      "EXTI0 has too high a priority",
+      "The IMU task's stack is too small"
+    ],
+    "answer": 1,
+    "explain": "The handle is written by `xTaskCreate`. An interrupt in the gap between enabling the IRQ and creating the task calls `vTaskNotifyGiveFromISR(NULL, …)`, which trips `configASSERT` or dereferences NULL. The rule: **create the receiver first, then enable its interrupt source.** Stack size and IRQ priority are real concerns, but they don't explain a crash that only happens at power-up and depends on timing."
+  }
+]

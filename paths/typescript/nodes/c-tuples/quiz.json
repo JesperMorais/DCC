@@ -1,0 +1,36 @@
+[
+  {
+    "type": "single",
+    "q": "What type does TypeScript infer for `entry`?",
+    "code": "const entry = [\"Ada\", 36];",
+    "options": ["`(string | number)[]`", "`[string, number]`", "`readonly [\"Ada\", 36]`", "`any[]`"],
+    "answer": 0,
+    "explain": "An array literal is inferred as an **array**, whose element type is the union of everything in it. TypeScript doesn't guess that you meant a fixed-length tuple. You get `[string, number]` by annotating (`const entry: [string, number] = …`) or from a declared return type. `readonly [\"Ada\", 36]` is what `as const` gives you."
+  },
+  {
+    "type": "multi",
+    "q": "`function parse(s: string): [number, number] | null`. Which return statements compile? Select all that apply.",
+    "options": [
+      "`return [1, 2];`",
+      "`return null;`",
+      "`return [1, 2, 3];`",
+      "`return [1];`",
+      "`return [\"1\", 2];`"
+    ],
+    "answer": [0, 1],
+    "explain": "The return type promises exactly two numbers, or `null`. `[1, 2, 3]` and `[1]` have the wrong length, and `[\"1\", 2]` has a string in the first position. The declared return type is what makes the compiler check the literal **as** a tuple. Without it, `[1, 2, 3]` would just be `number[]`."
+  },
+  {
+    "type": "single",
+    "q": "Why does this fail to compile?",
+    "code": "function sign(n: number): string {\n  if (n > 0) return \"+\";\n  if (n < 0) return \"-\";\n}",
+    "options": [
+      "When `n` is `0` the function falls off the end and returns `undefined`, which isn't a `string`",
+      "A function with a return type may only have one `return`",
+      "`\"+\"` is a literal type, not a `string`",
+      "Return types can't be used with `if`"
+    ],
+    "answer": 0,
+    "explain": "With a declared return type, the compiler checks **every** path. For `n === 0` neither `if` matches, so the function implicitly returns `undefined`, and that breaks the `string` promise. Fix it with a final `return \"0\";` (or change the type to `string | undefined`). Several returns are fine, and `\"+\"` is assignable to `string`."
+  }
+]

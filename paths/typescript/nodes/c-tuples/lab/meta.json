@@ -1,0 +1,11 @@
+{
+  "title": "Thumbnail sizes",
+  "level": 3,
+  "estMinutes": 10,
+  "topics": ["tuples", "return types"],
+  "hints": [
+    "Start with the type: `type Size = [width: number, height: number];`. Then give both functions explicit return types, `Size | null` and `Size`, so the compiler checks your `return [w, h]` as a tuple.",
+    "`parseSize`: `split(\"x\")` must give exactly two pieces. Turn each into a number with `Number(piece)` and reject it unless it's a whole number above zero (`Number.isInteger(n) && n > 0`). `fitInside`: destructure both tuples, then compute one scale factor that fits both directions without going above 1.",
+    "function fitInside([w, h]: Size, [maxW, maxH]: Size): Size { const scale = Math.min(1, maxW / w, maxH / h); return [Math.round(w * scale), Math.round(h * scale)]; }"
+  ]
+}

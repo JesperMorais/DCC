@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "What's wrong with this code?",
+    "code": "rtos_queue_t *q = rtos_queue_create(4, sizeof(char *));\n\nvoid uart_task(void *a) {\n    for (;;) {\n        char line[32];\n        read_line(line, sizeof line);\n        char *p = line;\n        rtos_queue_send(q, &p, RTOS_WAIT_FOREVER);\n    }\n}",
+    "options": [
+      "Nothing: the queue copies the data",
+      "The queue copies the *pointer*, not the text. The consumer reads `line` after the next `read_line` has overwritten it",
+      "`sizeof(char *)` is too small to hold a pointer",
+      "A task can't send with `RTOS_WAIT_FOREVER`"
+    ],
+    "answer": 1,
+    "explain": "Copy semantics copy exactly `item_size` bytes, and here that's the 8-byte pointer. Every item in the queue points at the *same* `line` buffer, which keeps being overwritten. Either queue the text itself (`rtos_queue_create(4, 32)` and send `line`), or hand out buffers from a pool and pass ownership. A task may wait forever on send. Only ISRs must not."
+  },
+  {
+    "type": "number",
+    "q": "A sensor ISR produces a sample every 2 ms. The consumer task can be blocked for up to 30 ms by higher-priority work (and otherwise keeps up easily). What's the **minimum** queue length that never drops a sample?",
+    "answer": 15,
+    "tolerance": 0,
+    "unit": "slots",
+    "explain": "Everything that arrives during the longest stall has to fit: 30 ms / 2 ms = **15** samples. In practice you'd add margin (and a drop counter to prove the margin is enough). A longer queue *doesn't* help if the consumer is slower on average. It just delays the overflow."
+  },
+  {
+    "type": "single",
+    "q": "A display shows the *current* temperature. The sensor ISR feeds a 1-slot queue, and the display task sometimes stalls for a while. Which drop policy fits best when the queue is full?",
+    "options": [
+      "Drop newest: keep the old reading, discard the new one",
+      "Overwrite oldest: replace the stored reading with the new one",
+      "Block in the ISR until the display catches up",
+      "Disable the ADC interrupt until the queue drains"
+    ],
+    "answer": 1,
+    "explain": "For a \"current value\", stale data is worthless, so you want the **freshest** reading: overwrite (FreeRTOS's `xQueueOverwrite` mailbox). Drop-newest is right for streams where every sample matters in order (filters, logs). Blocking in an ISR is never allowed, and turning off the interrupt just loses data in a less visible way."
+  },
+  {
+    "type": "order",
+    "q": "Put the life of one ADC sample in order, in the lab's pipeline.",
+    "items": [
+      "The ADC interrupt fires and the ISR reads the conversion result",
+      "The ISR copies the sample into `sample_q` with `RTOS_NO_WAIT`",
+      "The filter task, blocked in `receive`, becomes ready and preempts whatever is running",
+      "After 4 samples the filter sends the average to `log_q`",
+      "The low-priority logger receives the average and writes it out in the CPU's spare time"
+    ],
+    "explain": "ISR (read, copy, out), then the high-priority filter wakes on the same tick, then every fourth sample it passes an average down the pipeline, and the logger runs when nothing more urgent wants the CPU. Each hand-off is a copy into a queue, and no stage ever touches another stage's variables."
+  }
+]

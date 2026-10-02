@@ -1,0 +1,11 @@
+{
+  "title": "The gimbal that twitches",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["fixed-priority scheduling", "rate-monotonic", "utilisation", "response time", "deadlines"],
+  "hints": [
+    "Run the starter and open the Timeline. Telemetry's 6-tick job sits on the CPU while the motor's 5-tick deadline flies by. Which task has the *least* room to wait?",
+    "Use rate-monotonic assignment: the shorter the period, the higher the priority. For `utilisation`, add up `wcet / period` over the set, and convert to `double` before dividing.",
+    "`PRIO_MOTOR 3`, `PRIO_IMU 2`, `PRIO_TELEMETRY 1`, and in the loop: `u += (double)set[i].wcet / (double)set[i].period;`"
+  ]
+}

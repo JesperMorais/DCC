@@ -1,0 +1,42 @@
+[
+  {
+    "type": "single",
+    "q": "What does `rank(95)` return?",
+    "code": "function rank(score: number): string {\n  if (score >= 50) return \"pass\";\n  if (score >= 90) return \"distinction\";\n  return \"fail\";\n}",
+    "options": ["`\"pass\"`", "`\"distinction\"`", "`\"fail\"`", "Both `\"pass\"` and `\"distinction\"`"],
+    "answer": 0,
+    "explain": "Conditions are checked top to bottom and the first `return` leaves the function. 95 is `>= 50`, so it returns `\"pass\"` and the `>= 90` line is never reached. That line is dead code: every score of 90 or more is also 50 or more. Fix it by checking `>= 90` first. A function only ever returns one value."
+  },
+  {
+    "type": "multi",
+    "q": "`const ok = paid && (inStock || backorder);` Which situations make `ok` true? Select all that apply.",
+    "options": [
+      "paid, in stock, no backorder",
+      "paid, not in stock, backorder allowed",
+      "not paid, in stock, backorder allowed",
+      "paid, not in stock, no backorder"
+    ],
+    "answer": [0, 1],
+    "explain": "`&&` needs **both** sides: the order must be paid, and the part in parentheses must be true. `inStock || backorder` is true if at least one of them is. Option 3 fails because it isn't paid, no matter what else is true. Option 4 is paid, but neither in stock nor on backorder, so the parentheses are false."
+  },
+  {
+    "type": "single",
+    "q": "Free delivery is for orders of **$50 or more**. Which condition is right?",
+    "options": ["`total >= 50`", "`total > 50`", "`total == \"50\"`", "`total => 50`"],
+    "answer": 0,
+    "explain": "\"50 or more\" includes exactly 50, so it's `>=`. `> 50` would charge a customer who spent exactly $50: a classic boundary bug. `== \"50\"` compares to a string and only matches exactly 50 anyway. `=>` isn't a comparison at all; it's the arrow of an arrow function."
+  },
+  {
+    "type": "single",
+    "q": "Which is the cleanest way to write this function?",
+    "code": "function isAdult(age: number): boolean {\n  if (age >= 18) {\n    return true;\n  } else {\n    return false;\n  }\n}",
+    "options": [
+      "`return age >= 18;`",
+      "`return age >= 18 ? true : false;`",
+      "`return age >= 18 === true;`",
+      "It's already the cleanest version"
+    ],
+    "answer": 0,
+    "explain": "A comparison **is** a boolean, so you can return it directly. The `if` that returns `true` or `false`, and the `? true : false` version, both just repeat what `age >= 18` already gives you. Comparing to `=== true` adds nothing either."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "title": "The kitchen timer",
+  "level": 3,
+  "estMinutes": 12,
+  "topics": ["union types", "literal unions", "typeof narrowing", "in narrowing", "narrowing"],
+  "hints": [
+    "Write the union first: `TimerInput` is four types joined with `|`. Then peel the cases off one at a time in `timerSeconds`, returning early, so each check leaves fewer possibilities.",
+    "`typeof input === \"number\"` handles seconds, and `typeof input === \"string\"` leaves only the presets (compare or `switch` on them). What's left is one of the two objects, and `\"hours\" in input` tells them apart. In `countdownText`, check `remaining === null`, not `!remaining`, or 0 will show as dashes.",
+    "if (\"hours\" in input) return input.hours * 3600 + input.minutes * 60; return input.minutes * 60 + input.seconds;  and for the display: `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, \"0\")}`"
+  ]
+}

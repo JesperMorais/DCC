@@ -1,0 +1,11 @@
+{
+  "title": "The typed store",
+  "level": 4,
+  "estMinutes": 18,
+  "topics": ["generic classes", "generic constraints", "keyof", "discriminated unions", "exhaustive switch", "errors", "utility types"],
+  "hints": [
+    "Start with `playerReducer`: a `switch` on `action.type` with `assertNever(action)` in the `default`, returning a new object with spread in every case. Then the error class: `super(`${action.type}: ${reason}`)`, then set `name` and `action`.",
+    "In the `Store`, keep `#state`, `#reducer` and `#listeners` as private fields. `select` is `<K extends keyof S>(key: K): S[K]`. `dispatch` computes `const next = this.#reducer(this.#state, action);` *before* touching `#state`, so a throwing reducer leaves everything as it was. `update` is `{ ...this.#state, ...patch }`.",
+    "subscribe(listener: (state: Readonly<S>) => void): () => void { this.#listeners.push(listener); return () => { this.#listeners = this.#listeners.filter((l) => l !== listener); }; } — and a private `#set(next: S)` that assigns `#state` and calls every listener lets `dispatch` and `update` share the notify code."
+  ]
+}

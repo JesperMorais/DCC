@@ -10,6 +10,7 @@
     "start": "vite build && NODE_ENV=production tsx server/index.ts",
     "serve": "NODE_ENV=production tsx server/index.ts",
     "validate": "tsx scripts/validate-challenges.ts",
+    "validate:paths": "tsx scripts/validate-paths.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "engines": {

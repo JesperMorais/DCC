@@ -1,0 +1,39 @@
+[
+  {
+    "type": "multi",
+    "q": "Which of these give you a `uint32_t` mask with **only bit 31** set, with no undefined behaviour?",
+    "options": ["`1u << 31`", "`UINT32_C(1) << 31`", "`1 << 31`", "`0x80000000u`", "`(uint32_t)1 << 31`"],
+    "answer": [0, 1, 3, 4],
+    "explain": "The literal `1` is a signed `int`, so `1 << 31` shifts a one into the sign bit. That value can't be represented, so it's **undefined behaviour**. It usually \"works\", and UBSan kills it on the spot. Every other option starts from an unsigned value: `1u`, `UINT32_C(1)`, a cast, or a plain unsigned hex literal."
+  },
+  {
+    "type": "number",
+    "q": "`GPIOA->MODER` reads `0x0000A400`. Each pin has a 2-bit mode field at bits `2n+1:2n` (00 input, 01 output, 10 alternate, 11 analog). What number is **pin 6's** mode field?",
+    "answer": 2,
+    "tolerance": 0,
+    "explain": "Pin 6 owns bits 13:12. `0xA400` is `1010 0100 0000 0000` in binary, so bit 13 = 1 and bit 12 = 0, which gives `0b10` = **2** (alternate function). With code: `(0xA400 >> 12) & 0x3` = `0xA & 0x3` = 2. Pin 5 (bits 11:10) is `01`, an output, and pin 7 (bits 15:14) is `10`."
+  },
+  {
+    "type": "order",
+    "q": "Put the steps of a correct **field write** (setting a pin's mode without touching the other pins) in order.",
+    "items": [
+      "Read the whole register into a local variable",
+      "Clear the field: `v &= ~(mask << pos)`",
+      "OR in the new value: `v |= (mode & mask) << pos`",
+      "Write the local variable back to the register"
+    ],
+    "explain": "This is **read-modify-write**. You clear before you OR, because OR can only turn bits on: `01 | 10` is `11`, not `10`. Masking `mode` keeps an oversized value out of the neighbouring pin's bits. Writing `GPIOA->MODER = mode << pos` directly skips the read and wipes every other pin, which is how people lock themselves out of SWD."
+  },
+  {
+    "type": "single",
+    "q": "A colleague writes the field mask as `(1u << width) - 1u` and calls it with `width = 32` to read a whole register. On their ARM board the result is `0`. Why?",
+    "options": [
+      "Shifting a 32-bit value by 32 is undefined. The CPU used the shift count mod 32, so `1u << 32` became `1u`, and `1 - 1` = 0",
+      "`1u << 32` correctly gives 0x1_0000_0000, but it's truncated to 0",
+      "Unsigned subtraction wrapped around to 0",
+      "The compiler optimised the mask away because it's constant"
+    ],
+    "answer": 0,
+    "explain": "Shifting by **the type's width or more** is undefined in C, and it's not \"shift everything out\". x86 and ARM (for register shifts) use only the low 5 bits of the count, so `<< 32` behaves like `<< 0`. You get `1u`, minus 1, which is a mask of zero. The fix is to special-case it: `width >= 32 ? 0xFFFFFFFFu : (1u << width) - 1u`. The value never becomes 33 bits, and `1 - 1` = 0 isn't a wraparound."
+  }
+]

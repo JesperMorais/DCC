@@ -27,6 +27,13 @@
 static struct { const char *name; dts_test_fn fn; int line; } dts_tests[DTS_MAX_TESTS];
 static int dts_count;
 static int dts_result_fd = -1; /* child → parent pipe for the current test */
+static const char *dts_current_test = "";
+
+/* Optional hook (the RTOS simulator defines it): export the timeline and free kernel objects. */
+__attribute__((weak)) void dts_after_test(const char *test_name);
+static void dts_finish_test(void) {
+    if (dts_after_test) dts_after_test(dts_current_test);
+}
 
 void dts_register(const char *name, dts_test_fn fn, int line) {
     if (dts_count < DTS_MAX_TESTS) {
@@ -63,10 +70,19 @@ static void dts_failf(int line, const char *expr, const char *expected, const ch
     snprintf(msg, sizeof msg, "tests.c line %d: EXPECT failed: %s", line, expr);
     dts_report("F", msg, expected, received);
     fflush(stdout);
+    dts_finish_test();
     _exit(0);
 }
 
 void dts_fail(int line, const char *expr, const char *expected, const char *received) { dts_failf(line, expr, expected, received); }
+
+/* Fail the current test with a free-form message (used by the RTOS simulator). */
+void dts_fail_msg(const char *msg) {
+    dts_report("F", msg, "", "");
+    fflush(stdout);
+    dts_finish_test();
+    _exit(0);
+}
 
 void dts_fail_ll(int line, const char *expr, long long expected, long long received) {
     char e[64], r[64];
@@ -195,10 +211,12 @@ int main(void) {
             dup2(err[1], STDERR_FILENO);
             struct itimerval tv = {{0, 0}, {DTS_TIMEOUT_MS / 1000, (DTS_TIMEOUT_MS % 1000) * 1000}};
             setitimer(ITIMER_REAL, &tv, NULL); /* SIGALRM's default action kills us */
+            dts_current_test = dts_tests[i].name;
             dts_tests[i].fn();
             struct itimerval off = {{0, 0}, {0, 0}};
             setitimer(ITIMER_REAL, &off, NULL);
             fflush(stdout);
+            dts_finish_test();
 #ifdef DTS_HAVE_LSAN
             if (__lsan_do_recoverable_leak_check()) {
                 dts_report("L", "", "", "");

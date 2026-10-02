@@ -1,0 +1,11 @@
+{
+  "title": "A robust sysfs reader for thermal zones",
+  "profile": "linux",
+  "estMinutes": 12,
+  "topics": ["sysfs", "open/read/close", "partial reads", "opendir/readdir", "errno"],
+  "hints": [
+    "Write one private helper that opens the file, reads it **in a loop** until `read()` returns 0, closes it, and NUL-terminates the buffer. Everything else is built on that. `read()` may return fewer bytes than you asked for, and that's normal, not an error. Return `-errno` straight after a failing call, before anything else can overwrite `errno`.",
+    "For `sysfs_read_long`, read the string, strip the trailing whitespace, then parse it with `strtol(buf, &end, 10)`. It's valid only if `end != buf` (some digits were consumed) and `*end == '\\0'` (nothing after them). For `thermal_find_zone`, `opendir` the thermal directory, skip every entry whose name isn't `thermal_zone<digits>`, read each one's `type`, and remember the **lowest** matching number, because `readdir()` doesn't sort.",
+    "Every exit path after a successful `open` has to reach `close(fd)`, so collect the result in an `rc` variable and keep a single `close(fd); return rc;` at the bottom instead of returning early. The same goes for `closedir(dir)`. To detect a value that's too long, stop reading when the buffer is full and try to `read()` one more byte: if that read returns more than 0, the value didn't fit (`-ERANGE`)."
+  ]
+}

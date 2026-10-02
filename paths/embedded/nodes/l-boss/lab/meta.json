@@ -1,0 +1,11 @@
+{
+  "title": "Boss: the data-acquisition daemon",
+  "profile": "linux",
+  "estMinutes": 25,
+  "topics": ["epoll", "timerfd", "eventfd", "ring buffers", "line parsing", "graceful shutdown", "resource cleanup"],
+  "hints": [
+    "Split it into four small pieces. `setup()` opens the output file, `epoll_create1`, and a `timerfd` armed with `TFD_TIMER_ABSTIME` at now + period with `it_interval = period`, then registers the timer, the shutdown fd and every sensor. Use `epoll_event.data.u32` as a tag: the sensor index, or a special value for the timer and for shutdown. Then `on_sensor()`, `on_tick()`, and a `loop()`. Keep one exit path in `daq_run` that closes everything `setup` managed to open, even when it failed halfway (start the fds at -1).",
+    "Each sensor needs its **own** partial-line buffer that survives between reads. `read()` up to 64 bytes and walk them one at a time. On `'\\n'`, parse the line with `strtol` (valid only if `end != line && *end == '\\0'`). Otherwise append the character, but if the line has already reached 31 characters, set an `overlong` flag and finish it as one error at the next newline. If `read()` returns 0 (EOF) or fails, count an unfinished line as an error and `EPOLL_CTL_DEL` the fd. Never close it, because the caller owns it.",
+    "`loop()` is the l-epoll loop again: `epoll_wait(…, stopping ? 0 : -1)`. A timer event means: read the 8-byte count, `ticks++`, `overruns += count - 1`, then `fprintf(out, \"T %lu\", ticks)` followed by `\" %.1f\"` (the mean of the ring) or `\" -\"` for each sensor, and a newline. The shutdown event means: read the eventfd and set `stopping = true`. Return when a timeout-0 wait reports 0 events. Then write `END ticks=%lu samples=%lu errors=%lu`, and close the timerfd and epoll fd and `fclose` the file."
+  ]
+}

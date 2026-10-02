@@ -1,0 +1,11 @@
+{
+  "title": "Page-view report",
+  "level": 3,
+  "estMinutes": 12,
+  "topics": ["Record", "Map", "Set", "regular expressions", "string parsing"],
+  "hints": [
+    "Write `parseView` first and use it in the other two, so the line format lives in one place. `line.trim().match(/^…$/)` returns `null` for junk lines, which is exactly when `parseView` should return `null`.",
+    "The pattern is two digits, a colon, two digits, a space, lowercase letters, a space, then a `/` and non-space characters: `/^(\\d\\d:\\d\\d) ([a-z]+) (\\/\\S*)$/`. For `uniqueVisitors`, keep a `Map<string, Set<string>>` from path to users while you loop, then turn each set into its `.size`.",
+    "const users = new Map<string, Set<string>>(); for (const line of lines) { const view = parseView(line); if (!view) continue; const set = users.get(view.path) ?? new Set<string>(); set.add(view.user); users.set(view.path, set); } return new Map([...users].map(([path, set]) => [path, set.size]));"
+  ]
+}

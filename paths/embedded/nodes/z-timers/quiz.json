@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "Which bug is this?",
+    "code": "static void expiry(struct k_timer *t) {\n    k_mutex_lock(&i2c_lock, K_FOREVER);\n    read_temperature();     /* 3 ms I2C transfer */\n    k_mutex_unlock(&i2c_lock);\n}\nK_TIMER_DEFINE(sample_timer, expiry, NULL);",
+    "options": [
+      "The timer should be one-shot",
+      "The expiry runs in ISR context: it must not lock a mutex or wait on I2C. Submit a work item and read the sensor there",
+      "`K_FOREVER` should be `K_MSEC(10)`",
+      "Nothing: timer expiries run in the system workqueue"
+    ],
+    "answer": 1,
+    "explain": "`k_timer` expiry functions run in interrupt context (the system clock ISR). ISRs can't own mutexes or wait for anything, and an I2C transfer waits for its completion interrupt. A shorter timeout is still a wait. The fix is timer → `k_work_submit()` → read in the handler. (FreeRTOS software timers *do* run in a task, the daemon. Zephyr's `k_timer` doesn't.)"
+  },
+  {
+    "type": "single",
+    "q": "A periodic 100 ms timer submits `sample_work`. A cooperative thread hogs the CPU from 250 ms to 470 ms. In the run at 470 ms, what does `k_timer_status_get(&sample_timer)` return?",
+    "options": ["0", "1", "2", "3"],
+    "answer": 2,
+    "explain": "The timer is interrupt-driven, so it keeps expiring at 300 and 400 even though no thread can run. The first expiry submits the work and the second finds it **pending** (a no-op). The handler finally runs at 470, and the status counter says **2**: two expiries since the last read, so one period was missed. The timer grid isn't affected, so the next expiry is still at 500."
+  },
+  {
+    "type": "single",
+    "q": "How do you make a one-shot 500 ms inactivity timeout that restarts on every touch?",
+    "options": [
+      "`k_timer_start(&t, K_MSEC(500), K_MSEC(500))` once at boot",
+      "On every touch: `k_timer_start(&t, K_MSEC(500), K_NO_WAIT)`, which restarts the countdown",
+      "On every touch: `k_msleep(500)` in the ISR, then turn the light off",
+      "Start a new `K_TIMER_DEFINE` for each touch"
+    ],
+    "answer": 1,
+    "explain": "A period of `K_NO_WAIT` makes it one-shot, and calling `k_timer_start` on a running timer restarts it with the new duration, so each touch pushes the deadline back. Option A is a periodic timer that would switch the light off every 500 ms regardless of touches. Sleeping in an ISR is illegal. Timers are static objects, and you can't define one per event at runtime."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are safe to do directly in a `k_timer` expiry function?",
+    "options": [
+      "`k_work_submit(&work)`",
+      "`k_sem_give(&sem)`",
+      "`k_msgq_put(&q, &msg, K_NO_WAIT)`",
+      "`k_msleep(1)`",
+      "`k_mutex_lock(&m, K_NO_WAIT)`"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "Expiry functions are ISRs: they may signal (submit work, give a semaphore, put with `K_NO_WAIT`) but never sleep. Mutexes are off limits in ISRs even with `K_NO_WAIT`, because an ISR can't *own* a lock: it can't release it later from the same context, and priority inheritance has no thread to boost."
+  }
+]

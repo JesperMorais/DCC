@@ -1,0 +1,11 @@
+{
+  "title": "An epoll event loop with an eventfd shutdown",
+  "profile": "linux",
+  "estMinutes": 14,
+  "topics": ["epoll", "eventfd", "level-triggered", "event loops", "graceful shutdown"],
+  "hints": [
+    "`evloop_create` needs two kernel objects: `epoll_create1(EPOLL_CLOEXEC)` and `eventfd(0, EFD_NONBLOCK)`. Register the eventfd with epoll like any other fd. Use `epoll_event.data.ptr` to tell events apart: point it at the fd's slot, and use `NULL` for the stop eventfd.",
+    "`evloop_run` is a `for (;;)` around `epoll_wait`. Block with timeout `-1` normally. When the stop eventfd fires, `read()` its 8-byte counter to reset it and set `stopping = true`. From then on, call `epoll_wait` with timeout `0`, which just asks what's ready right now, and return as soon as it reports 0 events. Keep the default **level-triggered** mode (no `EPOLLET`), so a handler that only read part of the data gets called again.",
+    "When a handler returns `false`, call `epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL)` and mark the slot free, or that EOF fd stays ready forever and the drain never ends. `evloop_add` returns `-errno` when `epoll_ctl` fails: that gives you `-EBADF` for a closed fd and `-EPERM` for a regular file, with no extra code. `evloop_destroy` closes the eventfd and the epoll fd, but not the caller's fds."
+  ]
+}

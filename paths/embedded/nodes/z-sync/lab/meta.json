@@ -1,0 +1,11 @@
+{
+  "title": "The badge reader that missed people",
+  "profile": "embedded",
+  "estMinutes": 15,
+  "topics": ["k_sem", "k_mutex", "ISR signalling", "-EAGAIN", "recursive mutex", "priority inheritance"],
+  "hints": [
+    "There are four separate bugs: the ISR sets a flag that the reader *polls* (latency up to 10 ms); `card_sem` can only count to 1; the reader can't tell \"100 ms of silence\" from \"a card\"; and `log_lock` is a semaphore, so `log_card()` -> `log_touch()` takes it twice and blocks forever.",
+    "ISR: `k_sem_give(&card_sem)`. Reader: `int rc = k_sem_take(&card_sem, K_MSEC(READER_TIMEOUT_MS));` and branch on `rc == -EAGAIN`. Give the semaphore room to count (`K_SEM_DEFINE(card_sem, 0, 16)`). Replace the lock with `K_MUTEX_DEFINE(log_lock)` and use `k_mutex_lock`/`k_mutex_unlock` everywhere, including in `cloud_thread`.",
+    "Reader loop: `int rc = k_sem_take(&card_sem, K_MSEC(READER_TIMEOUT_MS)); if (rc == -EAGAIN) { log_timeout(); continue; } k_busy_wait(CARD_WORK_US); log_card();`. Every `k_sem_take(&log_lock, K_FOREVER)` becomes `k_mutex_lock(&log_lock, K_FOREVER)`, and every `k_sem_give(&log_lock)` becomes `k_mutex_unlock(&log_lock)`. The nested lock in `log_touch()` is fine: Zephyr mutexes are recursive."
+  ]
+}

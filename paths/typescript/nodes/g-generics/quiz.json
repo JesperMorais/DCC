@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "What is the type of `x`?",
+    "code": "function first<T>(items: readonly T[]): T | undefined {\n  return items[0];\n}\nconst x = first([\"ada\", \"linus\"]);",
+    "options": ["`string | undefined`", "`any`", "`T | undefined`", "`string[]`"],
+    "answer": 0,
+    "explain": "TypeScript **infers** `T = string` from the argument, so the return type `T | undefined` becomes `string | undefined`. `T` only exists inside the signature; at the call site it's replaced by the real type. `any` is what you'd get from the non-generic `any[]` version."
+  },
+  {
+    "type": "single",
+    "q": "A colleague wants `describe<T>(value: T)` to return `\"text\"` when `T` is `string`. Why can't they write `if (T === string)`?",
+    "options": [
+      "Types are erased before the code runs, so `T` doesn't exist at runtime. Check the value instead: `typeof value === \"string\"`",
+      "It works, but only with `T extends string`",
+      "They need `T.name === \"string\"`",
+      "Generic functions can't contain `if` statements"
+    ],
+    "answer": 0,
+    "explain": "TypeScript removes every type when it compiles to JavaScript. There's no `T` left to compare. Generics describe the relationship between inputs and outputs **at the call site**. At runtime you only have values, so you check the value with `typeof` (which is narrowing, from the Core section)."
+  },
+  {
+    "type": "multi",
+    "q": "`function pushItem<T>(list: readonly T[], item: T): T[]`. Which calls compile? Select all that apply.",
+    "options": [
+      "`pushItem([1, 2], 3)`",
+      "`pushItem([\"a\"], \"b\")`",
+      "`pushItem([1, 2], \"x\")`",
+      "`pushItem<string | number>([1, 2], \"x\")`"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "Using one `T` for both parameters says the item has the same type as the list's elements. `pushItem([1, 2], \"x\")` infers `T = number` from the array and then rejects `\"x\"`. If you really want a mixed list, you can pass the type argument yourself, `<string | number>`, and both arguments fit. Use separate parameters `<A, B>` when the types are meant to differ."
+  },
+  {
+    "type": "single",
+    "q": "Why does this generic not compile?",
+    "code": "function names<T>(items: readonly T[]): string[] {\n  return items.map((item) => item.name);\n}",
+    "options": [
+      "A bare `T` could be any type, like `number` or `null`, so TypeScript won't assume it has `.name`",
+      "Generic functions can't use `map`",
+      "The return type must be `T[]`",
+      "`T` must be written `<T>` on every parameter"
+    ],
+    "answer": 0,
+    "explain": "Nothing stops a caller from writing `names([1, 2, 3])`, so the compiler is right to refuse `item.name`. To allow it, you need to tell TypeScript that `T` has *at least* a `name`. That's a **generic constraint**, `<T extends { name: string }>`, and it's the next node."
+  }
+]

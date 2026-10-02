@@ -1,0 +1,46 @@
+[
+  {
+    "type": "single",
+    "q": "What does this log?",
+    "code": "let tag = \"  Sale \";\ntag.trim();\ntag.toUpperCase();\nconsole.log(`[${tag}]`);",
+    "options": [
+      "`[  Sale ]`",
+      "`[SALE]`",
+      "`[Sale]`",
+      "`[  SALE ]`"
+    ],
+    "answer": 0,
+    "explain": "Strings are immutable: `trim()` and `toUpperCase()` each **return a new string**, and both results are thrown away. `tag` never changes, so it still has its spaces and its original case. To get `[SALE]` you'd write `tag = tag.trim().toUpperCase();`."
+  },
+  {
+    "type": "single",
+    "q": "What is `\"TypeScript\".slice(-6)`?",
+    "options": ["`\"Script\"`", "`\"TypeS\"`", "`\"cript\"`", "`\"\"`"],
+    "answer": 0,
+    "explain": "A negative index counts from the end, so `slice(-6)` means *the last 6 characters*: `\"Script\"`. With no `end`, slice runs to the end of the string. `\"TypeS\"` would be `slice(0, 5)`; `\"cript\"` is only 5 characters, `slice(-5)`."
+  },
+  {
+    "type": "multi",
+    "q": "`word` might be the empty string `\"\"`. Which expressions are safe (they never throw)? Select all that apply.",
+    "options": [
+      "`word.charAt(0).toUpperCase()`",
+      "`word[0].toUpperCase()`",
+      "`word.slice(0, 1).toUpperCase()`",
+      "`word.slice(1)`"
+    ],
+    "answer": [0, 2, 3],
+    "explain": "On `\"\"`, `word[0]` is `undefined`, and calling `.toUpperCase()` on `undefined` throws a TypeError. `charAt(0)` returns `\"\"` instead, and `slice` simply returns `\"\"` when there's nothing to cut, so the other three are all safe."
+  },
+  {
+    "type": "single",
+    "q": "Which signature is the idiomatic way to type a function that takes some text and returns text?",
+    "options": [
+      "`function clean(s: string): string`",
+      "`function clean(s: String): String`",
+      "`function clean(s: \"string\"): \"string\"`",
+      "`function clean(s: char[]): char[]`"
+    ],
+    "answer": 0,
+    "explain": "Lowercase `string` is the primitive type for text. Capital `String` is the type of the wrapper *object*, which you almost never want. `\"string\"` in quotes is a literal type that only allows that exact word. And TypeScript has no `char` type: a character is just a `string` of length 1."
+  }
+]

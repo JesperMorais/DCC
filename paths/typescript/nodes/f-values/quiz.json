@@ -1,0 +1,47 @@
+[
+  {
+    "type": "number",
+    "q": "What does this evaluate to?",
+    "code": "23 % 6",
+    "answer": 5,
+    "tolerance": 0,
+    "explain": "6 fits into 23 three whole times (6 + 6 + 6 = 18), and 23 − 18 = **5** is left over. `%` gives the remainder, not the quotient: the quotient would be `Math.floor(23 / 6)`, which is 3. And `23 / 6` on its own is about 3.83, because `/` never rounds."
+  },
+  {
+    "type": "single",
+    "q": "Which line does TypeScript reject?",
+    "code": "function lineTotal(price: number, qty: number): number {\n  return price * qty;\n}\nconst a = lineTotal(4, 2);\nlet b = a + 1;\nconst c = lineTotal(4, \"2\");\nb = 10;",
+    "options": [
+      "`const c = lineTotal(4, \"2\");`",
+      "`let b = a + 1;`",
+      "`b = 10;`",
+      "None of them; the types are only checked at runtime"
+    ],
+    "answer": 0,
+    "explain": "`qty` is annotated `number`, and `\"2\"` is a `string`, so that call is a compile error. That's the whole point: the mistake is caught before the code runs. `b` is a `let` inferred as `number`, so reassigning it to `10` is fine. And TypeScript never checks types at runtime: they're erased, so the check happens only while you write the code."
+  },
+  {
+    "type": "single",
+    "q": "You have `minutes` minutes of video. Which expression gives the number of **full hours**?",
+    "options": [
+      "`Math.floor(minutes / 60)`",
+      "`minutes / 60`",
+      "`minutes % 60`",
+      "`Math.ceil(minutes / 60)`"
+    ],
+    "answer": 0,
+    "explain": "For 135 minutes you want 2 full hours. `minutes / 60` is 2.25 (TypeScript has no integer division). `minutes % 60` is 15, the *leftover* minutes, not the hours. `Math.ceil` rounds up to 3, which counts the partial hour. `Math.floor` rounds down to the 2 full hours."
+  },
+  {
+    "type": "single",
+    "q": "Why use `const` instead of `let` for `const taxRate = 0.25`?",
+    "options": [
+      "It can't be reassigned, so nobody can accidentally change it later",
+      "It makes the number an integer",
+      "`let` variables have no type",
+      "`const` values are checked at runtime"
+    ],
+    "answer": 0,
+    "explain": "`const` only means *this variable can't be reassigned*. It says nothing about integers: there's a single `number` type. A `let` gets an inferred type just like a `const` does (`let n = 0` is a `number`). And neither is checked at runtime, because types are erased. Default to `const` and reach for `let` when the value really changes."
+  }
+]

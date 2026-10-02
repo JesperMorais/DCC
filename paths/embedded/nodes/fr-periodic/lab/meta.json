@@ -1,0 +1,11 @@
+{
+  "title": "Keep the pump loop on its grid",
+  "profile": "embedded",
+  "estMinutes": 10,
+  "topics": ["freertos", "xTaskDelayUntil", "drift", "overruns"],
+  "hints": [
+    "vTaskDelay(10) means \"sleep 10 ticks from now\", and \"now\" is already 2 ticks late. You want \"wake at the previous wake time plus 10\".",
+    "Declare `TickType_t last_wake = xTaskGetTickCount();` once, above the `for (;;)`. Then replace the delay with `xTaskDelayUntil(&last_wake, CONTROL_PERIOD)`, which advances `last_wake` for you.",
+    "The last line of the loop becomes `if (xTaskDelayUntil(&last_wake, CONTROL_PERIOD) == pdFALSE) g_overruns++;`."
+  ]
+}

@@ -1,0 +1,43 @@
+[
+  {
+    "type": "single",
+    "q": "What is `seen.size` at the end?",
+    "code": "const seen = new Set<string>();\nfor (const user of [\"ada\", \"linus\", \"ada\", \"grace\", \"linus\"]) {\n  seen.add(user);\n}",
+    "options": ["3", "5", "2", "It throws on the second \"ada\""],
+    "answer": 0,
+    "explain": "A `Set` keeps each value once. Adding `\"ada\"` again does nothing, and it doesn't throw. Three distinct names means a size of 3. That's what makes a Set the natural answer to \"have I seen this before?\"."
+  },
+  {
+    "type": "single",
+    "q": "You need to count requests per status class, and the classes are always `\"2xx\" | \"3xx\" | \"4xx\" | \"5xx\"`. The result is sent to the browser as JSON. Which type fits best?",
+    "options": [
+      "`Record<\"2xx\" | \"3xx\" | \"4xx\" | \"5xx\", number>`",
+      "`Map<string, number>`",
+      "`Set<string>`",
+      "`number[]`"
+    ],
+    "answer": 0,
+    "explain": "The keys are a fixed, known set, so a `Record` over that literal union forces every key to be present and catches typos. It's also a plain object, so `JSON.stringify` works. A `Map` would serialise as `{}` and doesn't guarantee the four keys. A `Set` stores no counts. A `number[]` loses which count belongs to which class."
+  },
+  {
+    "type": "multi",
+    "q": "`const m = line.match(/^(\\d\\d:\\d\\d) ([a-z]+) (\\/\\S*)$/);`. Which lines match? Select all that apply.",
+    "options": [
+      "`09:15 ada /pricing`",
+      "`09:15 Ada /pricing`",
+      "`9:15 ada /pricing`",
+      "`09:15 ada /`",
+      "`09:15 ada pricing`"
+    ],
+    "answer": [0, 3],
+    "explain": "`[a-z]+` is lowercase letters only, so `Ada` fails. `\\d\\d` needs two digits, so `9:15` fails. `\\/\\S*` is a `/` followed by **zero** or more non-space characters, so `/` alone is fine, but `pricing` without the slash fails. When nothing matches, `match` returns `null`, so check before destructuring."
+  },
+  {
+    "type": "single",
+    "q": "What does this print?",
+    "code": "const counts: Record<string, number> = {};\nfor (const w of [\"a\", \"b\", \"a\"]) counts[w] = counts[w] + 1;\nconsole.log(counts.a);",
+    "options": ["`NaN`", "`2`", "`1`", "A compile error"],
+    "answer": 0,
+    "explain": "The first read of `counts[\"a\"]` is `undefined`, and `undefined + 1` is `NaN`. After that it stays `NaN`. The type `Record<string, number>` claims every key has a number, so the compiler doesn't warn you. Write `(counts[w] ?? 0) + 1`, or use a `Map`, whose `get` honestly returns `number | undefined`."
+  }
+]

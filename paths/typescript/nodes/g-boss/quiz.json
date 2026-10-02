@@ -1,0 +1,40 @@
+[
+  {
+    "type": "single",
+    "q": "The reducer throws on `{ type: \"pause\" }`. In which version is the store's state still the old one afterwards, with no listener called?",
+    "code": "// A\ndispatch(action: A) {\n  const next = this.#reducer(this.#state, action);\n  this.#state = next;\n  this.#notify();\n}\n\n// B\ndispatch(action: A) {\n  this.#notify();\n  this.#state = this.#reducer(this.#state, action);\n}",
+    "options": [
+      "A",
+      "B",
+      "Both",
+      "Neither: you need a try/catch to keep the old state"
+    ],
+    "answer": 0,
+    "explain": "In A the throw happens on the first line, so the assignment and the notify never run: compute first, commit second. B notifies listeners *before* the reducer runs, so they hear about a change that then fails. No `try/catch` is needed, because the throw itself skips the remaining lines."
+  },
+  {
+    "type": "multi",
+    "q": "With `class Store<S extends object, A extends { type: string }>` and `const player = new Store(initialPlayer, playerReducer)`, which lines are compile errors? Select all that apply.",
+    "options": [
+      "`player.update({ volum: 30 })`",
+      "`player.select(\"colour\")`",
+      "`player.dispatch({ type: \"rewind\" })`",
+      "`player.update({})`",
+      "`new Store({ count: 0 }, (s, a: { type: \"inc\" }) => s)`"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "`update` takes `Partial<PlayerState>`, and a fresh object literal can't have the unknown property `volum`. `select` takes `K extends keyof PlayerState`, which doesn't include `\"colour\"`. `dispatch` takes `PlayerAction`, a union without `\"rewind\"`. An empty patch is a valid `Partial`. And the counter store is fine: `{ count: 0 }` is an object, and `{ type: \"inc\" }` has a string `type`."
+  },
+  {
+    "type": "single",
+    "q": "A component keeps `const before = store.state`, then calls `store.update({ volume: 30 })`. Why does the lab insist `before.volume` is still `50`?",
+    "options": [
+      "So components can detect changes with a cheap `before !== store.state` check, and old snapshots never change under them",
+      "Because `Readonly<S>` freezes the object at runtime",
+      "Because TypeScript copies objects when they're passed to a getter",
+      "It doesn't matter: mutating `#state` in place gives the same result"
+    ],
+    "answer": 0,
+    "explain": "If `update` mutated the existing object, `before` would point at the same object and silently show `30`, and `before === store.state` would stay `true` even though something changed. `Readonly` is a compile-time type, erased at runtime, and nothing in TypeScript copies objects for you. Building a new object with spread is what makes snapshots safe."
+  }
+]

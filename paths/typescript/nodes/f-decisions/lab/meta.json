@@ -1,0 +1,11 @@
+{
+  "title": "Shipping rules",
+  "level": 1,
+  "estMinutes": 10,
+  "topics": ["if/else chains", "comparison", "logical operators", "booleans"],
+  "hints": [
+    "Write `freeShipping` first as one boolean expression; no `if` needed. Then `shippingCost` can start with `if (freeShipping(…)) return 0;`.",
+    "In `freeShipping`, combine \"member or big order\" with `||`, put it in parentheses, and `&&` it with the weight limit. In `shippingCost`, check the weight bands from the top: freight (over 20) first, then up to 1, then up to 5, then everything else.",
+    "freeShipping: `return (isMember || subtotal >= 50) && weightKg <= 20;`  ·  shippingCost: `if (freeShipping(subtotal, weightKg, isMember)) return 0; if (weightKg > 20) return 25; if (weightKg <= 1) return 4; if (weightKg <= 5) return 8; return 12;`"
+  ]
+}

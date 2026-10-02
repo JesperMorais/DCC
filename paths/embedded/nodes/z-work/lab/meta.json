@@ -1,0 +1,11 @@
+{
+  "title": "The remote that ate button presses",
+  "profile": "embedded",
+  "estMinutes": 13,
+  "topics": ["k_work", "k_work_submit", "system workqueue", "CONTAINER_OF", "pending semantics"],
+  "hints": [
+    "Two questions. The handler only gets a `struct k_work *`, so how does it know which `struct button` that work item lives inside? And `k_work_submit` on an item that's already pending does nothing (it returns 0), so how many presses can one run of the handler stand for?",
+    "Recover the context with `struct button *b = CONTAINER_OF(work, struct button, work);`. Then don't handle \"one press per run\": the ISR counts `presses`, the handler counts `handled`, and the handler loops until they match. Never sleep in a work handler, because every other work item in the system waits behind you.",
+    "Handler: `struct button *b = CONTAINER_OF(work, struct button, work); while (b->handled < b->presses) { log_event(b); k_busy_wait(HANDLE_US); b->handled++; }`. `button_b_isr` is the same as A's: `btn_b.presses++; k_work_submit(&btn_b.work);`."
+  ]
+}

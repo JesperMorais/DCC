@@ -1,0 +1,11 @@
+{
+  "title": "Pathfinder on the SPI bus",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["mutex", "priority inversion", "priority inheritance", "critical sections"],
+  "hints": [
+    "Run it and open the Timeline. At tick 2, attitude waits while telemetry *formats* a packet, and that doesn't need the bus at all. Fix that first, then run again and look at tick 12: who is running while attitude waits?",
+    "Two changes: move `rtos_busy(3)` (the formatting) to before `rtos_mutex_lock`, so the lock only covers `spi_transfer(2)`. Then create the mutex with priority inheritance, so telemetry is boosted while attitude waits for it.",
+    "In telemetry: `rtos_busy(3); rtos_mutex_lock(spi_bus, RTOS_WAIT_FOREVER); spi_transfer(2); rtos_mutex_unlock(spi_bus);` and in `rover_start`: `spi_bus = rtos_mutex_create(true);`"
+  ]
+}

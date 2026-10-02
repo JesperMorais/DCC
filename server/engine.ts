@@ -28,16 +28,17 @@ export const ratingFor = (data: Data, lang: Lang) => data.profile?.languages[lan
 export const expectedScore = (rating: number, difficulty: number) => 1 / (1 + 10 ** ((difficulty - rating) / 400));
 
 /**
- * How well did it go, 0..1. Solving counts for a lot; hints and running long shave a bit off.
- * A solve never scores below 0.5, so finishing a well-matched challenge never costs rating.
+ * How well did it go, 0..1. Solving counts for a lot; hints and running long take it down towards `floor`.
+ * Using every hint lands exactly on the floor. With the floor at Elo's expectation (see applyResult),
+ * a solve you needed all the help for leaves the rating where it is: you're not ready to move on yet.
  */
-export function performanceScore(a: Attempt, c: Challenge): number {
+export function performanceScore(a: Attempt, c: Challenge, floor = 0.5): number {
   if (a.status !== "solved") return 0;
   const minutes = codingMinutes(a);
   const overtime = Math.max(0, minutes - Math.max(TARGET_MINUTES, c.estMinutes));
   const timePenalty = Math.min(0.2, (overtime / 20) * 0.2);
-  const hintPenalty = Math.min(c.hints.length, a.hintsUsed) * 0.12;
-  return Math.max(0.5, 1 - hintPenalty - timePenalty);
+  const hintShare = c.hints.length ? Math.min(c.hints.length, a.hintsUsed) / c.hints.length : 0;
+  return Math.max(floor, 1 - hintShare * (1 - floor) - timePenalty);
 }
 
 function kFactor(ratedCount: number) {
@@ -48,10 +49,13 @@ function kFactor(ratedCount: number) {
 
 export function applyResult(data: Data, a: Attempt, c: Challenge) {
   const progress = data.profile!.languages[c.language]!;
-  a.score = performanceScore(a, c);
+  const expected = expectedScore(progress.rating, c.rating);
+  // Floor: what Elo expected, capped at 0.5. A hard challenge solved with every hint moves nothing;
+  // an easy one (expected > 0.5) can still cost a little, as before.
+  a.score = performanceScore(a, c, Math.min(0.5, expected));
   if (!a.rated) return;
   const ratedCount = data.attempts.filter((x) => x.language === c.language && x.rated && x.status !== "in-progress" && x.id !== a.id).length;
-  const delta = kFactor(ratedCount) * (a.score - expectedScore(progress.rating, c.rating));
+  const delta = kFactor(ratedCount) * (a.score - expected);
   a.ratingBefore = progress.rating;
   progress.rating = Math.round(Math.max(600, Math.min(1800, progress.rating + delta)));
   a.ratingAfter = progress.rating;
@@ -71,7 +75,7 @@ const finished = (a: Attempt) => a.status !== "in-progress";
  * not recently seen, leaning towards topics they're weakest at.
  */
 export function pickChallenge(data: Data, all: Challenge[], lang: Lang, exclude: Set<string> = new Set()): Challenge | null {
-  const challenges = all.filter((c) => c.language === lang);
+  const challenges = all.filter((c) => c.language === lang && c.bank !== "path");
   const rating = ratingFor(data, lang) ?? 900;
   const target = rating + 30; // a gentle stretch
   const now = Date.now();
@@ -177,9 +181,17 @@ export function streaks(solvedDays: Set<string>) {
   return { current, best: Math.max(best, current) };
 }
 
-/** Streaks are global: a day you practised any language counts. */
+/** Days with real practice: a solved challenge (any language, tree labs included) or a completed tree node. */
+export function practiceDays(data: Data) {
+  const days = new Set(data.attempts.filter((a) => a.status === "solved").map((a) => a.date));
+  for (const p of Object.values(data.paths ?? {}))
+    for (const n of Object.values(p.nodes)) if (n.completedAt) days.add(today(new Date(n.completedAt)));
+  return days;
+}
+
+/** Streaks are global: a day you practised anything counts. */
 export function currentStreak(data: Data) {
-  return streaks(new Set(data.attempts.filter((a) => a.status === "solved").map((a) => a.date))).current;
+  return streaks(practiceDays(data)).current;
 }
 
 /** Topics of a challenge the learner has never finished a challenge in (within that language). */
@@ -188,7 +200,8 @@ export function newTopicsFor(data: Data, challenges: Challenge[], c: Challenge) 
   return c.topics.filter((t) => !seen.has(t));
 }
 
-export function languageSummaries(data: Data, challenges: Challenge[]) {
+export function languageSummaries(data: Data, everything: Challenge[]) {
+  const challenges = everything.filter((c) => c.bank !== "path");
   return LANG_IDS.map((lang) => {
     const p = data.profile?.languages[lang];
     const solved = new Set(data.attempts.filter((a) => a.language === lang && a.status === "solved").map((a) => a.challengeId));
@@ -206,14 +219,16 @@ export function languageSummaries(data: Data, challenges: Challenge[]) {
   });
 }
 
-export function dashboard(data: Data, challenges: Challenge[], lang: Lang) {
+export function dashboard(data: Data, everything: Challenge[], lang: Lang) {
+  const challenges = everything.filter((c) => c.bank !== "path");
   const inLang = challenges.filter((c) => c.language === lang);
   const byId = new Map(challenges.map((c) => [c.id, c]));
   const all = data.attempts.filter(finished);
-  const done = all.filter((a) => a.language === lang);
+  // Tree labs count for the streak but not for a language's rating or stats.
+  const done = all.filter((a) => a.language === lang && byId.has(a.challengeId));
   const solved = done.filter((a) => a.status === "solved");
   const solvedIds = new Set(solved.map((a) => a.challengeId));
-  const allSolvedDays = new Set(all.filter((a) => a.status === "solved").map((a) => a.date));
+  const allSolvedDays = practiceDays(data);
   const rating = ratingFor(data, lang) ?? 0;
   const history = data.ratingHistory.filter((p) => p.language === lang);
 
@@ -229,7 +244,11 @@ export function dashboard(data: Data, challenges: Challenge[], lang: Lang) {
   const heatDays = 7 * 20;
   const heatmap = Array.from({ length: heatDays }, (_, i) => {
     const date = today(new Date(Date.now() - (heatDays - 1 - i) * DAY));
-    return { date, solved: all.filter((a) => a.status === "solved" && a.date === date).length };
+    const nodes = Object.values(data.paths ?? {}).reduce(
+      (n, p) => n + Object.values(p.nodes).filter((x) => x.completedAt && today(new Date(x.completedAt)) === date).length,
+      0,
+    );
+    return { date, solved: all.filter((a) => a.status === "solved" && a.date === date).length + nodes };
   });
 
   const inProgress = data.attempts.filter((a) => a.status === "in-progress").map((a) => a.challengeId);

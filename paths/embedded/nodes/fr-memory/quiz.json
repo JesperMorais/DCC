@@ -1,0 +1,57 @@
+[
+  {
+    "type": "single",
+    "q": "An insulin pump creates all its tasks, queues and timers at boot and never deletes anything. The safety standard bans dynamic allocation after init. Which heap fits best?",
+    "options": ["heap_1", "heap_3", "heap_4", "heap_5"],
+    "answer": 0,
+    "explain": "**heap_1** is a deterministic bump allocator that never frees. That's exactly \"allocate at boot, keep forever\", and it can't fragment. Better still is full static allocation (`xTaskCreateStatic`) with dynamic allocation disabled. heap_3 wraps the non-deterministic libc `malloc`. heap_4 and heap_5 add free and coalescing that this design never needs, which is more code to certify."
+  },
+  {
+    "type": "single",
+    "q": "After a full worst-case test campaign, `uxTaskGetStackHighWaterMark(comms_handle)` returns **12**. What does that mean?",
+    "options": [
+      "The comms task used 12 words of stack at most",
+      "At its worst moment so far, comms had only 12 words (48 bytes) of stack left unused, which is dangerously tight",
+      "Comms overflowed its stack 12 times",
+      "12% of the stack is in use"
+    ],
+    "answer": 1,
+    "explain": "The high-water mark is the **minimum free stack ever**, in words, found by checking how much of the 0xA5 fill pattern is still untouched. 12 words means one deeper call path, a bigger local or an extra exception frame could overflow it. Grow the stack until there's comfortable headroom (often 20–30%). It's a free amount, not a usage figure, a count or a percentage."
+  },
+  {
+    "type": "multi",
+    "q": "Which statements about `configCHECK_FOR_STACK_OVERFLOW` are true?",
+    "options": [
+      "Method 1 checks the stack pointer at context switches",
+      "Method 2 also checks that the stack's last bytes still hold the fill pattern",
+      "Either method guarantees an overflow is caught before any memory is corrupted",
+      "When it detects one, it calls vApplicationStackOverflowHook()"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "Both methods run **at a context switch**, so they detect an overflow *after* it happened. By then a neighbouring TCB or stack may already be corrupted, which is why C is false. Method 2's pattern check catches overflows that unwound before the switch, which Method 1 misses. Both call your hook with the task's handle and name. For prevention rather than detection, use an MPU guard region or Armv8-M's stack-limit registers."
+  },
+  {
+    "type": "single",
+    "q": "Why does `xTaskCreateStatic` help capacity planning compared with `xTaskCreate`?",
+    "options": [
+      "Static tasks run faster",
+      "The stack and TCB are ordinary arrays, so the linker fails the build if RAM is over-committed instead of the product failing at runtime",
+      "Static tasks can't overflow their stacks",
+      "It allows priorities above configMAX_PRIORITIES"
+    ],
+    "answer": 1,
+    "explain": "With static allocation, every byte is a named variable in `.bss`, so the **linker** adds it all up and errors out if it doesn't fit. Runtime `NULL`s from an exhausted heap disappear. Speed is the same once a task is created, the stack can overflow just as easily, so you still measure the high-water mark, and priorities are unaffected."
+  },
+  {
+    "type": "single",
+    "q": "A design kicks the hardware watchdog from the SysTick interrupt. The throttle task deadlocks, but the car doesn't reset. What's the design flaw?",
+    "options": [
+      "The watchdog timeout is too long",
+      "SysTick keeps running even when tasks are dead, so the watchdog only proves the timer interrupt works, not that the critical tasks are healthy",
+      "Hardware watchdogs can't detect deadlocks",
+      "SysTick has too low an interrupt priority"
+    ],
+    "answer": 1,
+    "explain": "A watchdog is only as good as the evidence used to kick it. Kick it only when **every critical task has checked in** within its deadline. A supervisor that collects check-ins does this (you'll build one in the boss). Then a dead or stuck task stops the kicks and the hardware resets into a safe state. A shorter timeout or a different IRQ priority doesn't fix a kick that's independent of task health."
+  }
+]

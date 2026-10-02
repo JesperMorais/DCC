@@ -1,0 +1,38 @@
+[
+  {
+    "type": "single",
+    "q": "What does this log?",
+    "code": "const prices = [10, 20, 30];\nlet out = \"\";\nfor (const p in prices) {\n  out += p;\n}\nconsole.log(out);",
+    "options": ["`\"012\"`", "`\"102030\"`", "`60`", "`\"0\"`"],
+    "answer": 0,
+    "explain": "`for...in` gives you the **keys** of the array, its indices, as strings: `\"0\"`, `\"1\"`, `\"2\"`. Gluing them onto `\"\"` gives `\"012\"`. To get the prices you need `for (const p of prices)`, which would give `\"102030\"` here (still text, because `out` started as `\"\"`). To get `60`, start the accumulator at `0`."
+  },
+  {
+    "type": "single",
+    "q": "What does `sum([5, 5, 5])` return?",
+    "code": "function sum(nums: number[]): number {\n  let total = 0;\n  for (const n of nums) {\n    let total = 0;\n    total += n;\n  }\n  return total;\n}",
+    "options": ["`0`", "`5`", "`15`", "It doesn't compile"],
+    "answer": 0,
+    "explain": "The inner `let total = 0` creates a **new** variable that only lives inside the loop body. It's reset to 0, gets 5 added, and is thrown away every round. The outer `total` is never touched and is still `0` when it's returned. This compiles fine (shadowing is legal), which is why it's sneaky. Declare the accumulator once, before the loop."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these loops visit **every** element of `arr` exactly once? Select all that apply.",
+    "options": [
+      "`for (let i = 0; i < arr.length; i++)`",
+      "`for (let i = 0; i <= arr.length; i++)`",
+      "`for (const x of arr)`",
+      "`for (let i = 1; i < arr.length; i++)`"
+    ],
+    "answer": [0, 2],
+    "explain": "Indices run from `0` to `length - 1`. `i < arr.length` with a start of `0` hits exactly those. `<=` goes one step too far and reads `arr[arr.length]`, which is `undefined`. Starting at `1` skips the first element. `for...of` visits every item with no index to get wrong."
+  },
+  {
+    "type": "number",
+    "q": "What does `firstOver([3, 9, 4, 12], 8)` return?",
+    "code": "function firstOver(nums: number[], limit: number): number {\n  for (let i = 0; i < nums.length; i++) {\n    if (nums[i] > limit) return i;\n  }\n  return -1;\n}",
+    "answer": 1,
+    "tolerance": 0,
+    "explain": "It returns the **index**, not the value. `nums[0]` is 3 (not over 8), `nums[1]` is 9, which is over 8, so it returns `1` immediately and never looks at 12. If nothing were over the limit, the loop would finish and the function would return `-1`."
+  }
+]

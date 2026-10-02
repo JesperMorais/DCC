@@ -1,0 +1,53 @@
+[
+  {
+    "type": "single",
+    "q": "What does this print?",
+    "code": "class NotFoundError extends Error {\n  constructor(what: string) {\n    super(`${what} not found`);\n    this.name = \"NotFoundError\";\n  }\n}\n\ntry {\n  throw new NotFoundError(\"User 7\");\n} catch (err) {\n  if (err instanceof NotFoundError) console.log(\"404:\", err.message);\n  else console.log(\"500\");\n}",
+    "options": [
+      "`404: User 7 not found`",
+      "`500`",
+      "`404: NotFoundError`",
+      "Nothing: it's a compile error because `err` is `unknown`"
+    ],
+    "answer": 0,
+    "explain": "`super(...)` sets `message` to `\"User 7 not found\"`. The thrown object is a `NotFoundError`, so `instanceof` is true and the 404 branch runs. `err` *is* `unknown` in the catch, but `instanceof` narrows it, so `err.message` compiles. `name` is what shows up in stack traces, not in `message`."
+  },
+  {
+    "type": "multi",
+    "q": "Which statements about `private balance` versus `#balance` are true? Select all that apply.",
+    "options": [
+      "Both make `acc.balance` / `acc.#balance` a compile error outside the class",
+      "`private` is erased with the other types, so `(acc as any).balance` still reads it at runtime",
+      "A `#balance` field is hidden by JavaScript itself, even from code that uses `any`",
+      "`private` makes the field read-only inside the class too"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "Both are compile-time errors from outside. But `private` is a TypeScript type annotation, and types are erased, so at runtime it's an ordinary property that `any` can reach. `#` fields are a JavaScript feature, enforced when the code runs. Neither makes the field read-only: the class's own methods can change it freely. That's what `readonly` is for."
+  },
+  {
+    "type": "single",
+    "q": "The checkout code from the lesson catches every error and shows \"Card declined\". What is the smallest change that stops a typo's `ReferenceError` from being reported as a declined card?",
+    "code": "try {\n  pay(order);\n} catch (err) {\n  show(\"Card declined, try another card\");\n}",
+    "options": [
+      "Check `if (err instanceof CardDeclinedError)` before showing the message, and `throw err` otherwise",
+      "Add a `finally` block that logs the error",
+      "Change `catch (err)` to `catch (err: CardDeclinedError)`",
+      "Throw strings instead of `Error` objects so they're easier to compare"
+    ],
+    "answer": 0,
+    "explain": "Only handle the error you expect, and re-throw the rest so bugs crash loudly. `finally` runs for every outcome, so it can't tell errors apart. TypeScript doesn't allow annotating the catch variable with a specific class, because anything can be thrown, and even if it could, an annotation checks nothing at runtime. Strings lose the stack trace and can't be matched with `instanceof`."
+  },
+  {
+    "type": "single",
+    "q": "After `const inbox = new Inbox<string>()`, which line is a compile error?",
+    "code": "class Inbox<T> {\n  #items: T[] = [];\n  add(item: T): void { this.#items.push(item); }\n  get size(): number { return this.#items.length; }\n}",
+    "options": [
+      "`inbox.add(42)`",
+      "`inbox.add(\"42\")`",
+      "`inbox.size`",
+      "`new Inbox<number>()`"
+    ],
+    "answer": 0,
+    "explain": "`T` was fixed to `string` when this inbox was created, so `add` only accepts strings and `42` is rejected. `inbox.size` is a getter, read without parentheses. A *different* inbox can still be `Inbox<number>`: each object picks its own `T`."
+  }
+]

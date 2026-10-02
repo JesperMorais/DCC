@@ -1,0 +1,50 @@
+[
+  {
+    "type": "single",
+    "q": "What are `scores` and `passed` after this runs?",
+    "code": "const scores = [42, 88, 67, 95];\nconst passed = scores.filter((s) => s >= 60);",
+    "options": [
+      "`scores` is `[42, 88, 67, 95]`, `passed` is `[88, 67, 95]`",
+      "`scores` is `[88, 67, 95]`, `passed` is `[88, 67, 95]`",
+      "`scores` is `[42, 88, 67, 95]`, `passed` is `[false, true, true, true]`",
+      "`scores` is `[42, 88, 67, 95]`, `passed` is `3`"
+    ],
+    "answer": 0,
+    "explain": "`filter` builds a **new** array of the original items for which the callback returned `true`, and leaves the input alone. It doesn't return the booleans (that would be `map((s) => s >= 60)`), and it doesn't return a count (that would be `passed.length`)."
+  },
+  {
+    "type": "single",
+    "q": "A teammate's code returns `[undefined, undefined, undefined]`. Which bug is this?",
+    "code": "const names = [\"ada\", \"linus\", \"grace\"];\nconst loud = names.map((n) => { n.toUpperCase(); });",
+    "options": [
+      "The arrow has a block body `{ … }` with no `return`, so each call returns `undefined`",
+      "`toUpperCase` changes the string in place and returns nothing",
+      "`map` can't be used on strings",
+      "The callback needs a type annotation `(n: string)`"
+    ],
+    "answer": 0,
+    "explain": "With braces, an arrow function is a normal function body and only returns what you `return`. Either drop the braces, `(n) => n.toUpperCase()`, or write `{ return n.toUpperCase(); }`. Strings can't be changed in place at all, so `toUpperCase` returns a new string. The annotation is optional, since TypeScript infers `n: string` from the array."
+  },
+  {
+    "type": "multi",
+    "q": "Given `function countWhere(items: Song[], test: (s: Song) => boolean): number` and `type Song = { title: string; seconds: number }`, which calls compile? Select all that apply.",
+    "options": [
+      "`countWhere(songs, (s) => s.seconds > 180)`",
+      "`countWhere(songs, (s) => s.title.startsWith(\"A\"))`",
+      "`countWhere(songs, (s) => s.year > 2000)`",
+      "`countWhere(songs, (s) => s.seconds)`"
+    ],
+    "answer": [0, 1],
+    "explain": "The callback type says: you get a `Song`, you must return a `boolean`. The first two do exactly that. `s.year` doesn't exist on `Song`, so the third fails. The fourth returns a `number`, and `number` isn't assignable to `boolean`. TypeScript won't let a truthy-or-falsy number stand in for a real yes/no answer here."
+  },
+  {
+    "type": "order",
+    "q": "`[\"1\", \"7\", \"11\"].map(parseInt)` gives `[1, NaN, 3]`. Put the calls that `map` makes in the order they happen.",
+    "items": [
+      "`parseInt(\"1\", 0)` → 1 (radix 0 means \"guess\", so base 10)",
+      "`parseInt(\"7\", 1)` → NaN (base 1 doesn't exist)",
+      "`parseInt(\"11\", 2)` → 3 (\"11\" in binary)"
+    ],
+    "explain": "`map` calls its callback with `(item, index, array)`, once per item, in order. `parseInt` happens to take a second parameter, the radix (number base), so it receives the **index** as the base. The fix is to write the callback yourself so only the item gets passed: `.map((s) => parseInt(s, 10))`."
+  }
+]

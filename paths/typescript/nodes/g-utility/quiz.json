@@ -1,0 +1,53 @@
+[
+  {
+    "type": "single",
+    "q": "What is `Patch`?",
+    "code": "interface Product {\n  readonly id: number;\n  name: string;\n  price: number;\n}\ntype Patch = Partial<Omit<Product, \"id\">>;",
+    "options": [
+      "`{ name?: string; price?: number }`",
+      "`{ readonly id?: number; name?: string; price?: number }`",
+      "`{ name: string; price: number }`",
+      "`{ id?: number }`"
+    ],
+    "answer": 0,
+    "explain": "Read it inside-out. `Omit<Product, \"id\">` drops `id`, leaving `name` and `price`. `Partial` then makes both optional. If it were `Omit<Partial<Product>, \"id\">` you'd get the same here. `{ id?: number }` would be `Partial<Pick<Product, \"id\">>`."
+  },
+  {
+    "type": "single",
+    "q": "Which mapped type turns `{ readonly a?: string }` into `{ a: string }`?",
+    "options": [
+      "`{ -readonly [K in keyof T]-?: T[K] }`",
+      "`{ readonly [K in keyof T]?: T[K] }`",
+      "`{ [K in keyof T]: T[K] }`",
+      "`{ -readonly [K in keyof T]: T[K] | undefined }`"
+    ],
+    "answer": 0,
+    "explain": "You need to *remove* both modifiers, and removing is written with `-`: `-readonly` before the brackets, `-?` after. `-?` also drops the `undefined` that `?` added, so `a` becomes plain `string`. A mapped type without modifiers (`[K in keyof T]: T[K]`) **keeps** the original `readonly` and `?`. That's why `Partial` and `Readonly` preserve each other's modifiers."
+  },
+  {
+    "type": "single",
+    "q": "`toPublic` compiles. What does the API response contain?",
+    "code": "interface Account { name: string; passwordHash: string }\ntype PublicAccount = Omit<Account, \"passwordHash\">;\n\nfunction toPublic(a: Account): PublicAccount {\n  return a;\n}\nres.json(toPublic({ name: \"Ada\", passwordHash: \"x9f…\" }));",
+    "options": [
+      "Both `name` and `passwordHash`: types are erased, so `Omit` removed nothing from the object",
+      "Only `name`, because the return type is `PublicAccount`",
+      "Nothing: it's a compile error to return an `Account` as a `PublicAccount`",
+      "`name`, and `passwordHash` set to `undefined`"
+    ],
+    "answer": 0,
+    "explain": "An `Account` has every field a `PublicAccount` needs, so returning it is allowed: extra fields are fine for a variable that isn't a fresh object literal. But the return type is only a description. At runtime `a` is returned unchanged, hash included. To actually drop the field, build a new object: `const { passwordHash, ...rest } = a; return rest;`."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are compile errors? Select all that apply.",
+    "code": "interface User { id: number; name: string; email: string }",
+    "options": [
+      "`type A = Pick<User, \"emial\">`",
+      "`type B = Omit<User, \"emial\">`",
+      "`const c: Readonly<User> = u; c.name = \"x\";`",
+      "`const d: Partial<User> = {};`"
+    ],
+    "answer": [0, 2],
+    "explain": "`Pick` constrains its keys with `K extends keyof T`, so the typo is caught. `Omit` accepts *any* string key, so `Omit<User, \"emial\">` quietly removes nothing: a classic trap. `Readonly` makes every property `readonly`, so assigning `c.name` fails. And `{}` is a valid `Partial<User>`, because every field is optional."
+  }
+]

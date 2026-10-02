@@ -1,0 +1,11 @@
+{
+  "title": "Board bring-up: an LED and a button",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["memory-mapped I/O", "volatile", "GPIO", "read-modify-write", "BSRR"],
+  "hints": [
+    "`gpio_reg` does the address maths: add the byte offset to the base *as an integer*, then cast the result to `volatile uint32_t *`. For init, read MODER, change only the 2-bit field for your pin, and write it back. For the LED, write BSRR with `=`, never touching ODR.",
+    "`(volatile uint32_t *)(port_base + offset)`. PA5's mode field is at bit `5 * 2`: clear it with `&= ~(3u << 10)`, then OR in `1u << 10`. PC13's field is at bit 26, and input is `00`, so clearing is enough. LED on is `1u << LED_PIN` in BSRR, and LED off is `1u << (LED_PIN + 16)`.",
+    "`uint32_t m = GPIOA->MODER; m &= ~(3u << (LED_PIN * 2)); m |= 1u << (LED_PIN * 2); GPIOA->MODER = m; GPIOC->MODER &= ~(3u << (BUTTON_PIN * 2));` and then `GPIOA->BSRR = 1u << LED_PIN;` / `GPIOA->BSRR = 1u << (LED_PIN + 16);` and `return (GPIOC->IDR & (1u << BUTTON_PIN)) == 0;`"
+  ]
+}

@@ -1,0 +1,46 @@
+[
+  {
+    "type": "single",
+    "q": "An ISR produces into a full queue. Which line is correct inside the ISR?",
+    "options": [
+      "`k_msgq_put(&q, &s, K_FOREVER);`: wait until the thread makes room",
+      "`k_msgq_put(&q, &s, K_MSEC(1));`: a short wait is fine",
+      "`if (k_msgq_put(&q, &s, K_NO_WAIT) != 0) dropped++;`",
+      "`k_mutex_lock(&q_lock, K_FOREVER); k_msgq_put(&q, &s, K_NO_WAIT);`"
+    ],
+    "answer": 2,
+    "explain": "An ISR can never wait, so any timeout other than `K_NO_WAIT` is a bug (the simulator stops you, and real Zephyr asserts or misbehaves). With `K_NO_WAIT` a full queue returns `-ENOMSG` at once, and you apply your drop policy and **count it**. The queue is already safe to use from an ISR without a lock, and mutexes can't be used in ISRs anyway."
+  },
+  {
+    "type": "single",
+    "q": "A balance-control loop consumes gyro samples from an 8-slot queue. The consumer is sometimes stalled for 30 ms. Which full-queue policy fits, and why?",
+    "options": [
+      "Drop-newest: it keeps the history in order",
+      "Drop-oldest: after a stall the controller should see the freshest data, not 30 ms-old readings",
+      "Block the ISR until there's room",
+      "Make the queue 1 deep so it never overflows"
+    ],
+    "answer": 1,
+    "explain": "For control, the value of a sample decays fast. Drop-oldest (`get` the oldest, then `put` the new one) means the queue always holds the **newest** 8 samples, so the controller resumes on fresh data. Drop-newest is right for logs and protocols, where order and history matter more. Blocking is impossible in an ISR. A queue that's 1 deep still overflows; it just loses more."
+  },
+  {
+    "type": "number",
+    "q": "1 kHz samples, a queue of depth 8 with drop-oldest, and a consumer stalled for exactly 20 ms with an empty queue at the start. How many samples get dropped during the stall? (Assume exactly 20 arrive.)",
+    "answer": 12,
+    "tolerance": 0,
+    "unit": "samples",
+    "explain": "20 arrive and only 8 fit, so 20 − 8 = **12** are dropped: the 12 oldest. The 8 newest survive, and when the consumer wakes, the oldest sample it sees is about 8 ms old. Drop-newest would drop the same *number*, but keep the 8 *oldest*, which are up to 20 ms stale. Same count, very different usefulness."
+  },
+  {
+    "type": "multi",
+    "q": "Which statements about `k_msgq` are true?",
+    "options": [
+      "Messages are copied into the queue's own static buffer, so the producer can reuse its struct right away",
+      "`k_msgq_get(..., K_NO_WAIT)` on an empty queue returns -ENOMSG",
+      "Each queue can carry messages of different sizes",
+      "If a thread is already waiting in `k_msgq_get`, a put can hand the message directly to that thread"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "Message size is fixed per queue (`K_MSGQ_DEFINE(name, msg_size, max_msgs, align)`). For variable-length data, use `k_fifo`/`k_pipe` or a buffer pool. Messages are copied in and out of static storage, `-ENOMSG` signals full or empty with `K_NO_WAIT`, and a waiting receiver can get the message copied straight into its buffer, which is why a preempted consumer can end up holding one stale sample."
+  }
+]

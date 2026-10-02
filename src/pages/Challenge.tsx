@@ -4,7 +4,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type ChallengeView, type Clock, type FinishResult, type RunResult } from "../api";
 import { editorTheme, monaco } from "../monaco"; // configures the bundled Monaco before <Editor> mounts
 import { LangBadge, LANGUAGES, type Lang } from "../lang";
+import { LessonContent } from "../components/LessonContent";
 import { Mascot, TessLoading, TessRow } from "../components/Mascot";
+import { Timeline } from "../components/Timeline";
 import { categorize, conceptCardCopy, conceptNudge, finishLine, finishTitle, runReaction, type Line } from "../tess/lines";
 import {
   bumpNudge,
@@ -330,13 +332,27 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
     <div className="flex h-full flex-col">
       {/* Top bar */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface px-4">
-        <button className="btn btn-ghost px-2" onClick={() => navigate(-1)} title="Back">
+        <button
+          className="btn btn-ghost px-2"
+          onClick={() => (view.pathNode ? navigate(`/paths/${view.pathNode.path}/${view.pathNode.node}`) : navigate(-1))}
+          title={view.pathNode ? "Back to the lesson" : "Back"}
+        >
           <Icon name="back" size={16} />
         </button>
         <div className="flex min-w-0 items-center gap-2.5">
-          <LangBadge lang={lang} size={22} />
+          {view.pathNode ? (
+            <span className="grid size-[22px] place-items-center rounded-md bg-accent text-white" title="Skill-tree lab">
+              <Icon name="cpu" size={13} />
+            </span>
+          ) : (
+            <LangBadge lang={lang} size={22} />
+          )}
           <h1 className="truncate text-[15px] font-semibold">{view.title}</h1>
-          <LevelBadge level={view.level} />
+          {view.pathNode ? (
+            <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-ink-2">{view.profile === "linux" ? "Linux lab" : "RTOS lab"}</span>
+          ) : (
+            <LevelBadge level={view.level} />
+          )}
           {view.isDaily && (
             <span className="hidden items-center gap-1 rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-semibold text-accent-strong sm:inline-flex">
               <Icon name="zap" size={11} /> Daily
@@ -455,14 +471,17 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                 {(!view.newTopics.includes(view.topics[0]) || conceptSeen) && <ConceptCard view={view} onOpen={openConcept} tess={voice !== "off"} />}
               </>
             )}
-            {tab === "concept" && <Markdown source={view.learn} />}
+            {tab === "concept" && <LessonContent source={view.learn} />}
             {tab === "tests" && (
               <>
                 <p className="mb-3 text-sm text-ink-2">
                   {lang === "typescript" && "These run against your code. They're type-checked too, so a wrong parameter or return type shows up as a type error."}
                   {lang === "python" &&
                     "These pytest-style tests run against your code. Your type hints are checked by mypy --strict: its findings show as warnings, which are advice and won't block a solve."}
-                  {lang === "c" &&
+                  {lang === "c" && view.profile === "embedded" &&
+                    "Your code runs on a simulated microcontroller and a deterministic RTOS (1 tick = 1 ms). Tests drive virtual time with sim_run() and interrupts with sim_irq_*(). Every test that uses the kernel draws a Timeline in the results panel."}
+                  {lang === "c" && view.profile === "linux" && "Compiled with gcc against the real Linux APIs (-pthread). Each test runs in a fresh process inside a private temp directory."}
+                  {lang === "c" && view.profile === "c" &&
                     "Compiled together with your code using gcc -Wall -Wextra and AddressSanitizer. Out-of-bounds access, use-after-free and memory leaks fail a test."}
                 </p>
                 <CodeBlock code={view.tests} />
@@ -527,7 +546,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                   renderLineHighlight: "line",
                   smoothScrolling: true,
                   cursorBlinking: "smooth",
-                  fontLigatures: true,
+                  fontLigatures: false,
                   automaticLayout: true,
                 }}
               />
@@ -588,7 +607,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
             setFinish(null);
             load();
           }}
-          onDashboard={() => navigate(`/${lang}`)}
+          onDashboard={() => (view.pathNode ? navigate(`/paths/${view.pathNode.path}/${view.pathNode.node}`) : navigate(`/${lang}`))}
         />
       )}
     </div>
@@ -763,7 +782,18 @@ function ResultsPanel({
   onSubmit: () => void;
   reviewing: boolean;
 }) {
-  const [tab, setTab] = useState<"results" | "console">("results");
+  const [tab, setTab] = useState<"results" | "console" | "timeline">("results");
+  const [traceIdx, setTraceIdx] = useState(0);
+  const traces = result?.traces ?? [];
+  useEffect(() => {
+    // Show the timeline of the first failing test that has one, else the first.
+    if (!result?.traces?.length) {
+      if (tab === "timeline") setTab("results");
+      return;
+    }
+    const firstFail = result.traces.findIndex((t) => result.tests.find((x) => x.name === t.test && !x.pass));
+    setTraceIdx(firstFail >= 0 ? firstFail : 0);
+  }, [result]);
   const passing = result?.tests.filter((t) => t.pass).length ?? 0;
   const total = result?.tests.length ?? 0;
 
@@ -784,13 +814,17 @@ function ResultsPanel({
   return (
     <div className="flex h-full flex-col bg-surface">
       <div className="flex h-10 shrink-0 items-center gap-1 border-b border-line px-3">
-        {(["results", "console"] as const).map((k) => (
+        {(traces.length ? (["results", "timeline", "console"] as const) : (["results", "console"] as const)).map((k) => (
           <button
             key={k}
             onClick={() => setTab(k)}
             className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize ${tab === k ? "bg-surface-2 text-ink" : "text-muted hover:text-ink-2"}`}
           >
-            {k === "console" ? (
+            {k === "timeline" ? (
+              <span className="inline-flex items-center gap-1">
+                <Icon name="clock" size={12} /> Timeline
+              </span>
+            ) : k === "console" ? (
               <span className="inline-flex items-center gap-1">
                 <Icon name="terminal" size={12} /> Console{result?.logs.length ? ` (${result.logs.length})` : ""}
               </span>
@@ -819,6 +853,32 @@ function ResultsPanel({
                 Press <span className="kbd">Ctrl ↵</span> or <b className="text-ink-2">Run</b> to {lang === "c" ? "compile" : lang === "python" ? "check" : "type-check"} and test your code.
               </p>
             )}
+          </div>
+        )}
+
+        {result && tab === "timeline" && traces[traceIdx] && (
+          <div>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted">Test:</span>
+              {traces.map((t, i) => {
+                const pass = result.tests.find((x) => x.name === t.test)?.pass;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setTraceIdx(i)}
+                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs ${i === traceIdx ? "border-accent bg-accent-soft text-ink" : "border-line text-ink-2 hover:border-line-strong"}`}
+                  >
+                    <Icon name={pass ? "check" : "x"} size={11} className={pass ? "text-good" : "text-bad"} />
+                    {t.test}
+                  </button>
+                );
+              })}
+            </div>
+            {traces[traceIdx].deadlock && (
+              <div className="mb-3 rounded-lg border border-bad/30 bg-bad-soft px-3 py-2 text-xs text-bad">☠ Deadlock: every task ended up blocked forever.</div>
+            )}
+            <Timeline data={traces[traceIdx]} maxTicks={Math.min(traces[traceIdx].ticks, 300)} />
+            {traces[traceIdx].ticks > 300 && <p className="mt-1 text-xs text-muted">Showing the first 300 of {traces[traceIdx].ticks} ticks.</p>}
           </div>
         )}
 
@@ -1033,7 +1093,19 @@ function FinishModal({
 }) {
   const solved = finish.status === "solved";
   const delta = finish.ratingAfter - finish.ratingBefore;
-  const line = finishLine(finish, conceptOpened);
+  const base = finishLine(finish, conceptOpened);
+  const t = finish.tree;
+  const line =
+    t && solved
+      ? {
+          ...base,
+          mood: "cheer" as const,
+          confetti: t.completed ? ("full" as const) : ("none" as const),
+          text: t.completed
+            ? `Node complete: +${t.xpGained} XP${t.unlocked.length ? `, and ${t.unlocked.length} new node${t.unlocked.length > 1 ? "s" : ""} unlocked on the tree` : ""}.`
+            : "Lab solved! Pass the quiz on the lesson page and the node is yours.",
+        }
+      : base;
   const confetti = line.confetti === "full" && !reducedMotion();
   return (
     <>
@@ -1056,11 +1128,11 @@ function FinishModal({
         <div className="mt-5 grid grid-cols-3 gap-3">
           <Metric label="Time" value={fmtMinutes(finish.minutes)} />
           <Metric label="Hints used" value={String(finish.hintsUsed)} />
-          <Metric
-            label={finish.rated ? "Rating" : "Rating (practice)"}
-            value={finish.rated ? `${finish.ratingAfter}` : "—"}
-            delta={finish.rated ? delta : undefined}
-          />
+          {t ? (
+            <Metric label="XP" value={t.completed ? `+${t.xpGained}` : "—"} />
+          ) : (
+            <Metric label={finish.rated ? "Rating" : "Rating (practice)"} value={finish.rated ? `${finish.ratingAfter}` : "—"} delta={finish.rated ? delta : undefined} />
+          )}
         </div>
 
         <h3 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Reference solution</h3>
@@ -1071,7 +1143,7 @@ function FinishModal({
             Stay here
           </button>
           <button className="btn btn-primary" onClick={onDashboard}>
-            Back to dashboard <Icon name="chevron" size={14} />
+            {t ? "Back to the lesson" : "Back to dashboard"} <Icon name="chevron" size={14} />
           </button>
         </div>
       </Modal>

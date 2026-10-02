@@ -1,0 +1,54 @@
+[
+  {
+    "type": "single",
+    "q": "Inside `case \"swish\":`, what does TypeScript know about `p`?",
+    "code": "type Payment =\n  | { method: \"card\"; last4: string }\n  | { method: \"swish\"; phone: string };\n\nfunction show(p: Payment) {\n  switch (p.method) {\n    case \"swish\":\n      // here\n  }\n}",
+    "options": [
+      "`p` is `{ method: \"swish\"; phone: string }`, so `p.phone` is a `string`",
+      "`p` is still `Payment`, so you need `p.phone!` or a cast",
+      "`p.method` is `\"swish\"`, but `p.phone` may be `undefined`",
+      "Nothing: narrowing only works with `if`, not `switch`"
+    ],
+    "answer": 0,
+    "explain": "Checking the tag narrows the **whole object**. Only one shape has `method: \"swish\"`, so `p` is that shape and `p.phone` is a plain `string`. No cast or `!` is needed. `switch` narrows exactly like `if (p.method === \"swish\")` does."
+  },
+  {
+    "type": "single",
+    "q": "A teammate adds `{ method: \"klarna\"; months: number }` to `Payment`. Which version of `show` turns that into a **compile error** until klarna is handled?",
+    "code": "// A\ndefault: return \"\";\n\n// B\ndefault: return assertNever(p); // assertNever(value: never): never\n\n// C\n// no default at all, return type string | undefined",
+    "options": [
+      "B",
+      "A",
+      "C",
+      "All three"
+    ],
+    "answer": 0,
+    "explain": "In B, after the card and swish cases, `p` is the klarna shape, which isn't assignable to `never`, so the call to `assertNever` is an error. A compiles forever, because returning `\"\"` is fine for any shape: that's the blank grey card. C compiles too, because falling off the end just returns `undefined`, which the return type allows."
+  },
+  {
+    "type": "multi",
+    "q": "Which statements about `never` are true? Select all that apply.",
+    "options": [
+      "No value has type `never`",
+      "A function that always throws can have return type `never`",
+      "When every case of a union has been handled, the leftover type is `never`",
+      "`never` means the same as `undefined`",
+      "`assertNever` can never run, so it doesn't need a body"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "`never` is the empty type: no values at all. A function that always throws never *returns*, so `never` is its honest return type. Narrowing away every shape leaves `never`. It is **not** `undefined`, which is a real value. And `assertNever` does need a body: types are erased, so bad data from an API can still reach the `default` at runtime, and the `throw` makes that loud."
+  },
+  {
+    "type": "single",
+    "q": "Why doesn't this narrow `s` to the open shape?",
+    "code": "type Shift =\n  | { state: string; opensAt: string }\n  | { state: string; reason: string };\n\nif (s.state === \"open\") s.opensAt; // ✗",
+    "options": [
+      "The tag is typed `string` in both shapes, so `\"open\"` could belong to either. It must be a literal type like `\"open\"`",
+      "Narrowing only works on a field called `kind` or `type`",
+      "You have to use `switch` to narrow on a tag",
+      "`===` doesn't narrow; you need `in`"
+    ],
+    "answer": 0,
+    "explain": "A discriminant only works if each shape gives it a different **literal** type. With `state: string` everywhere, knowing `s.state === \"open\"` rules nothing out. Change the shapes to `state: \"open\"` and `state: \"closed\"` and the check narrows. The field can have any name, and `if` with `===` narrows just as well as `switch`."
+  }
+]

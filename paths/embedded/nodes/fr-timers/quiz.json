@@ -1,0 +1,52 @@
+[
+  {
+    "type": "single",
+    "q": "A 200 ms auto-reload `heartbeat` timer and a one-shot `timeout` timer due at tick 1050 both exist. At tick 1000, heartbeat's callback runs this. When does the timeout callback actually run?",
+    "code": "static void heartbeat_cb(TimerHandle_t t) {\n    led_on();\n    vTaskDelay(pdMS_TO_TICKS(100));\n    led_off();\n}",
+    "options": [
+      "At 1050, because timers are independent",
+      "At about 1100, after heartbeat_cb returns: all callbacks share the Tmr Svc task",
+      "Never, because the timeout is cancelled",
+      "At 1050, but in interrupt context"
+    ],
+    "answer": 1,
+    "explain": "Every software-timer callback runs in the **one** timer service task. While `heartbeat_cb` sleeps from 1000 to 1100, the daemon can't run anything else, so the timeout's expiry waits in the timer queue until about 1100. FreeRTOS timer callbacks never run in interrupt context: the daemon is a task. Fix it with a 100 ms auto-reload timer that toggles one step per expiry."
+  },
+  {
+    "type": "single",
+    "q": "You want the screen to turn off 30 s after the **last** key press. Which setup is right?",
+    "options": [
+      "A 30 s auto-reload timer, started once at boot",
+      "A 30 s one-shot timer; every key press calls xTimerReset() on it",
+      "A 30 s one-shot timer; every key press calls xTimerStart() on a new timer from xTimerCreate()",
+      "A 1 s auto-reload timer that counts key presses"
+    ],
+    "answer": 1,
+    "explain": "A one-shot timer fires once, and `xTimerReset` restarts its countdown from *now*, starting it if it had already expired. So the deadline is always 30 s after the last press. An auto-reload timer fires every 30 s whatever you do. Creating a new timer per press leaks timers. A 1 s poller works, but it's a hand-rolled version of what reset gives you."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are fine inside a FreeRTOS software-timer callback?",
+    "options": [
+      "xQueueSend(q, &evt, 0);",
+      "xTimerStop(other_timer, 0);",
+      "xSemaphoreTake(i2c_mutex, portMAX_DELAY); read_sensor(); xSemaphoreGive(i2c_mutex);",
+      "xTaskNotifyGive(worker);",
+      "vTaskDelay(pdMS_TO_TICKS(5));"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "The callback runs in a **task** (the daemon), so the normal task API is allowed, as long as it **doesn't block**. That's why A, B and D are fine with a 0 block time. C can wait indefinitely for a mutex someone else holds, which stalls every timer. E sleeps the daemon outright. Hand slow work like that I²C read to a worker task with a notification."
+  },
+  {
+    "type": "single",
+    "q": "Three LEDs blink different patterns. How should you structure the timers?",
+    "options": [
+      "One task per LED with vTaskDelay loops",
+      "Three timers sharing one callback; each timer's ID points to its LED's pattern state",
+      "One timer whose callback sleeps between the LEDs' steps",
+      "Three callbacks, copy-pasted, each with its own global variables"
+    ],
+    "answer": 1,
+    "explain": "`pvTimerID` is per-timer context, and `pvTimerGetTimerID()` gives it back in the callback. So one non-blocking `blink_cb` can drive any number of LEDs, each from its own struct. A task per LED costs a stack each, which is far more RAM than a timer. A sleeping callback stalls the daemon. Copy-paste works, but it triples the code you must review."
+  }
+]

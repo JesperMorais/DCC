@@ -1,0 +1,65 @@
+[
+  {
+    "type": "single",
+    "q": "Fix this overlay. The BME280 on `i2c1` is never found: `DEVICE_DT_GET(DT_NODELABEL(env_sensor))` won't even link. The board's `.dts` has `&i2c1 { status = \"disabled\"; ... }`.",
+    "code": "&i2c1 {\n    env_sensor: bme280@76 {\n        compatible = \"bosch,bme280\";\n        reg = <0x76>;\n    };\n};",
+    "options": [
+      "Change `reg = <0x76>` to `reg = <76>`",
+      "Add `status = \"okay\";` to `&i2c1`: a disabled bus disables everything on it",
+      "Rename the node to `env_sensor`",
+      "Add `CONFIG_BME280=y` to the overlay"
+    ],
+    "answer": 1,
+    "explain": "A node is only instantiated if it **and its parents** are `okay`. The board left `i2c1` disabled, so the sensor beneath it never gets a driver instance and `DEVICE_DT_GET` has nothing to link to. 0x76 is the correct I2C address (the unit address `@76` is hex too). The label `env_sensor:` is what `DT_NODELABEL` uses, and node names can stay as they are. Kconfig symbols go in `.conf` files, never in a devicetree overlay."
+  },
+  {
+    "type": "single",
+    "q": "Which snippet gets the board's LED portably, so it works on any board that defines a `led0` alias, with polarity handled?",
+    "options": [
+      "`#define LED_PIN 13` and `gpio_pin_set(dev, LED_PIN, 0);` /* active low */",
+      "`static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);` then `gpio_pin_set_dt(&led, 1);`",
+      "`const struct device *led = device_get_binding(\"LED_0\");`",
+      "`static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led0), gpios);`"
+    ],
+    "answer": 1,
+    "explain": "`DT_ALIAS(led0)` follows the board's alias. `GPIO_DT_SPEC_GET` pulls the port, pin *and flags* (such as `GPIO_ACTIVE_LOW`) from the tree, so `gpio_pin_set_dt(&led, 1)` means logical \"on\" on every board. Hard-coding the pin and polarity defeats the point. `device_get_binding` with a string name is the old runtime lookup. `led0` is an *alias*, not a node label, so `DT_NODELABEL(led0)` only works if a board happens to use that label too."
+  },
+  {
+    "type": "order",
+    "q": "Order these from \"hardware described\" to \"code using it safely\".",
+    "items": [
+      "An overlay adds `bme280@76` with `compatible = \"bosch,bme280\"` under an `okay` `&i2c0`",
+      "The binding YAML for `bosch,bme280` validates the node's properties at build time",
+      "The generated devicetree header provides macros for the node",
+      "`DEVICE_DT_GET(DT_NODELABEL(bme))` resolves to the driver instance at compile/link time",
+      "At startup, `device_is_ready(bme)` confirms the driver's init succeeded"
+    ],
+    "explain": "The tree describes the hardware. The binding (matched by `compatible`) checks it, and bad or missing properties fail the build. The generator turns it into macros. `DEVICE_DT_GET` turns a node into a `const struct device *` at build time (a missing or disabled node is a link error, not a NULL). Finally `device_is_ready()` covers what the build can't know: did the sensor actually answer during init?"
+  },
+  {
+    "type": "single",
+    "q": "Fix this overlay. The status LED moved from P0.13 to P0.17 on rev B of your PCB. Which change is idiomatic?",
+    "code": "/* board .dts (not yours) */\nleds {\n    compatible = \"gpio-leds\";\n    status_led: led_0 { gpios = <&gpio0 13 GPIO_ACTIVE_LOW>; };\n};",
+    "options": [
+      "Edit the board's `.dts` in the Zephyr tree",
+      "In `boards/<board>.overlay`: `&status_led { gpios = <&gpio0 17 GPIO_ACTIVE_LOW>; };`",
+      "`#ifdef REV_B` around the pin number in `main.c`",
+      "Add `CONFIG_LED_PIN=17` to prj.conf"
+    ],
+    "answer": 1,
+    "explain": "Overlays are merged on top of the board's tree. Referencing the node by its label (`&status_led`) and overriding one property is the whole change, and the C code doesn't change at all. Editing upstream board files breaks with every SDK update. `#ifdef`s put hardware back into code, and there's no such Kconfig symbol, because pins are hardware, so they live in the devicetree."
+  },
+  {
+    "type": "multi",
+    "q": "Which statements about devicetree in Zephyr are true?",
+    "options": [
+      "It's compiled into C macros at build time, so there's no runtime parsing",
+      "`status = \"disabled\"` nodes still get a driver instance, they just aren't started",
+      "`chosen` selects system-wide roles such as `zephyr,console`",
+      "`build/zephyr/zephyr.dts` shows the final merged tree after all overlays",
+      "Devicetree replaces Kconfig: you no longer need `CONFIG_` options for drivers"
+    ],
+    "answer": [0, 2, 3],
+    "explain": "Zephyr resolves the tree at build time into `DT_*` macros. Disabled nodes get **no** instance at all. `chosen` and `aliases` are the indirections that keep code portable, and `zephyr.dts` in the build directory is the merged truth to check when debugging. Devicetree describes *hardware* and Kconfig selects *software*, so you need both (though many driver symbols default to `y` when an enabled node exists)."
+  }
+]

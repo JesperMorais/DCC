@@ -1,0 +1,52 @@
+[
+  {
+    "type": "single",
+    "q": "Two consumers share this queue. Under load, a consumer sometimes returns a garbage item and `count` jumps to a huge number. Which bug is this?",
+    "code": "pthread_mutex_lock(&q->lock);\nif (q->count == 0)\n    pthread_cond_wait(&q->not_empty, &q->lock);\n*out = q->buf[q->head];\nq->head = (q->head + 1) % CAP;\nq->count--;\npthread_mutex_unlock(&q->lock);",
+    "options": [
+      "A missing `volatile` on `count`",
+      "`if` instead of `while`: after waking, another consumer may already have taken the item (or the wakeup was spurious), so it pops from an empty queue",
+      "`pthread_cond_wait` doesn't release the mutex, so the producer can't push",
+      "The modulo on `head` overflows"
+    ],
+    "answer": 1,
+    "explain": "A wakeup only means \"go and look\". Between the producer's signal and this thread re-acquiring the lock, a second consumer can take the item (a stolen wakeup), and POSIX also allows spurious wakeups. With `if`, the thread pops from an empty ring and `count--` wraps around. `while` re-checks the condition. `volatile` is irrelevant because the mutex already orders the memory, `cond_wait` *does* release the mutex atomically, and the modulo is fine."
+  },
+  {
+    "type": "single",
+    "q": "`bq_close()` sets `closed = true` and calls `pthread_cond_signal(&not_empty)` once. Three consumers are blocked on an empty queue. What happens at shutdown?",
+    "options": [
+      "All three wake up and return -EPIPE",
+      "One wakes up and returns -EPIPE. The other two sleep forever, and `pthread_join` on them hangs",
+      "None wake up, because a signal is lost if it's sent before closing",
+      "The program crashes because `signal` needs the mutex unlocked"
+    ],
+    "answer": 1,
+    "explain": "`signal` wakes (at least) **one** waiter. When a state change matters to *every* waiter, such as a shutdown flag, you need `pthread_cond_broadcast`. Signalling with or without the mutex held is legal, and the woken thread does see `closed` because the flag was set under the lock."
+  },
+  {
+    "type": "multi",
+    "q": "Which statements about `PTHREAD_PRIO_INHERIT` on glibc are true?",
+    "options": [
+      "A default `PTHREAD_MUTEX_INITIALIZER` mutex has priority inheritance turned off",
+      "Setting the protocol needs root",
+      "It's the POSIX version of `rtos_mutex_create(true)` from Fundamentals",
+      "It boosts the mutex owner to the priority of the highest-priority waiter while the owner holds the lock",
+      "It makes SCHED_FIFO unnecessary"
+    ],
+    "answer": [0, 2, 3],
+    "explain": "PI is opt-in. The default mutex is a pure userspace futex with no owner bookkeeping, which makes it a bit cheaper. Setting `PTHREAD_PRIO_INHERIT` needs no privileges, and it does exactly what the Fundamentals inheritance mutex did: the owner temporarily runs at the highest waiter's priority, so a medium task can't starve it. It doesn't replace a real-time policy, though. Priorities only mean something under SCHED_FIFO/RR, and *that* needs CAP_SYS_NICE or rtprio."
+  },
+  {
+    "type": "single",
+    "q": "You set `SCHED_FIFO` priority 80 on a `pthread_attr_t` and create the thread as root. `pthread_create` returns 0, but `chrt -p` shows the thread running as SCHED_OTHER. Why?",
+    "options": [
+      "Priority 80 is out of range",
+      "You forgot `pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED)`, so the thread inherited the creator's policy and ignored the attr",
+      "The kernel needs PREEMPT_RT for SCHED_FIFO",
+      "RT throttling downgraded it"
+    ],
+    "answer": 1,
+    "explain": "By default a new thread *inherits* its scheduling from the creating thread (`PTHREAD_INHERIT_SCHED`), and the policy and priority in the attr are silently ignored. 1–99 is a valid range, SCHED_FIFO works on any mainline kernel (PREEMPT_RT only makes it more deterministic), and RT throttling limits CPU time without changing the policy."
+  }
+]

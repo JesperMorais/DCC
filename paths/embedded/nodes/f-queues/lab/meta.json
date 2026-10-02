@@ -1,0 +1,11 @@
+{
+  "title": "The soil-moisture pipeline",
+  "profile": "embedded",
+  "estMinutes": 14,
+  "topics": ["queues", "producer/consumer", "back-pressure", "drop policy", "ISR to task"],
+  "hints": [
+    "Three gaps: the ISR must never wait, the filter never hands its average on, and the logger never receives anything. Start with the ISR: what does `rtos_queue_send` return when the queue is full and you don't wait?",
+    "ISR: send with `RTOS_NO_WAIT`, and if it returns false, count a drop (that's drop-newest). Filter: send the average to `log_q` and *wait* if it's full (back-pressure). Logger: block in `rtos_queue_receive(log_q, ...)` and call `log_line()`.",
+    "`if (!rtos_queue_send(sample_q, &sample, RTOS_NO_WAIT)) samples_dropped++;`, then in the filter `rtos_queue_send(log_q, &avg, RTOS_WAIT_FOREVER);`, and the logger loop is `int32_t avg; rtos_queue_receive(log_q, &avg, RTOS_WAIT_FOREVER); log_line(avg);`"
+  ]
+}

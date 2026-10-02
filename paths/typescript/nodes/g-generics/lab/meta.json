@@ -1,0 +1,11 @@
+{
+  "title": "Recently viewed",
+  "level": 4,
+  "estMinutes": 10,
+  "topics": ["generics"],
+  "hints": [
+    "Replace each `any` with a type parameter. `pushRecent` needs one, `<T>`, used for the list, the item and the result. `zip` has two unrelated inputs, so it needs two, `<A, B>`, and it returns an array of `[A, B]` tuples.",
+    "`pushRecent`: build a new array with the item first, followed by the old list without that item (`filter((x) => x !== item)`), then `slice(0, max)`. `zip`: loop up to `Math.min(as.length, bs.length)` and push `[as[i], bs[i]]`.",
+    "function pushRecent<T>(list: readonly T[], item: T, max: number): T[] { return [item, ...list.filter((x) => x !== item)].slice(0, max); }  function zip<A, B>(as: readonly A[], bs: readonly B[]): [A, B][] { … }"
+  ]
+}

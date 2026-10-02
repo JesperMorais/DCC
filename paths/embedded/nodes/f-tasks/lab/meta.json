@@ -1,0 +1,11 @@
+{
+  "title": "Rescue the starving control loop",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": ["tasks", "priorities", "preemption", "blocking vs busy-waiting"],
+  "hints": [
+    "Run the starter's tests and open the Timeline: the logger owns the CPU and `control` hardly appears. There are two bugs. The priorities are backwards, and the logger busy-waits while it's waiting for the flash.",
+    "Priorities follow deadlines, not importance: the 10-tick control loop is the most urgent, then the 50-tick blink, then the logger with no deadline. Higher number = more urgent. In the logger, swap `rtos_busy(1)` inside the wait loop for a call that *blocks* for a tick.",
+    "`rtos_task_create(\"control\", control_task, NULL, 3); rtos_task_create(\"blink\", blink_task, NULL, 2); rtos_task_create(\"logger\", logger_task, NULL, 1);` and `while (!flash_ready) rtos_delay(1);`. Then rerun and watch the idle gaps appear in the Timeline."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Heartbeat LED and backlight timeout",
+  "profile": "embedded",
+  "estMinutes": 15,
+  "topics": ["freertos", "software timers", "timer daemon", "one-shot vs auto-reload"],
+  "hints": [
+    "Create the pattern as a 100 ms timer that takes one step per expiry, not as one callback that sleeps between blinks. Callbacks run in the shared daemon task, so a sleep there freezes every timer.",
+    "`xTimerCreate(\"blink\", pdMS_TO_TICKS(BLINK_STEP_MS), pdTRUE, &g_status_led, blink_cb)` creates the auto-reload blink timer with its ID, and `xTimerCreate(\"idle\", pdMS_TO_TICKS(INACTIVITY_MS), pdFALSE, NULL, idle_cb)` creates the one-shot. In blink_cb, write `led_t *led = pvTimerGetTimerID(timer);`.",
+    "blink_cb: `led->on = led->pattern[led->step] != 0; led->step = (led->step + 1) % led->len;`. idle_cb ends with `xTimerStop(g_blink_timer, 0); g_status_led.on = false;`. user_activity: `if (!g_backlight_on) { g_backlight_on = true; g_status_led.step = 0; xTimerStart(g_blink_timer, 0); } xTimerReset(g_idle_timer, 0);`."
+  ]
+}

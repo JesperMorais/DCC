@@ -1,0 +1,11 @@
+{
+  "title": "The job board",
+  "level": 3,
+  "estMinutes": 10,
+  "topics": ["interfaces", "optional properties", "nullish coalescing", "object spread"],
+  "hints": [
+    "Optional fields get a `?` after the name. `FeaturedListing` doesn't repeat Listing's fields: `interface FeaturedListing extends Listing { … }`. For the missing-openings default, think about which operator keeps a real `0`.",
+    "`openingsLeft` is `listing.openings ?? 1` (`||` would turn 0 into 1). `hire` and `feature` both copy the listing with spread and then set one field after it: `{ ...listing, field: value }`.",
+    "function hire(listing: Listing): Listing { return { ...listing, openings: Math.max(0, openingsLeft(listing) - 1) }; }"
+  ]
+}

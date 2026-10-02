@@ -1,0 +1,11 @@
+{
+  "title": "The playlist screen",
+  "level": 2,
+  "estMinutes": 10,
+  "topics": ["map", "filter", "arrow functions", "callbacks"],
+  "hints": [
+    "`map` turns each item into something else; `filter` keeps the items whose callback returns `true`. Both return a new array and leave the input alone.",
+    "`songTitles` is `songs.map((s) => s.title)`, and `byArtist` is a `filter` comparing `s.artist === artist`. `titlesBy` can reuse `byArtist` and then `map`. For `countMatching`, replace `any` with a function type: `(song: Song) => boolean`.",
+    "function countMatching(songs: Song[], test: (song: Song) => boolean): number { let count = 0; for (const song of songs) { if (test(song)) count++; } return count; }"
+  ]
+}

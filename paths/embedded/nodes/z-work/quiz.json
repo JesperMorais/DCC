@@ -1,0 +1,47 @@
+[
+  {
+    "type": "number",
+    "q": "Three button edges arrive in the same tick, and each ISR calls `k_work_submit(&btn.work)`. The handler is idle and nothing else is queued. How many times does the handler run?",
+    "answer": 1,
+    "tolerance": 0,
+    "unit": "runs",
+    "explain": "The first submit queues the item (returns 1). The second and third find it **pending** and do nothing (return 0). So there's **one** run. That's by design: submission is a request for attention, not an event record. Keep a counter or flag in your struct and have the handler catch up on everything that happened."
+  },
+  {
+    "type": "single",
+    "q": "Which bug is this? With two buttons, pressing B sometimes toggles A's LED.",
+    "code": "struct button { struct k_work work; int led; };\nstruct button btn_a, btn_b;\n\nstatic void handler(struct k_work *w) {\n    struct button *b = (struct button *)&btn_a;\n    toggle(b->led);\n}",
+    "options": [
+      "Work items can't be embedded in structs",
+      "The handler ignores `w` and always uses `btn_a`. It should recover the owner with `CONTAINER_OF(w, struct button, work)`",
+      "Each button needs its own workqueue thread",
+      "`k_work_submit` should be called with the button as an argument"
+    ],
+    "answer": 1,
+    "explain": "The handler is told *which* work item ran (`w`), and that's the key back to its context. `CONTAINER_OF(w, struct button, work)` subtracts the member offset and gives you the enclosing `struct button`. Embedding the work item is exactly the intended pattern. `k_work_submit` takes only the work pointer, and one shared queue serves everyone."
+  },
+  {
+    "type": "single",
+    "q": "A colleague debounces in the work handler with `k_msleep(20)`. Why is that a problem?",
+    "options": [
+      "`k_msleep` is not allowed in any thread",
+      "The system workqueue is a single shared thread: while it sleeps, every other queued item (BLE, USB, sensors, your other buttons) waits 20 ms",
+      "Sleeping in the handler makes the work item pending forever",
+      "It's fine: the workqueue is cooperative, so sleeping is free"
+    ],
+    "answer": 1,
+    "explain": "Work items run one after another on one thread. A sleeping handler holds up the whole queue. That's how 'my LED code broke Bluetooth' happens. For timing, use a delayable work item (`k_work_schedule`/`k_work_reschedule`), or move slow jobs to your own workqueue. Sleeping is legal in a thread, and the item isn't pending while it runs."
+  },
+  {
+    "type": "single",
+    "q": "A preemptible thread at priority 3 is busy computing. An ISR submits a work item. When does the handler start?",
+    "options": [
+      "When the priority-3 thread blocks or sleeps",
+      "At the next time slice boundary",
+      "Right after the ISR: the system workqueue (-1) is more urgent than priority 3, so it preempts it",
+      "Never, because 3 is a higher priority than -1"
+    ],
+    "answer": 2,
+    "explain": "Remember the flip: in Zephyr **lower is more urgent**, so -1 beats 3. The work item makes the workqueue thread ready, and it preempts the preemptible thread immediately. The reverse case is the trap: if the busy thread were *cooperative* (negative), the work would wait until that thread yields. And option D is the FreeRTOS habit talking."
+  }
+]

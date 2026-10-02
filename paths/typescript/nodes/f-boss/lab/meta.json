@@ -1,0 +1,11 @@
+{
+  "title": "The grade book",
+  "level": 2,
+  "estMinutes": 18,
+  "topics": ["type aliases", "literal union types", "accumulator", "if/else chains", "map", "filter", "immutability"],
+  "hints": [
+    "Build it bottom-up: get `averageScore` and `gradeFor` right first, then `reportCard` can just call them. `honorRoll` is a `filter` and a `map` on top of `reportCard`.",
+    "averageScore: return 0 early for an empty list, sum with a `for...of` loop, then `Math.round(mean * 10) / 10`. gradeFor: an `if` chain from the highest band down, so each check only needs `>=`. curve: return a new object whose `scores` is `student.scores.map(...)` with `Math.min(100, s + points)`.",
+    "function honorRoll(students: Student[]): string[] { return students.map(reportCard).filter((card) => card.grade === \"A\").map((card) => card.name); }"
+  ]
+}

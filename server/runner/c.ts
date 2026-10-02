@@ -3,7 +3,12 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runProcess } from "./python.ts";
-import { LOOP_MSG, SKIPPED_MSG, lineOf, verdict, type Diagnostic, type RunResult, type TestResult } from "./types.ts";
+import { LOOP_MSG, SKIPPED_MSG, lineOf, verdict, type Diagnostic, type RunResult, type SimTrace, type TestResult } from "./types.ts";
+
+/** "c" = plain C17; "embedded" = + RTOS simulator, FreeRTOS/Zephyr facades, fake MCU; "linux" = POSIX/Linux APIs. */
+export type CProfile = "c" | "embedded" | "linux";
+const EMBEDDED_DIR = fileURLToPath(new URL("./c/embedded/", import.meta.url));
+const EMBEDDED_SOURCES = ["rtos_sim.c", "freertos.c", "zephyr.c", "mcu_sim.c"];
 
 const HARNESS_DIR = fileURLToPath(new URL("./c/", import.meta.url));
 const CC = process.env.DAILY_TS_CC ?? "gcc";
@@ -13,6 +18,24 @@ export const C_FLAGS = ["-std=c17", "-Wall", "-Wextra", "-pedantic", "-g", "-O0"
 const SAN = ["-fsanitize=address,undefined", "-fno-sanitize-recover=undefined"];
 
 let harnessObj: Promise<string> | null = null;
+let embeddedObjs: Promise<string[]> | null = null;
+
+/** Build the simulator + facades once per server start. */
+function buildEmbedded(): Promise<string[]> {
+  embeddedObjs ??= (async () => {
+    fs.mkdirSync(BUILD_DIR, { recursive: true });
+    const objs: string[] = [];
+    for (const src of EMBEDDED_SOURCES) {
+      const obj = path.join(BUILD_DIR, `${src.replace(".c", "")}-${process.pid}.o`);
+      const p = await runProcess(CC, ["-std=gnu17", "-Wall", "-Wextra", "-g", "-O0", "-fno-omit-frame-pointer", ...SAN, "-I", path.join(EMBEDDED_DIR, "include"), "-c", path.join(EMBEDDED_DIR, src), "-o", obj]);
+      if (p.code !== 0) throw new Error(`Couldn't build the embedded simulator (${src}):\n${p.stderr}`);
+      objs.push(obj);
+    }
+    return objs;
+  })();
+  embeddedObjs.catch(() => (embeddedObjs = null));
+  return embeddedObjs;
+}
 
 /** Build the harness runtime once per server start (it never changes at runtime). */
 function buildHarness(): Promise<string> {
@@ -144,14 +167,31 @@ function parseResults(raw: string): TestResult[] {
   return results;
 }
 
-export async function runC(userCode: string, testsCode: string): Promise<RunResult> {
+function parseTraces(raw: string): SimTrace[] {
+  const out: SimTrace[] = [];
+  for (const rec of raw.split("\x1e")) {
+    if (!rec.trim()) continue;
+    try {
+      const t = JSON.parse(rec) as SimTrace;
+      t.test = t.test.replace(/_/g, " ");
+      out.push(t);
+    } catch {
+      /* a test that crashed mid-write */
+    }
+  }
+  return out;
+}
+
+export async function runC(userCode: string, testsCode: string, profile: CProfile = "c"): Promise<RunResult> {
   const started = performance.now();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "daily-ts-c-"));
   const elapsed = () => Math.round(performance.now() - started);
   try {
     let obj: string;
+    let extraObjs: string[] = [];
     try {
       obj = await buildHarness();
+      if (profile === "embedded") extraObjs = await buildEmbedded();
     } catch (e) {
       const r = { diagnostics: [], setupErrors: [{ file: "your-code", message: (e as Error).message }], tests: [], logs: [] };
       return { ...r, passed: false, durationMs: elapsed() };
@@ -160,7 +200,14 @@ export async function runC(userCode: string, testsCode: string): Promise<RunResu
     const unit = `#include "harness.h"\n#line 1 "your-code.c"\n${userCode}\n#line 1 "tests.c"\n${testsCode}\n`;
     fs.writeFileSync(path.join(dir, "unit.c"), unit);
     const exe = path.join(dir, "program");
-    const cc = await runProcess(CC, [...C_FLAGS, ...SAN, "-I", HARNESS_DIR, "unit.c", obj, "-o", exe, "-lm"], { cwd: dir, timeoutMs: 30_000 });
+    const profileFlags =
+      profile === "embedded" ? ["-I", path.join(EMBEDDED_DIR, "include")] : profile === "linux" ? ["-D_GNU_SOURCE", "-pthread"] : [];
+    // gnu17 for embedded/linux: real firmware and POSIX code use a few GNU extensions (e.g. typeof in vendor headers).
+    const std = profile === "c" ? C_FLAGS : C_FLAGS.map((f) => (f === "-std=c17" ? "-std=gnu17" : f)).filter((f) => f !== "-pedantic");
+    const cc = await runProcess(CC, [...std, ...SAN, ...profileFlags, "-I", HARNESS_DIR, "unit.c", obj, ...extraObjs, "-o", exe, "-lm", ...(profile === "linux" ? ["-pthread", "-lrt"] : [])], {
+      cwd: dir,
+      timeoutMs: 30_000,
+    });
     const diagnostics = parseDiagnostics(cc.stderr, userCode, testsCode);
     if (cc.code !== 0) {
       const setupErrors = diagnostics.some((d) => d.severity === "error") ? [] : linkErrors(cc.stderr);
@@ -173,10 +220,12 @@ export async function runC(userCode: string, testsCode: string): Promise<RunResu
     const run = await runProcess(exe, [], {
       cwd: dir,
       fd3: true,
+      fd4: profile === "embedded",
       timeoutMs: 15_000,
       env: {
         PATH: process.env.PATH,
-        ASAN_OPTIONS: "detect_leaks=1:abort_on_error=0:allocator_may_return_null=1:detect_stack_use_after_return=1:print_summary=1",
+        // Task switching uses ucontext; stack-use-after-return tracking doesn't understand it.
+        ASAN_OPTIONS: `detect_leaks=1:abort_on_error=0:allocator_may_return_null=1:detect_stack_use_after_return=${profile === "embedded" ? 0 : 1}:print_summary=1`,
         UBSAN_OPTIONS: "print_stacktrace=1",
         LSAN_OPTIONS: "exitcode=0",
       },
@@ -191,7 +240,8 @@ export async function runC(userCode: string, testsCode: string): Promise<RunResu
     if (run.timedOut) setupErrors.push({ file: "tests", message: "Execution timed out — is there an infinite loop?" });
     else if (!tests.length && run.code !== 0) setupErrors.push({ file: "tests", message: `The test program crashed on startup.\n${run.stderr.trim().slice(0, 1500)}` });
     const r = { diagnostics, setupErrors, tests, logs };
-    return { ...r, passed: verdict(r), durationMs: elapsed() };
+    const traces = profile === "embedded" ? parseTraces(run.fd4) : undefined;
+    return { ...r, passed: verdict(r), durationMs: elapsed(), ...(traces?.length ? { traces } : {}) };
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

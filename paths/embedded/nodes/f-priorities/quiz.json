@@ -1,0 +1,43 @@
+[
+  {
+    "type": "single",
+    "q": "Predict the timeline. Both tasks are released at tick 0. `sensor` has priority 3, period 4 and WCET 1. `filter` has priority 1, period 12 and WCET 5. At which tick does the first `filter` job **finish**?",
+    "code": "tick:    0 1 2 3 4 5 6 7 8 9\nsensor:  # . . . # . . . # .\nfilter:  ? ? ? ? ? ? ? ? ? ?",
+    "options": [
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "answer": 2,
+    "explain": "`sensor` takes ticks 0 and 4 (and 8). `filter` runs in the gaps: 1, 2, 3, then 5, 6. That's 5 ticks, so it finishes at the end of tick 6, which is **tick 7**. Response-time analysis agrees: R = 5 + ⌈R/4⌉·1. R=5 → 7, R=7 → 7, stable. Tick 5 ignores the preemptions, and 6 counts only one of them."
+  },
+  {
+    "type": "number",
+    "q": "A task set has `adc` (T=2, C=0.5), `pid` (T=10, C=3) and `ui` (T=50, C=10). What is the CPU utilisation, in %?",
+    "answer": 75,
+    "tolerance": 0.5,
+    "unit": "%",
+    "explain": "U = 0.5/2 + 3/10 + 10/50 = 0.25 + 0.30 + 0.20 = **0.75 = 75 %**. The Liu & Layland bound for 3 tasks is 78.0 %, so RM is guaranteed to schedule it without any further analysis."
+  },
+  {
+    "type": "number",
+    "q": "Under rate-monotonic priorities, what is the worst-case response time of `logger` (T=20, C=4), given the higher-priority tasks `motor` (T=5, C=1) and `imu` (T=10, C=3)? Iterate R = C + Σ ⌈R/Tⱼ⌉·Cⱼ.",
+    "answer": 9,
+    "tolerance": 0,
+    "unit": "ticks",
+    "explain": "Start with R = C = 4. Then R = 4 + ⌈4/5⌉·1 + ⌈4/10⌉·3 = 4+1+3 = **8**. Next, R = 4 + ⌈8/5⌉·1 + ⌈8/10⌉·3 = 4+2+3 = **9**. Then R = 4 + ⌈9/5⌉·1 + ⌈9/10⌉·3 = 4+2+3 = 9, which is stable, so **R = 9 ticks** (≤ 20, schedulable). On the timeline: motor runs at 0, imu at 1–3, logger at 4, motor at 5, logger at 6–8, done at 9. If you said 8, you missed the second motor job, the one released at 5 while the logger was still busy."
+  },
+  {
+    "type": "single",
+    "q": "A safety review says: \"The airbag crash-log task is the most important task, so give it the highest priority.\" It has a 500 ms period and plenty of slack. The airbag deployment check runs every 1 ms. What's wrong with that advice?",
+    "options": [
+      "Nothing: important tasks should always preempt unimportant ones",
+      "Priority is about timing, not importance: rate-monotonic puts the 1 ms task on top, and the logger meets its 500 ms deadline from the gaps",
+      "The logger should get the same priority as the deployment check, so they round-robin fairly",
+      "Priorities don't matter if the CPU utilisation is under 100 %"
+    ],
+    "answer": 1,
+    "explain": "If the logger runs on top, its long job sits on the CPU while the 1 ms check misses deadline after deadline. Under RM the 1 ms task preempts briefly, and the logger still finishes well within 500 ms. Its importance shows up as *meeting its deadline*, not as a big priority number. Round-robin at equal priority makes the 1 ms task wait for a time slice. And U < 100 % is necessary, but not sufficient for fixed priorities. You still need a sensible order (see the playground)."
+  }
+]

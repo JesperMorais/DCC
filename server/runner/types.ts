@@ -20,6 +20,18 @@ export interface TestResult {
   error?: { message: string; expected?: string; received?: string; stack?: string };
 }
 
+/** One test's run through the RTOS simulator, drawn as a timeline in the UI. */
+export interface SimTrace {
+  test: string;
+  ticks: number;
+  tasks: { name: string; prio: number; coop: boolean }[];
+  /** [startTick, endTick, taskIndex | -1 for idle] */
+  runs: [number, number, number][];
+  /** [tick, type, a, b] — type: run, preempt, irq, timer, ready, wait, timeout, lock, unlock, prio, delay, overrun, mark, deadlock, fail, exit, create */
+  events: [number, string, string, string][];
+  deadlock: boolean;
+}
+
 export interface RunResult {
   /** True when there are no error diagnostics, nothing crashed on load, and every test passes. */
   passed: boolean;
@@ -28,6 +40,8 @@ export interface RunResult {
   tests: TestResult[];
   logs: { level: "log" | "warn" | "error"; text: string }[];
   durationMs: number;
+  /** RTOS-simulator timelines, one per test that used the kernel. */
+  traces?: SimTrace[];
 }
 
 export const LOOP_MSG = "Took longer than 1500ms — infinite loop?";

@@ -1,0 +1,42 @@
+[
+  {
+    "type": "multi",
+    "q": "Which of these take up space in **flash**, the non-volatile program memory? Select all that apply.",
+    "code": "const uint16_t sine_table[256] = { /* ... */ };   /* A */\nint retries = 3;                                   /* B */\nstatic uint8_t rx_buf[512];                        /* C */\nvoid loop(void) { char line[80]; /* ... */ }      /* D */",
+    "options": ["A: the `const` table (.rodata)", "B: the initial value `3` of `retries` (.data)", "C: `rx_buf` (.bss)", "D: `line` (stack)", "The machine code of `loop` (.text)"],
+    "answer": [0, 1, 4],
+    "explain": "Code (`.text`) and constants (`.rodata`) live in flash. **Initialised globals** (`.data`) need RAM at runtime *and* a copy of their initial value in flash, which the startup code copies across before `main`. `.bss` is only zeroed at boot, so it needs no flash, just RAM. Locals live on the stack, in RAM, only while the function runs."
+  },
+  {
+    "type": "single",
+    "q": "A logger has run for 3 weeks with mixed-size `malloc`/`free`. The heap stats say **6 KB free**, yet `malloc(2048)` returns NULL. What's going on?",
+    "options": [
+      "Fragmentation: the free memory is split into many small holes, and none of them is 2 KB long",
+      "A memory leak: the 6 KB figure is wrong",
+      "`malloc` can't allocate more than 1 KB on a microcontroller",
+      "The stack has grown into the heap"
+    ],
+    "answer": 0,
+    "explain": "Free space isn't the same as *contiguous* free space. After many mixed-size allocs and frees, the heap is full of small gaps. It passes a 10-minute test and fails in the field. A fixed-block pool makes this impossible, because every hole is exactly one block. A leak would show *less* free memory, not unusable free memory. A stack collision is a different (and worse) failure that usually corrupts data rather than returning NULL."
+  },
+  {
+    "type": "number",
+    "q": "A task has a **1024-byte** stack. Its recursive `parse()` function has a local `uint8_t tmp[240]`, plus 32 bytes of saved registers and return address per call (272 bytes per frame). Ignoring everything else, how many nested calls fit **completely** before the stack overflows?",
+    "answer": 3,
+    "tolerance": 0,
+    "unit": "calls",
+    "explain": "1024 / 272 = 3.76, so 3 frames fit (816 bytes) and the 4th one runs off the end. On a Cortex-M with no MPU, the 4th call doesn't crash. It silently overwrites whatever sits below the stack (often `.bss` or another task's stack). That's why safety standards ban unbounded recursion and why you measure stack high-water marks."
+  },
+  {
+    "type": "single",
+    "q": "Why does a fixed-block pool make your firmware **more predictable** than a general-purpose `malloc`?",
+    "options": [
+      "Alloc and free are O(1) pops and pushes on a free list, and because all blocks are the same size, fragmentation can't happen",
+      "It uses less RAM than `malloc` for any workload",
+      "Pools never run out of memory",
+      "Pools are automatically thread-safe"
+    ],
+    "answer": 0,
+    "explain": "Constant-time operations give you a **bounded** worst-case execution time, and equal-sized blocks mean any free block satisfies any request. Pools *can* waste RAM, because a 10-byte object in a 32-byte block wastes 22. They *do* run out, but at a known count you can size for and test. They aren't magically thread-safe either: a pool shared with an ISR still needs a critical section around its free list."
+  }
+]

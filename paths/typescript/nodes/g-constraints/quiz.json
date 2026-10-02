@@ -1,0 +1,48 @@
+[
+  {
+    "type": "single",
+    "q": "You `console.log(items)` inside `function f(items: any[])` and see `[{ id: 1, name: \"Ada\" }]`. What does that tell you about the *type* of `items` at the call site?",
+    "options": [
+      "Nothing. Types are erased before the code runs, so the log only shows values",
+      "That TypeScript inferred `{ id: number; name: string }[]`",
+      "That `items` is a `Customer[]`, because the values match",
+      "That `any` was narrowed to the logged shape"
+    ],
+    "answer": 0,
+    "explain": "TypeScript types only exist while you write code; the JavaScript that runs has none. The log shows **values**. With `any[]` the compiler has already stopped tracking the type, and logging can't bring it back. To keep the caller's type, use a type parameter `T` in the signature."
+  },
+  {
+    "type": "multi",
+    "q": "Given `function ids<T extends { id: number }>(items: readonly T[]): number[]`, which calls compile? Select all that apply.",
+    "code": "ids([{ id: 1, name: \"Ada\" }]);\nids([{ id: 5, sku: \"X\" }]);\nids([{ name: \"no id\" }]);\nids([{ id: \"7\" }]);",
+    "options": [
+      "`ids([{ id: 1, name: \"Ada\" }])`",
+      "`ids([{ id: 5, sku: \"X\" }])`",
+      "`ids([{ name: \"no id\" }])`",
+      "`ids([{ id: \"7\" }])`"
+    ],
+    "answer": [0, 1],
+    "explain": "The constraint is a **minimum**: each item must have *at least* `id: number`. Extra fields like `name` or `sku` are fine. `{ name: \"no id\" }` is missing `id`, and `{ id: \"7\" }` has an `id` of the wrong type (`string` isn't `number`), so both fail."
+  },
+  {
+    "type": "single",
+    "q": "Both signatures accept a `Customer[]`. Why do the tests for *Dedupe by id* insist on the generic one?",
+    "code": "function a(items: { id: number }[]): { id: number }[]\nfunction b<T extends { id: number }>(items: T[]): T[]",
+    "options": [
+      "`a` returns `{ id: number }[]`, so the caller loses `name` and every other field. `b` returns `Customer[]`",
+      "`a` is slower at runtime because it checks every item",
+      "`b` removes duplicates automatically",
+      "`a` doesn't accept objects with extra fields"
+    ],
+    "answer": 0,
+    "explain": "Types don't change runtime speed, so both run identically. The difference is what the **caller** gets back. `a` promises only the minimum shape, so `a(customers)[0].name` is a compile error. `b` passes the caller's exact type through: `T = Customer` in, `Customer[]` out. (And `a` does accept extra fields. Excess-property checks only apply to inline object literals assigned directly to a type.)"
+  },
+  {
+    "type": "single",
+    "q": "What is the type of `x`?",
+    "code": "interface User { name: string; age: number; admin: boolean }\nfunction get<T, K extends keyof T>(obj: T, key: K): T[K] { return obj[key]; }\nconst x = get(user, \"admin\");",
+    "options": ["`boolean`", "`string | number | boolean`", "`keyof User`", "`\"admin\"`"],
+    "answer": 0,
+    "explain": "`K` is inferred as the literal `\"admin\"`, so `T[K]` is `User[\"admin\"]`, which is `boolean`. If the return type were `T[keyof T]`, you'd get the union of *all* the value types, `string | number | boolean`. Having `K` as its own type parameter is what keeps it precise."
+  }
+]

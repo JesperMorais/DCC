@@ -1,0 +1,15 @@
+{
+  "title": "A connection pool",
+  "level": 4,
+  "estMinutes": 12,
+  "topics": [
+    "classes",
+    "private fields",
+    "errors"
+  ],
+  "hints": [
+    "Keep two `#` arrays: the free resources and the checked-out ones. `available` is a getter over the free one. For the error class, call `super(message)` first, then set `this.name` and `this.capacity`.",
+    "`acquire` takes from the front of the free list (`shift()`) and records the resource as checked out. `release` finds it in the checked-out list with `indexOf`; `-1` means throw, otherwise `splice` it out and `push` it onto the back of the free list. `use` is acquire, then `try { return fn(r); } finally { this.release(r); }`.",
+    "acquire(): T { if (this.#free.length === 0) throw new PoolExhaustedError(this.#capacity); const r = this.#free.shift() as T; this.#inUse.push(r); return r; } — set `#capacity` in the constructor from `resources.length`, and copy the array with `[...resources]` so you don't modify the caller's list."
+  ]
+}

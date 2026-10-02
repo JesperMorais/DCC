@@ -1,0 +1,43 @@
+[
+  {
+    "type": "multi",
+    "q": "Which of these lines are compile errors? Select all that apply.",
+    "code": "type Size = \"small\" | \"medium\" | \"large\";\ntype Pizza = { topping: string; size: Size };\n\nconst a: Pizza = { topping: \"ham\", size: \"large\" };\nconst b: Pizza = { topping: \"ham\", size: \"huge\" };\nconst c: Pizza = { topping: \"ham\" };\nconst d: Pizza = { topping: \"ham\", size: \"small\", extraCheese: true };",
+    "options": ["`a`", "`b`", "`c`", "`d`"],
+    "answer": [1, 2, 3],
+    "explain": "`a` matches the shape exactly. `b` fails because `\"huge\"` isn't one of the three strings in `Size`; a literal union only allows the listed values. `c` fails because `size` is missing, and every property in an object type is required unless marked optional. `d` fails because `extraCheese` isn't part of `Pizza`: an object literal written straight into a typed variable may only have known properties, which is how TypeScript catches misspelled property names."
+  },
+  {
+    "type": "single",
+    "q": "Why does the last line fail to compile?",
+    "code": "type Status = \"placed\" | \"delivered\";\nfunction ship(s: Status) { /* … */ }\n\nlet next = \"placed\";\nship(next);",
+    "options": [
+      "`let next = \"placed\"` is inferred as `string`, and a `string` could be any text, not just a `Status`",
+      "`\"placed\"` is misspelled",
+      "Literal unions only work with `const` functions",
+      "`ship` needs `Status` written as `String`"
+    ],
+    "answer": 0,
+    "explain": "With `let`, TypeScript assumes you might reassign the variable to any other string, so it widens the type to `string`. A `string` isn't assignable to `\"placed\" | \"delivered\"`. Fix it with `const next = \"placed\"` (inferred as the literal `\"placed\"`) or with `let next: Status = \"placed\"`. The spelling is fine, and capital `String` is the wrapper object type, which would make things worse, not better."
+  },
+  {
+    "type": "single",
+    "q": "What does this print?",
+    "code": "type Order = { id: number; status: string };\n\nconst first: Order = { id: 1, status: \"placed\" };\nconst same = first;\nsame.status = \"cancelled\";\n\nconsole.log(first.status);",
+    "options": ["`\"cancelled\"`", "`\"placed\"`", "A compile error, because `first` is `const`", "`undefined`"],
+    "answer": 0,
+    "explain": "`same = first` doesn't copy the object. Both names point at the **same** object, so changing it through `same` changes what `first` sees too. `const` only stops you from pointing `first` at a different object; it doesn't freeze the properties. That's why functions that \"update\" an order should return a **new** object instead of assigning to the one they were given."
+  },
+  {
+    "type": "single",
+    "q": "You `console.log(order)` and see `{ id: 7, status: 'cooking' }`. Where did the `Order` type go?",
+    "options": [
+      "It was erased. Types are only checked while you write code; the JavaScript that runs contains values, not types",
+      "It's hidden; `console.log(typeof order)` prints `\"Order\"`",
+      "Type aliases are stored on the object as a hidden property",
+      "It only shows up in the browser console, not in Node"
+    ],
+    "answer": 0,
+    "explain": "A `type` alias produces no code at all. After compiling, the program is plain JavaScript with no trace of `Order`. `typeof order` at runtime prints `\"object\"`, the JavaScript category of the value. TypeScript's job ends before the program starts: it has already checked that every place using `order` matches the shape."
+  }
+]

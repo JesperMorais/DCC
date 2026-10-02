@@ -1,0 +1,11 @@
+{
+  "title": "Pack the order",
+  "level": 1,
+  "estMinutes": 8,
+  "topics": ["functions", "type annotations", "arithmetic", "remainder operator"],
+  "hints": [
+    "Each function needs its two parameters annotated as `number`, and a `: number` return type. Then think about which operator answers each question: `/` with rounding, or `%`.",
+    "`fullBoxes` is \"how many times does `perBox` fit into `items`\", rounded **down**: `Math.floor`. `leftover` is what remains after that: the remainder operator. `boxesNeeded` counts a partly filled box too, so it rounds **up**.",
+    "function fullBoxes(items: number, perBox: number): number { return Math.floor(items / perBox); }  ·  leftover uses `items % perBox`  ·  boxesNeeded uses `Math.ceil(items / perBox)`."
+  ]
+}

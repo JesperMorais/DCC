@@ -1,0 +1,11 @@
+{
+  "title": "Debounce + long press as a state machine",
+  "profile": "embedded",
+  "estMinutes": 15,
+  "topics": ["state machines", "superloop", "debouncing", "SysTick"],
+  "hints": [
+    "Draw it first: IDLE → PRESS_DEBOUNCE → PRESSED → LONG_HELD, with release paths through a release-debounce state back to IDLE. A single `uint32_t` counter counts ticks in the current state, so reset it whenever you change state. In each debounce state, a sample that disagrees sends you straight back to where you came from.",
+    "Debounce with `if (raw == expected) { if (++count >= DEBOUNCE_MS) change state; } else go back;`. In PRESSED, count held ticks, and when the count reaches `LONG_PRESS_MS` do `long_presses++` and move to LONG_HELD, which never counts again. For the release, use two states (RELEASE_DEBOUNCE_SHORT and RELEASE_DEBOUNCE_LONG) or a flag, so that only a release from PRESSED adds a short press.",
+    "In `SysTick_Handler`: `bool raw = (GPIOC->IDR & (1u << 13)) == 0; switch (state) { case BTN_IDLE: if (raw) go(BTN_PRESS_DEBOUNCE); break; case BTN_PRESS_DEBOUNCE: if (!raw) go(BTN_IDLE); else if (++ticks >= DEBOUNCE_MS) go(BTN_PRESSED); break; case BTN_PRESSED: if (!raw) { from_long = false; go(BTN_RELEASE_DEBOUNCE); } else if (++ticks >= LONG_PRESS_MS) { long_presses++; go(BTN_LONG_HELD); } break; ... }`. `go()` sets `state` and zeroes `ticks`. In RELEASE_DEBOUNCE, a pressed sample returns to PRESSED or LONG_HELD."
+  ]
+}

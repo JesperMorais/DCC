@@ -1,0 +1,52 @@
+[
+  {
+    "type": "single",
+    "q": "The `decoder` task (priority 4) is blocked on `rx_queue`. The `ui` task (priority 1) is running when this ISR fires at tick 10. When does the decoder run?",
+    "code": "void USART1_IRQHandler(void) {\n    BaseType_t woken = pdFALSE;\n    uint8_t b = USART1->DR;\n    xQueueSendFromISR(rx_queue, &b, &woken);\n}",
+    "options": [
+      "Immediately at tick 10, because it has a higher priority",
+      "At the next scheduling point, typically tick 11: the ISR returns into ui",
+      "Never, because the ISR didn't call xQueueSend",
+      "Only when ui blocks or calls taskYIELD()"
+    ],
+    "answer": 1,
+    "explain": "`xQueueSendFromISR` makes the decoder *ready* and sets `woken` to pdTRUE, but nothing acts on it, so the CPU returns into `ui`. The decoder runs at the next scheduling point, usually the next tick interrupt (which preempts ui, so it isn't \"only when ui blocks\"). Adding `portYIELD_FROM_ISR(woken);` makes it run right as the ISR exits. The byte isn't lost: it's in the queue."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are bugs inside an interrupt handler?",
+    "options": [
+      "xSemaphoreGive(sem);",
+      "xQueueSendFromISR(q, &item, &woken); with woken never initialised",
+      "xQueueReceive(q, &item, 0);",
+      "vTaskNotifyGiveFromISR(task, &woken); portYIELD_FROM_ISR(woken);",
+      "xQueueSendFromISR(q, &a, &woken); xQueueSendFromISR(q, &b, &woken); portYIELD_FROM_ISR(woken);"
+    ],
+    "answer": [0, 1, 2],
+    "explain": "**A**: the task API in an ISR asserts on a debug build and corrupts the kernel on a release build. **B**: FromISR calls only ever *set* the flag to pdTRUE and never clear it, so stack garbage causes spurious context switches. **C**: `xQueueReceive` is a task API, even with a 0 timeout. The ISR-safe one is `xQueueReceiveFromISR`. **D** is the textbook pattern. **E** is correct too: one accumulator for several calls, then one yield."
+  },
+  {
+    "type": "single",
+    "q": "Your UART ISR calls `xQueueSendFromISR`, and it returns `errQUEUE_FULL`. What should the ISR do?",
+    "options": [
+      "Retry in a loop until the decoder makes space",
+      "Call xQueueSend(q, &b, portMAX_DELAY) instead",
+      "Count the drop (and maybe flag an overflow), then return",
+      "Disable the UART interrupt forever"
+    ],
+    "answer": 2,
+    "explain": "An ISR can never wait. Spinning in the ISR blocks the decoder that would make space, because tasks don't run while you're in the ISR, so it deadlocks the CPU. `xQueueSend` with a timeout is a task API and would block. Count it, return, and fix the sizing or the consumer's priority if the counter ever moves. Disabling the interrupt turns a lost byte into a dead product."
+  },
+  {
+    "type": "single",
+    "q": "On an STM32, the UART ISR calls `xQueueSendFromISR` and the board hard-faults about once an hour. The NVIC priority for USART1 is 0 (the CubeMX default). What's the likely cause?",
+    "options": [
+      "The queue is too small",
+      "Priority 0 is above configMAX_SYSCALL_INTERRUPT_PRIORITY, so the ISR can interrupt the kernel's own critical sections",
+      "FreeRTOS doesn't support UART interrupts",
+      "The ISR should call portYIELD_FROM_ISR(pdTRUE) unconditionally"
+    ],
+    "answer": 1,
+    "explain": "On Cortex-M, FreeRTOS critical sections mask interrupts only **up to** `configMAX_SYSCALL_INTERRUPT_PRIORITY`. An IRQ at priority 0 (the most urgent) is never masked, so it can call into the kernel *while the kernel is updating its lists*. That makes rare, random corruption. ISRs that use the FreeRTOS API need a numerically higher (less urgent) priority. A full queue just returns errQUEUE_FULL, and an unconditional yield wastes time but doesn't fault."
+  }
+]

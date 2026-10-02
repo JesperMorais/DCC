@@ -1,0 +1,47 @@
+[
+  {
+    "type": "single",
+    "q": "On a Cortex-M (4-byte `StackType_t`), how much stack does this task get?",
+    "code": "xTaskCreate(radio_task, \"radio\", 1024, NULL, 3, NULL);",
+    "options": ["1 KB", "4 KB", "256 bytes", "It depends on configTICK_RATE_HZ"],
+    "answer": 1,
+    "explain": "The stack depth is in **words**. 1024 words × 4 bytes = **4 KB**. If the author meant 1 KB, they wasted 3 KB of RAM, which is a lot on a 64 KB part. 256 bytes would be the answer if the number were bytes divided by 4. The tick rate has nothing to do with stacks. (ESP-IDF is the odd one out: its `xTaskCreate` takes bytes.)"
+  },
+  {
+    "type": "single",
+    "q": "What happens when this task function reaches its closing brace on real FreeRTOS?",
+    "code": "static void calibrate_task(void *pvParameters) {\n    (void)pvParameters;\n    run_calibration();\n}",
+    "options": [
+      "The task is deleted automatically, like a thread returning",
+      "It returns into prvTaskExitError(), which asserts and hangs (or does something undefined)",
+      "The scheduler restarts the task from the top",
+      "Nothing: the task just becomes idle"
+    ],
+    "answer": 1,
+    "explain": "A FreeRTOS task must never return. The port seeds a new task's stack with `prvTaskExitError` as its return address, which triggers `configASSERT` and spins. The fix is `vTaskDelete(NULL);` as the last line. POSIX threads clean up on return, but FreeRTOS tasks don't, and they are never restarted or silently idled."
+  },
+  {
+    "type": "multi",
+    "q": "`configMAX_PRIORITIES` is 8. Which of these task priority plans are fine? (higher number = more urgent)",
+    "options": [
+      "control 6, comms 4, ui 2, logger 1",
+      "control 10, comms 5, ui 1",
+      "control 7, logger 0",
+      "control 3, comms 2, ui 1"
+    ],
+    "answer": [0, 3],
+    "explain": "Valid priorities are 0..7, and only the **order** matters for scheduling, so A and D are both fine. B uses 10, which is out of range: FreeRTOS clamps it to 7, and the simulator rejects it. C puts the logger at 0, which shares the idle task's priority. That's legal, but the logger then time-slices with idle and only runs when nothing else wants the CPU. That's rarely what you meant, and it can starve the idle task's cleanup."
+  },
+  {
+    "type": "single",
+    "q": "A colleague writes `vTaskDelay(500);` for a half-second blink. Later the product's `configTICK_RATE_HZ` goes from 1000 to 100 to save power. What does the blink become, and what's the fix?",
+    "options": [
+      "Still 500 ms, because delays are in milliseconds",
+      "5 seconds; write vTaskDelay(pdMS_TO_TICKS(500))",
+      "50 ms; write vTaskDelay(500 * portTICK_PERIOD_MS)",
+      "It stops blinking, because the delay is too long for the tick counter"
+    ],
+    "answer": 1,
+    "explain": "Delays are in **ticks**. At 100 Hz a tick is 10 ms, so 500 ticks is 5 s. `pdMS_TO_TICKS(500)` converts milliseconds to ticks at compile time for whatever tick rate is configured. Multiplying by `portTICK_PERIOD_MS` goes the wrong way: it turns ticks into ms. And 500 is nowhere near the 32-bit tick counter's limit."
+  }
+]

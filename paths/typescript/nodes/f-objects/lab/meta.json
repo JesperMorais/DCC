@@ -1,0 +1,11 @@
+{
+  "title": "The coffee bar till",
+  "level": 2,
+  "estMinutes": 10,
+  "topics": ["objects", "type aliases", "object types", "literal union types"],
+  "hints": [
+    "Start with the types. A literal union lists the allowed strings joined with `|`, and an object type lists each property with its type between `{ }`.",
+    "`type Size = \"small\" | \"medium\" | \"large\";` then `type CoffeeOrder = { drink: string; size: Size; shots: number; oatMilk: boolean };`. For the price, pick the base with an if/else chain on `order.size`, then add `(order.shots - 1) * 6` and 5 if `order.oatMilk`.",
+    "withOatMilk must build a brand-new object instead of assigning to the old one: `return { drink: order.drink, size: order.size, shots: order.shots, oatMilk: true };`"
+  ]
+}

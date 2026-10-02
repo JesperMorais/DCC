@@ -1,0 +1,11 @@
+{
+  "title": "A week of steps",
+  "level": 2,
+  "estMinutes": 12,
+  "topics": ["for...of", "for loops", "accumulator"],
+  "hints": [
+    "Each function is an accumulator: a variable before the loop, updated inside, returned after. `averageSteps` only needs the items (`for...of`). `improvedDays` compares each day with the one before it, so it needs the index.",
+    "`improvedDays`: a classic `for` starting at `i = 1`, comparing `days[i] > days[i - 1]`. `longestStreak`: keep two numbers, `current` (add 1 on a goal day, reset to 0 otherwise) and `best` (the biggest `current` you've seen).",
+    "longestStreak: `let current = 0; let best = 0; for (const n of days) { if (n >= goal) { current++; if (current > best) best = current; } else { current = 0; } } return best;`  ·  averageSteps: sum with `for...of`, return `0` for an empty week, else `Math.round(total / days.length)`."
+  ]
+}

@@ -47,8 +47,32 @@ export interface Attempt {
   code?: string;
 }
 
+export interface NodeProgress {
+  quizPassed: boolean;
+  quizAttempts: number;
+  quizFirstTry: boolean;
+  labSolved: boolean;
+  /** Fewest hints used in a solved lab attempt. */
+  labHints: number | null;
+  /** Latest time the quiz was passed (all answers right). Re-passing it counts as practice. */
+  quizPassedAt?: string;
+  /** Latest time the lab was solved without hints. */
+  cleanLabAt?: string;
+  completedAt?: string;
+  stars: number;
+  xp: number;
+}
+
+export interface PathProgress {
+  nodes: Record<string, NodeProgress>;
+  /** The branch the learner chose first, once the fundamentals are done. */
+  branch?: string;
+}
+
 export interface Data {
   version: 2;
+  /** Skill-tree progress per path. */
+  paths?: Record<string, PathProgress>;
   profile: Profile | null;
   attempts: Attempt[];
   /** date → language → challenge id, fixed once assigned so the daily doesn't shift mid-day. */
@@ -59,7 +83,7 @@ export interface Data {
 const DATA_FILE =
   process.env.DAILY_TS_DATA ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../data/progress.json");
 
-const empty = (): Data => ({ version: 2, profile: null, attempts: [], dailies: {}, ratingHistory: [] });
+const empty = (): Data => ({ version: 2, profile: null, attempts: [], dailies: {}, ratingHistory: [], paths: {} });
 
 /** v1 (TypeScript-only) → v2 (per-language). Lossless: every attempt, daily and rating point is kept. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

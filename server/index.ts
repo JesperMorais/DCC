@@ -19,6 +19,9 @@ import {
   ratingFor,
   START_RATING,
 } from "./engine.ts";
+import { labSolved, nodeView, pathView, progressOf, submitQuiz } from "./pathProgress.ts";
+import { loadPaths } from "./paths.ts";
+import { focusFor } from "./weakness.ts";
 import { HARNESS_DTS } from "./runner/harness.ts";
 import { runChallenge } from "./runner/index.ts";
 import { load, reset, save, today, type Attempt, type Experience } from "./store.ts";
@@ -26,7 +29,12 @@ import { load, reset, save, today, type Attempt, type Experience } from "./store
 const PORT = Number(process.env.PORT ?? 4321);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-let challenges = loadChallenges();
+// The daily bank and the skill-tree labs live side by side; labs are tagged bank: "path".
+const loadAll = () => {
+  const { paths, labs } = loadPaths();
+  return { challenges: [...loadChallenges(), ...labs], paths };
+};
+let { challenges, paths } = loadAll();
 const byId = () => new Map(challenges.map((c) => [c.id, c]));
 
 const app = new Hono();
@@ -34,7 +42,7 @@ const app = new Hono();
 // Challenge files are plain folders; pick up edits without restarting in dev.
 if (process.env.NODE_ENV !== "production") {
   app.use("/api/*", async (_c, next) => {
-    challenges = loadChallenges();
+    ({ challenges, paths } = loadAll());
     await next();
   });
 }
@@ -79,8 +87,10 @@ function challengeView(c: Challenge) {
     bestCode: best?.code ?? null,
     isDaily: data.dailies[today()]?.[c.language] === c.id,
     expected: rating !== null ? expectedScore(rating, c.rating) : null,
-    newTopics: newTopicsFor(data, challenges, c),
-    languageStarted: rating !== null,
+    newTopics: c.bank === "path" ? [] : newTopicsFor(data, challenges, c),
+    languageStarted: rating !== null || c.bank === "path",
+    profile: c.profile ?? "c",
+    pathNode: c.pathNode ?? null,
   };
 }
 
@@ -89,9 +99,10 @@ app.get("/api/harness", (c) => c.text(HARNESS_DTS));
 app.get("/api/state", (c) => {
   const data = load();
   if (!data.profile) return c.json({ profile: null });
-  const d = dashboard(data, challenges, langParam(c));
+  const lang = langParam(c);
+  const d = dashboard(data, challenges, lang);
   save(data); // dashboard may have assigned today's daily
-  return c.json(d);
+  return c.json({ ...d, focus: focusFor(data, paths, challenges, lang) });
 });
 
 function startLanguage(lang: Lang, experience: Experience) {
@@ -150,7 +161,7 @@ app.get("/api/challenges", (c) => {
     levels: Object.entries(LEVEL_BANDS).map(([k, band]) => ({ level: Number(k), name: LANGUAGES[lang].levels[Number(k)], band })),
     rating: ratingFor(data, lang),
     challenges: challenges
-      .filter((ch) => ch.language === lang)
+      .filter((ch) => ch.language === lang && ch.bank !== "path")
       .map((ch) => ({
         id: ch.id,
         slug: ch.slug,
@@ -176,7 +187,7 @@ app.post("/api/challenges/:lang/:slug/start", (c) => {
   const ch = findChallenge(c);
   const data = load();
   if (!ch || !data.profile) return c.json({ error: "not found" }, 404);
-  if (!data.profile.languages[ch.language]) return c.json({ error: "language not started" }, 409);
+  if (!data.profile.languages[ch.language] && ch.bank !== "path") return c.json({ error: "language not started" }, 409);
   if (!activeAttempt(ch.id)) {
     dailyChallenge(data, challenges, ch.language);
     const date = today();
@@ -190,7 +201,8 @@ app.post("/api/challenges/:lang/:slug/start", (c) => {
       hintsUsed: 0,
       runs: 0,
       isDaily: data.dailies[date]?.[ch.language] === ch.id,
-      rated: !data.attempts.some((a) => a.challengeId === ch.id && a.status !== "in-progress"),
+      // Tree labs are progression, not skill rating.
+      rated: ch.bank !== "path" && !data.attempts.some((a) => a.challengeId === ch.id && a.status !== "in-progress"),
     };
     data.attempts.push(attempt);
     save(data);
@@ -248,7 +260,7 @@ app.post("/api/challenges/:lang/:slug/run", async (c) => {
   const ch = findChallenge(c);
   if (!ch) return c.json({ error: "not found" }, 404);
   const { code } = await c.req.json<{ code: string }>();
-  const result = await runChallenge(ch.language, String(code ?? ""), ch.tests, ch.mode);
+  const result = await runChallenge(ch.language, String(code ?? ""), ch.tests, ch.mode, ch.profile);
   const a = activeAttempt(ch.id);
   if (a) {
     a.runs++;
@@ -279,9 +291,15 @@ function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: s
   a.status = status;
   a.finishedAt = new Date().toISOString();
   a.code = code;
-  applyResult(data, a, ch);
+  if (ch.bank !== "path") applyResult(data, a, ch);
+  let tree: ReturnType<typeof labSolved> | null = null;
+  if (ch.pathNode && status === "solved") {
+    const p = paths.find((x) => x.id === ch.pathNode!.path);
+    const node = p?.nodes.find((n) => n.id === ch.pathNode!.node);
+    if (p && node) tree = labSolved(data, p, node, a.hintsUsed);
+  }
   save(data);
-  const rating = ratingFor(data, ch.language)!;
+  const rating = ratingFor(data, ch.language) ?? 0;
   return {
     status,
     score: a.score,
@@ -296,6 +314,7 @@ function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: s
     levelName: levelForRating(ch.language, rating).name,
     streak: currentStreak(data),
     firstSolveToday: status === "solved" && !solvedTodayBefore,
+    tree: tree && { ...tree, path: ch.pathNode!.path, node: ch.pathNode!.node },
   };
 }
 
@@ -304,7 +323,7 @@ app.post("/api/challenges/:lang/:slug/submit", async (c) => {
   const a = ch && activeAttempt(ch.id);
   if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
   const { code } = await c.req.json<{ code: string }>();
-  const result = await runChallenge(ch.language, String(code ?? ""), ch.tests, ch.mode);
+  const result = await runChallenge(ch.language, String(code ?? ""), ch.tests, ch.mode, ch.profile);
   if (!result.passed) return c.json({ error: "Not all checks pass yet", result }, 400);
   return c.json({ ...finish(ch, a, "solved", code), result });
 });
@@ -315,6 +334,52 @@ app.post("/api/challenges/:lang/:slug/giveup", async (c) => {
   if (!ch || !a) return c.json({ error: "no active attempt" }, 400);
   const { code } = await c.req.json<{ code: string }>().catch(() => ({ code: "" }));
   return c.json(finish(ch, a, "gave-up", String(code ?? "")));
+});
+
+/* ---------------- skill trees ---------------- */
+const labsById = () => new Map(challenges.filter((c) => c.bank === "path").map((c) => [c.id, c]));
+
+app.get("/api/paths", (c) => {
+  const data = load();
+  return c.json(paths.map((p) => {
+    const v = pathView(data, p, labsById(), challenges);
+    return { id: v.id, title: v.title, tagline: v.tagline, language: v.language, xp: v.xp, rank: v.rank, stars: v.stars, maxStars: v.maxStars, sections: v.sections };
+  }));
+});
+
+app.get("/api/paths/:path", (c) => {
+  const p = paths.find((x) => x.id === c.req.param("path"));
+  if (!p) return c.json({ error: "not found" }, 404);
+  return c.json(pathView(load(), p, labsById(), challenges));
+});
+
+app.post("/api/paths/:path/branch", async (c) => {
+  const p = paths.find((x) => x.id === c.req.param("path"));
+  const { branch } = await c.req.json<{ branch: string }>();
+  if (!p || !p.sections.some((s) => s.id === branch)) return c.json({ error: "unknown branch" }, 400);
+  const data = load();
+  progressOf(data, p.id).branch = branch;
+  save(data);
+  return c.json({ ok: true });
+});
+
+app.get("/api/paths/:path/nodes/:node", (c) => {
+  const p = paths.find((x) => x.id === c.req.param("path"));
+  const node = p?.nodes.find((n) => n.id === c.req.param("node"));
+  if (!p || !node) return c.json({ error: "not found" }, 404);
+  return c.json(nodeView(load(), p, node, labsById(), challenges));
+});
+
+app.post("/api/paths/:path/nodes/:node/quiz", async (c) => {
+  const p = paths.find((x) => x.id === c.req.param("path"));
+  const node = p?.nodes.find((n) => n.id === c.req.param("node"));
+  if (!p || !node) return c.json({ error: "not found" }, 404);
+  const { answers } = await c.req.json<{ answers: unknown[] }>();
+  const data = load();
+  if (pathView(data, p, labsById(), challenges).nodes.find((n) => n.id === node.id)?.status === "locked") return c.json({ error: "locked" }, 403);
+  const r = submitQuiz(data, p, node, Array.isArray(answers) ? answers : []);
+  save(data);
+  return c.json(r);
 });
 
 // Production: serve the built SPA.

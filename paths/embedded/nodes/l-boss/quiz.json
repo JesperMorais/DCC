@@ -1,0 +1,48 @@
+[
+  {
+    "type": "single",
+    "q": "A sensor is unplugged at 02:00. By 02:01 the daemon is at 100% CPU and its 10 ms ticks arrive hundreds of ms late. Which bug is this?",
+    "code": "if (tag < n_sensors) {\n    ssize_t n = read(fd, buf, sizeof buf);\n    if (n <= 0) return;          /* nothing to do */\n    feed_lines(&sensors[tag], buf, n);\n}",
+    "options": [
+      "The read end now reports EOF forever, and with level-triggered epoll it's readable on every `epoll_wait`, so the loop spins on it",
+      "`read()` blocks on the unplugged sensor and starves the timer",
+      "The timerfd has overrun, so `epoll_wait` returns too often",
+      "Using a 64-byte buffer causes partial reads, which forces extra wakeups"
+    ],
+    "answer": 0,
+    "explain": "After the writer goes away, `read()` returns 0 **every time** and the fd stays ready (`EPOLLIN|EPOLLHUP`). Level-triggered epoll reports it on every call, and `return` doesn't change that, so you get a hot loop that delays the timer. The fix is `epoll_ctl(EPOLL_CTL_DEL)` on EOF. The other options are wrong for these reasons. `read()` on a ready fd doesn't block. Timer overruns make `read(tfd)` return a larger count, not more wakeups. A small buffer means more reads only while there's data, not a spin at EOF."
+  },
+  {
+    "type": "number",
+    "q": "Sensor A's fd delivers three reads: `\"7\\n1\"`, `\"4\\nx\"` and `\"y\\n21\\n\"`. With a correct per-sensor line buffer, what is the **mean of A's samples** (`T` line value)?",
+    "answer": 14,
+    "tolerance": 0.05,
+    "explain": "Join the bytes and split on `\\n`: `7`, `14`, `xy` and `21`. `xy` is one error, so the samples are 7, 14 and 21, and (7 + 14 + 21) / 3 = **14.0**. The traps: a parser that restarts at every `read()` sees `1` and `4` as two separate values (or drops them), and it sees `x` and `y` as two errors. Lines are a property of the byte stream, not of `read()` calls."
+  },
+  {
+    "type": "order",
+    "q": "The eventfd fires (SIGTERM). Put the daemon's shutdown steps in order.",
+    "items": [
+      "Read the eventfd and set `stopping = true`",
+      "Keep calling `epoll_wait` with timeout 0 and handle every ready sensor",
+      "A timeout-0 wait reports 0 events: everything is drained",
+      "Write the `END ticks=… samples=… errors=…` summary line",
+      "Close the timerfd and epoll fd, and `fclose` the log (but not the caller's fds)",
+      "Return 0"
+    ],
+    "explain": "Draining first is what makes the shutdown *graceful*: samples already in the pipes still reach the log. The summary must come after the drain, or its counts are wrong. Cleanup comes last and closes only what this function opened. The sensor fds and the eventfd belong to the caller, who may reuse them, as the tests do 20 times in a row."
+  },
+  {
+    "type": "multi",
+    "q": "Code review of a DAQ daemon. Which of these are **real bugs**?",
+    "options": [
+      "`printf(\"%.1f\", sum / count)` where `sum` and `count` are both `long`",
+      "On EOF, the handler calls `close(fd)` on the sensor's fd",
+      "If `timerfd_create` fails, the function returns `-errno` straight away, after `fopen` already succeeded",
+      "The tick handler reads the timerfd's 8-byte count and adds `count - 1` to `overruns`",
+      "The sensors share one static `char line[32]` buffer"
+    ],
+    "answer": [0, 1, 2, 4],
+    "explain": "**0:** integer division truncates (8.5 becomes 8), and passing a `long` to `%.1f` is undefined behaviour. Cast to `double`. **1:** the fd belongs to the caller. Closing it can close an unrelated fd that later reuses the number. Use `EPOLL_CTL_DEL` and leave it open. **2:** the early return leaks the `FILE*`, which is an fd plus heap memory. Use a single cleanup path. **4:** two sensors' half-lines interleave in one buffer, so you parse `\"12\"` from A plus `\"7\\n\"` from B as 127. **3** is correct: that's exactly how you count missed periods."
+  }
+]

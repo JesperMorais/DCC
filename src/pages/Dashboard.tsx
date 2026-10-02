@@ -40,6 +40,8 @@ export default function DashboardPage({ state }: { state: Dashboard }) {
         <RatingCard stats={stats} level={level} lang={state.language} />
       </div>
 
+      {state.focus.length > 0 && <FocusCard focus={state.focus} />}
+
       <div className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-4">
         <StatTile
           icon="flame"
@@ -201,6 +203,40 @@ function DailyCard({ state }: { state: Dashboard }) {
           )}
         </div>
       </div>
+    </section>
+  );
+}
+
+/** Skill-tree nodes a rough daily pointed at. A recommendation only: the daily stays open either way. */
+function FocusCard({ focus }: { focus: Dashboard["focus"] }) {
+  return (
+    <section className="card mt-5 border-warn/40 p-5">
+      <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-warn uppercase">
+        <Icon name="target" size={14} /> Needs practice
+      </div>
+      <p className="mt-1 text-sm text-ink-2">
+        Your dailies showed these are shaky. Do the node (quiz + lab without hints), or solve two dailies on the topic cleanly, and the mark goes away.
+      </p>
+      <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {focus.map((f) => (
+          <li key={`${f.path}/${f.node}`}>
+            <Link
+              to={`/paths/${f.path}/${f.node}`}
+              className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 transition-colors hover:border-line-strong hover:bg-surface-2"
+            >
+              <Icon name="tree" size={16} className="shrink-0 text-warn" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-ink">{f.title}</span>
+                <span className="block truncate text-xs text-muted">
+                  {f.challenge.title}: {f.reason}
+                  {f.cleanSolves > 0 && ` · ${f.cleanSolves}/2 clean since`}
+                </span>
+              </span>
+              <Icon name="chevron" size={14} className="shrink-0 text-muted" />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

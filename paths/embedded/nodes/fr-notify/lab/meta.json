@@ -1,0 +1,11 @@
+{
+  "title": "Notify the step counter",
+  "profile": "embedded",
+  "estMinutes": 10,
+  "topics": ["freertos", "task notifications", "ulTaskNotifyTake", "counting semaphore"],
+  "hints": [
+    "A task notification works like a counter built into the task. Give adds 1. Take waits until the counter is non-zero, and the first parameter decides whether take clears the counter or decrements it.",
+    "In the ISR, call `vTaskNotifyGiveFromISR(g_imu_task, &xHigherPriorityTaskWoken);` and keep the yield. In the task, call `ulTaskNotifyTake(pdFALSE, IMU_SILENCE_TIMEOUT)`: it returns the count before decrementing, or 0 on timeout.",
+    "The task loop is: `if (ulTaskNotifyTake(pdFALSE, IMU_SILENCE_TIMEOUT) == 0) { g_timeouts++; continue; } read_one_fifo_sample();`. Then delete `g_imu_sem` and the `xSemaphoreCreateBinary()` call."
+  ]
+}

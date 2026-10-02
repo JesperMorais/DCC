@@ -1,0 +1,11 @@
+{
+  "title": "Find it, typed",
+  "level": 4,
+  "estMinutes": 10,
+  "topics": ["generic constraints", "keyof", "indexed access types"],
+  "hints": [
+    "`newest` only needs one thing from its items: a numeric `createdAt`. Put that in a constraint, `<T extends { createdAt: number }>`, and return `T | undefined` so the caller keeps their type.",
+    "`findBy` needs two type parameters: the item type `T`, and a key `K extends keyof T`. The value must have the same type as that field. That's `T[K]`.",
+    "function findBy<T, K extends keyof T>(items: readonly T[], key: K, value: T[K]): T | undefined { return items.find((item) => item[key] === value); }"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "title": "The wristband that lagged behind your arm",
+  "profile": "embedded",
+  "estMinutes": 14,
+  "topics": ["K_MSGQ_DEFINE", "k_msgq_put", "k_msgq_get", "K_NO_WAIT", "drop-oldest", "-ENOMSG"],
+  "hints": [
+    "In the ISR you may only use `K_NO_WAIT`. So what does `k_msgq_put` return when the queue is full, and what do you do then? For a motion filter, which sample is worth more: the one from 20 ms ago or the one from right now?",
+    "Drop-oldest with a message queue is \"get one, then put\": if `k_msgq_put(&imu_q, &s, K_NO_WAIT)` returns `-ENOMSG`, pull the oldest out with `k_msgq_get(..., K_NO_WAIT)`, count it in `dropped`, and put again. The fusion thread blocks with `k_msgq_get(&imu_q, &s, K_FOREVER)`.",
+    "ISR: `struct imu_sample s = { .seq = ++produced, .t_ms = k_uptime_get_32(), .x = sample_value(produced) }; if (k_msgq_put(&imu_q, &s, K_NO_WAIT) == -ENOMSG) { struct imu_sample old; k_msgq_get(&imu_q, &old, K_NO_WAIT); dropped++; k_msgq_put(&imu_q, &s, K_NO_WAIT); }`. Fusion: after `get`, `if (k_uptime_get_32() - s.t_ms > STALE_MS) stats.stale++;` then update consumed, sum_x and last_seq."
+  ]
+}

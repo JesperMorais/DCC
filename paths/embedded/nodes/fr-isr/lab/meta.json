@@ -1,0 +1,11 @@
+{
+  "title": "Same-tick barcode bytes",
+  "profile": "embedded",
+  "estMinutes": 10,
+  "topics": ["freertos", "FromISR", "portYIELD_FROM_ISR", "interrupt latency"],
+  "hints": [
+    "Inside an interrupt handler, only call functions whose names end in FromISR. They never block, and they report through a pointer whether you just woke a more important task.",
+    "Declare `BaseType_t xHigherPriorityTaskWoken = pdFALSE;`, pass `&xHigherPriorityTaskWoken` to `xQueueSendFromISR(g_rx_queue, &byte, ...)`, and check whether the return value is `pdPASS`.",
+    "The whole handler is: read the byte; `if (xQueueSendFromISR(g_rx_queue, &byte, &xHigherPriorityTaskWoken) != pdPASS) g_rx_dropped++;` and then `portYIELD_FROM_ISR(xHigherPriorityTaskWoken);` as the last line."
+  ]
+}

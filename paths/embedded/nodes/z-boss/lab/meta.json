@@ -1,0 +1,11 @@
+{
+  "title": "Boss: the sensor hub",
+  "profile": "embedded",
+  "estMinutes": 25,
+  "topics": ["K_THREAD_DEFINE", "coop vs preempt", "k_msgq", "k_timer", "k_work", "k_mutex", "priority inheritance"],
+  "hints": [
+    "Build it in this order and run the tests after each step: (1) the ISR puts messages with `K_NO_WAIT`, and the processing thread gets them with `K_FOREVER`; (2) the stats update under `stats_lock`; (3) a periodic `K_TIMER_DEFINE` whose expiry submits `report_work`, started in `hub_main`; (4) the priorities. For (4), ask: who must never wait behind a 30 ms BLE burst? And who must the 100 ms report be able to interrupt?",
+    "Priorities: `processing` must be more urgent than `ble` (a smaller number), or 30 ms bursts overflow the 4-slot queue. It must also stay **preemptible** (>= 0), because a cooperative thread would delay the coop system workqueue and the reports would slip by 1 ms. `logger` is least urgent and preemptible. The k_mutex's priority inheritance takes care of it holding the lock. In the report handler, copy `stats` under the lock and do the 2 ms send *after* unlocking.",
+    "`#define PROCESSING_PRIO 2`, `BLE_PRIO 6`, `LOGGER_PRIO 10`. ISR: `struct imu_msg m = {++isr_produced, k_uptime_get_32(), imu_value(isr_produced)}; if (k_msgq_put(&imu_q, &m, K_NO_WAIT) != 0) isr_drops++;`. Timer: `static void report_expiry(struct k_timer *t) { (void)t; k_work_submit(&report_work); } K_TIMER_DEFINE(report_timer, report_expiry, NULL);` and in `hub_main`: `k_timer_start(&report_timer, K_MSEC(REPORT_PERIOD_MS), K_MSEC(REPORT_PERIOD_MS));`."
+  ]
+}

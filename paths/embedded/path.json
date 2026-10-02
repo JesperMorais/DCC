@@ -1,0 +1,464 @@
+{
+  "id": "embedded",
+  "title": "Embedded & real-time systems",
+  "tagline": "From bits in a register to production RTOS firmware. Learn the fundamentals, then pick your branch.",
+  "gate": "f-boss",
+  "sections": [
+    {
+      "id": "fundamentals",
+      "title": "Fundamentals",
+      "color": "#3987e5",
+      "blurb": "What every firmware engineer knows cold: registers, interrupts, scheduling, synchronisation."
+    },
+    {
+      "id": "freertos",
+      "title": "FreeRTOS",
+      "color": "#2fa36b",
+      "blurb": "The world's most deployed RTOS. Small, explicit, everywhere: from toothbrushes to satellites."
+    },
+    {
+      "id": "zephyr",
+      "title": "Zephyr",
+      "color": "#8a5cf6",
+      "blurb": "The Linux Foundation's RTOS: devicetree, Kconfig, west and a rich kernel. The modern way to build product firmware."
+    },
+    {
+      "id": "linux",
+      "title": "Embedded Linux",
+      "color": "#e8700a",
+      "blurb": "When the product needs a filesystem, networking and a GUI: boot chains, build systems and real-time Linux."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "f-bits",
+      "section": "fundamentals",
+      "row": 0,
+      "col": 0,
+      "kind": "lab",
+      "title": "Bits & registers",
+      "requires": []
+    },
+    {
+      "id": "f-mmio",
+      "section": "fundamentals",
+      "row": 1,
+      "col": -1,
+      "kind": "lab",
+      "title": "Memory-mapped I/O & volatile",
+      "requires": [
+        "f-bits"
+      ]
+    },
+    {
+      "id": "f-memory",
+      "section": "fundamentals",
+      "row": 1,
+      "col": 1,
+      "kind": "lab",
+      "title": "Memory without malloc",
+      "requires": [
+        "f-bits"
+      ]
+    },
+    {
+      "id": "f-interrupts",
+      "section": "fundamentals",
+      "row": 2,
+      "col": -1,
+      "kind": "lab",
+      "title": "Interrupts & ring buffers",
+      "requires": [
+        "f-mmio"
+      ]
+    },
+    {
+      "id": "f-races",
+      "section": "fundamentals",
+      "row": 3,
+      "col": 1,
+      "kind": "lab",
+      "title": "Races & critical sections",
+      "requires": [
+        "f-memory",
+        "f-interrupts"
+      ]
+    },
+    {
+      "id": "f-fsm",
+      "section": "fundamentals",
+      "row": 3,
+      "col": -1,
+      "kind": "lab",
+      "title": "Superloops & state machines",
+      "requires": [
+        "f-interrupts"
+      ]
+    },
+    {
+      "id": "f-tasks",
+      "section": "fundamentals",
+      "row": 4,
+      "col": 0,
+      "kind": "lab",
+      "title": "Why an RTOS? Tasks & context switches",
+      "requires": [
+        "f-races",
+        "f-fsm"
+      ]
+    },
+    {
+      "id": "f-timing",
+      "section": "fundamentals",
+      "row": 5,
+      "col": -1,
+      "kind": "lab",
+      "title": "Ticks, delays & periodic tasks",
+      "requires": [
+        "f-tasks"
+      ]
+    },
+    {
+      "id": "f-priorities",
+      "section": "fundamentals",
+      "row": 5,
+      "col": 1,
+      "kind": "lab",
+      "title": "Priorities, preemption & deadlines",
+      "requires": [
+        "f-tasks"
+      ]
+    },
+    {
+      "id": "f-semaphores",
+      "section": "fundamentals",
+      "row": 6,
+      "col": -1,
+      "kind": "lab",
+      "title": "From ISR to task: semaphores",
+      "requires": [
+        "f-timing"
+      ]
+    },
+    {
+      "id": "f-mutex",
+      "section": "fundamentals",
+      "row": 6,
+      "col": 1,
+      "kind": "lab",
+      "title": "Mutexes & priority inversion",
+      "requires": [
+        "f-priorities"
+      ]
+    },
+    {
+      "id": "f-queues",
+      "section": "fundamentals",
+      "row": 7,
+      "col": -1,
+      "kind": "lab",
+      "title": "Queues & pipelines",
+      "requires": [
+        "f-semaphores"
+      ]
+    },
+    {
+      "id": "f-deadlock",
+      "section": "fundamentals",
+      "row": 7,
+      "col": 1,
+      "kind": "lab",
+      "title": "Deadlock & lock ordering",
+      "requires": [
+        "f-mutex"
+      ]
+    },
+    {
+      "id": "f-boss",
+      "section": "fundamentals",
+      "row": 8,
+      "col": 0,
+      "kind": "boss",
+      "title": "Boss: the sensor pipeline",
+      "requires": [
+        "f-queues",
+        "f-deadlock"
+      ]
+    },
+    {
+      "id": "fr-tasks",
+      "section": "freertos",
+      "row": 9,
+      "col": -3,
+      "kind": "lab",
+      "title": "FreeRTOS tasks & the API",
+      "requires": [
+        "f-boss"
+      ]
+    },
+    {
+      "id": "fr-periodic",
+      "section": "freertos",
+      "row": 10,
+      "col": -3,
+      "kind": "lab",
+      "title": "Periodic tasks with vTaskDelayUntil",
+      "requires": [
+        "fr-tasks"
+      ]
+    },
+    {
+      "id": "fr-isr",
+      "section": "freertos",
+      "row": 11,
+      "col": -3,
+      "kind": "lab",
+      "title": "FromISR & portYIELD_FROM_ISR",
+      "requires": [
+        "fr-periodic"
+      ]
+    },
+    {
+      "id": "fr-notify",
+      "section": "freertos",
+      "row": 12,
+      "col": -3,
+      "kind": "lab",
+      "title": "Task notifications",
+      "requires": [
+        "fr-isr"
+      ]
+    },
+    {
+      "id": "fr-queues",
+      "section": "freertos",
+      "row": 13,
+      "col": -3,
+      "kind": "lab",
+      "title": "Queue-driven architecture",
+      "requires": [
+        "fr-notify"
+      ]
+    },
+    {
+      "id": "fr-timers",
+      "section": "freertos",
+      "row": 14,
+      "col": -3,
+      "kind": "lab",
+      "title": "Software timers & the daemon task",
+      "requires": [
+        "fr-queues"
+      ]
+    },
+    {
+      "id": "fr-memory",
+      "section": "freertos",
+      "row": 15,
+      "col": -3,
+      "kind": "lesson",
+      "title": "Heaps, static allocation & stack overflow",
+      "requires": [
+        "fr-timers"
+      ]
+    },
+    {
+      "id": "fr-boss",
+      "section": "freertos",
+      "row": 16,
+      "col": -3,
+      "kind": "boss",
+      "title": "Boss: motor controller with a watchdog",
+      "requires": [
+        "fr-memory"
+      ]
+    },
+    {
+      "id": "z-build",
+      "section": "zephyr",
+      "row": 9,
+      "col": 0,
+      "kind": "lesson",
+      "title": "west, Kconfig & the build",
+      "requires": [
+        "f-boss"
+      ]
+    },
+    {
+      "id": "z-threads",
+      "section": "zephyr",
+      "row": 10,
+      "col": 0,
+      "kind": "lab",
+      "title": "Threads: cooperative vs preemptive",
+      "requires": [
+        "z-build"
+      ]
+    },
+    {
+      "id": "z-sync",
+      "section": "zephyr",
+      "row": 11,
+      "col": 0,
+      "kind": "lab",
+      "title": "k_sem & k_mutex",
+      "requires": [
+        "z-threads"
+      ]
+    },
+    {
+      "id": "z-msgq",
+      "section": "zephyr",
+      "row": 12,
+      "col": 0,
+      "kind": "lab",
+      "title": "Message queues",
+      "requires": [
+        "z-sync"
+      ]
+    },
+    {
+      "id": "z-work",
+      "section": "zephyr",
+      "row": 13,
+      "col": 0,
+      "kind": "lab",
+      "title": "Workqueues: deferring ISR work",
+      "requires": [
+        "z-msgq"
+      ]
+    },
+    {
+      "id": "z-timers",
+      "section": "zephyr",
+      "row": 14,
+      "col": 0,
+      "kind": "lab",
+      "title": "k_timer & periodic work",
+      "requires": [
+        "z-work"
+      ]
+    },
+    {
+      "id": "z-devicetree",
+      "section": "zephyr",
+      "row": 15,
+      "col": 0,
+      "kind": "lesson",
+      "title": "Devicetree & bindings",
+      "requires": [
+        "z-timers"
+      ]
+    },
+    {
+      "id": "z-boss",
+      "section": "zephyr",
+      "row": 16,
+      "col": 0,
+      "kind": "boss",
+      "title": "Boss: the sensor hub",
+      "requires": [
+        "z-devicetree"
+      ]
+    },
+    {
+      "id": "l-boot",
+      "section": "linux",
+      "row": 9,
+      "col": 3,
+      "kind": "lesson",
+      "title": "The boot chain",
+      "requires": [
+        "f-boss"
+      ]
+    },
+    {
+      "id": "l-build",
+      "section": "linux",
+      "row": 10,
+      "col": 3,
+      "kind": "lesson",
+      "title": "Buildroot, Yocto & the device tree",
+      "requires": [
+        "l-boot"
+      ]
+    },
+    {
+      "id": "l-sysfs",
+      "section": "linux",
+      "row": 11,
+      "col": 3,
+      "kind": "lab",
+      "title": "Everything is a file: sysfs",
+      "requires": [
+        "l-build"
+      ]
+    },
+    {
+      "id": "l-epoll",
+      "section": "linux",
+      "row": 12,
+      "col": 3,
+      "kind": "lab",
+      "title": "Event loops with epoll",
+      "requires": [
+        "l-sysfs"
+      ]
+    },
+    {
+      "id": "l-timerfd",
+      "section": "linux",
+      "row": 13,
+      "col": 3,
+      "kind": "lab",
+      "title": "Periodic loops: timerfd & absolute time",
+      "requires": [
+        "l-epoll"
+      ]
+    },
+    {
+      "id": "l-pthreads",
+      "section": "linux",
+      "row": 14,
+      "col": 3,
+      "kind": "lab",
+      "title": "pthreads & priority-inheritance mutexes",
+      "requires": [
+        "l-timerfd"
+      ]
+    },
+    {
+      "id": "l-rt",
+      "section": "linux",
+      "row": 15,
+      "col": 3,
+      "kind": "lesson",
+      "title": "PREEMPT_RT & latency",
+      "requires": [
+        "l-pthreads"
+      ]
+    },
+    {
+      "id": "l-driver",
+      "section": "linux",
+      "row": 16,
+      "col": 3,
+      "kind": "lab",
+      "title": "Character drivers: file_operations",
+      "requires": [
+        "l-rt"
+      ]
+    },
+    {
+      "id": "l-boss",
+      "section": "linux",
+      "row": 17,
+      "col": 3,
+      "kind": "boss",
+      "title": "Boss: the data-acquisition daemon",
+      "requires": [
+        "l-driver"
+      ]
+    }
+  ]
+}

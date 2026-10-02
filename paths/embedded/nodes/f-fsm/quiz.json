@@ -1,0 +1,42 @@
+[
+  {
+    "type": "number",
+    "q": "A superloop calls three jobs in turn: `sensor_task()` (up to 4 ms), `display_task()` (up to 7 ms) and `button_task()` (up to 2 ms). None of them block. In the worst case, how many ms can pass between two consecutive runs of `button_task()`'s check?",
+    "answer": 13,
+    "tolerance": 0,
+    "unit": "ms",
+    "explain": "In the worst case the button is checked, then every job, including `button_task` itself, runs for its maximum before the next check comes round: 2 + 4 + 7 = **13 ms**. That's a superloop's response time: the sum of everyone's worst case. It's why one job with a `delay_ms(100)` wrecks every other job's timing, and why the RTOS node is next."
+  },
+  {
+    "type": "single",
+    "q": "Why is this debouncer a bad idea in a superloop?",
+    "code": "void button_task(void) {\n    if (button_raw()) {\n        delay_ms(20);              /* wait out the bounce */\n        if (button_raw()) on_press();\n        while (button_raw()) { }   /* wait for release */\n    }\n}",
+    "options": [
+      "It blocks: while the user holds the button, *nothing else* in the loop runs: no display, no radio, no watchdog kick",
+      "20 ms is too short to debounce any switch",
+      "`delay_ms` doesn't work in `main`",
+      "It debounces the release twice"
+    ],
+    "answer": 0,
+    "explain": "The `delay_ms` stalls everything for 20 ms per press, and the release-wait stalls the whole product for as long as a finger stays on the button. A watchdog might even reset the board. A tick-driven FSM does the same job by *counting* samples and returning immediately every time. As for the other options: 20 ms is a common, reasonable window, and this code doesn't debounce the release at all."
+  },
+  {
+    "type": "order",
+    "q": "A user presses the button, holds it for 3 seconds, then lets go. Put the states the long-press FSM goes through in order.",
+    "items": ["IDLE", "PRESS_DEBOUNCE", "PRESSED", "LONG_HELD", "RELEASE_DEBOUNCE (after long)", "IDLE again"],
+    "explain": "The press must be stable for the debounce window before `PRESSED`. After 1 s held it fires LONG **once** and moves to `LONG_HELD`, so it doesn't fire again on every tick. The release is debounced too. Because it came from `LONG_HELD`, the release does **not** report a short press. Then it's back to `IDLE`, ready for the next gesture."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are real advantages of an explicit `enum` + `switch` state machine stepped by a tick, over a pile of `bool` flags and delays? Select all that apply.",
+    "options": [
+      "It never blocks, so many FSMs can share one superloop",
+      "Each state must explicitly decide what to do with every input, which surfaces edge cases",
+      "You can unit-test it by feeding in (tick, level) samples, with no hardware",
+      "It removes the need for any timing source",
+      "Impossible flag combinations, like `long_sent && !pressed && debouncing`, can't even be represented"
+    ],
+    "answer": [0, 1, 2, 4],
+    "explain": "The tick *is* the timing source, so you still need SysTick or a timer. The FSM turns \"wait 20 ms\" into \"count 20 ticks\". Everything else is the reason firmware engineers draw state diagrams before writing code: non-blocking composition, forced handling of every state and input pair, deterministic tests and no unrepresentable states. N booleans have 2^N combinations, while an enum has exactly the states you named."
+  }
+]

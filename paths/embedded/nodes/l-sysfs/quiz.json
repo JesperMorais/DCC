@@ -1,0 +1,59 @@
+[
+  {
+    "type": "single",
+    "q": "A fan daemon reads the CPU temperature with the code below. On a board where the sensor driver failed to probe, the file exists but contains `\"\\n\"`. What does the daemon see?",
+    "code": "char buf[32] = {0};\nint fd = open(\"/sys/class/hwmon/hwmon0/temp1_input\", O_RDONLY);\nread(fd, buf, sizeof buf - 1);\nclose(fd);\nint mc = atoi(buf);",
+    "options": ["`mc = 0`: a plausible 0 °C, with no error reported", "`atoi` returns -1 to signal the error", "The read fails with `-EINVAL`", "A crash, because `buf` holds no digits"],
+    "answer": 0,
+    "explain": "`atoi` has no way to report an error. For input with no digits it returns **0**, and 0 m°C looks like a real (very cold) reading. `read` succeeds, because a one-byte file is a fine file. Use `strtol` with an `end` pointer: the value is valid only if `end != buf` and only whitespace follows. Then you can return `-EINVAL` and let the caller decide, for example \"fail safe: fans to 100 %\" *with a log line*, instead of silently believing the value."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are good reasons the kernel exposes device attributes as **one text value per file** in sysfs?",
+    "options": [
+      "You can inspect and change them with `cat` and `echo`, with no special tools",
+      "There's no binary struct layout to keep compatible across kernel versions",
+      "Text is faster to parse than a binary register",
+      "Each attribute can have its own permissions",
+      "It lets userspace `mmap` the hardware registers directly"
+    ],
+    "answer": [0, 1, 3],
+    "explain": "Debuggability (`cat`), ABI stability (a new attribute is a new file, and old ones don't change shape) and per-file permissions (`0444` vs `0644`) are the point. Text is *not* faster: parsing `\"45123\\n\"` costs more than reading a `uint32_t`, which is why high-rate data goes through character devices instead. And sysfs never gives you the registers: the driver formats a value in its `show()` callback when you read. Mapping registers into userspace is what `/dev/mem` or UIO does, and that's a deliberate exception."
+  },
+  {
+    "type": "single",
+    "q": "After a kernel upgrade, your daemon reads `thermal_zone0/temp` and gets the modem's temperature instead of the CPU's. What's the robust fix?",
+    "options": [
+      "Pin the old kernel version",
+      "Scan `/sys/class/thermal/thermal_zone*`, match the zone whose `type` is the one you want, then read its `temp`",
+      "Use `thermal_zone1`, because that's where the CPU is now",
+      "Read `/proc/cpuinfo` instead"
+    ],
+    "answer": 1,
+    "explain": "Instance numbers in `/sys/class/*` are assigned in probe order, and that can change with the kernel, the device tree or module load order. The stable identity is an attribute: `type` for thermal zones, `name` for hwmon devices. Hard-coding `1` just moves the bug to the next upgrade. `/proc/cpuinfo` doesn't hold temperatures, and pinning the kernel freezes the security fixes too."
+  },
+  {
+    "type": "single",
+    "q": "You want to react when `/sys/class/power_supply/AC/online` changes, without polling it in a loop. You add the open attribute fd to your epoll loop, and `epoll_ctl` fails with `EPERM`. What's the right approach?",
+    "options": [
+      "Retry `epoll_ctl` with `EPOLLET`",
+      "`poll()` the fd for `POLLPRI | POLLERR`, which fires when the driver calls `sysfs_notify()`, then `lseek` to 0 and read the value again",
+      "Open the file with `O_NONBLOCK`, and epoll will accept it",
+      "Read it in a tight `while (1)` loop"
+    ],
+    "answer": 1,
+    "explain": "epoll refuses regular files (`EPERM`), whatever flags you use, because a regular file is always \"ready\". sysfs has its own notification mechanism: a driver that supports it calls `sysfs_notify()`, and a `poll()` waiting on `POLLPRI|POLLERR` for that attribute wakes up. Then you seek back to the start and read the fresh value. (A uevent netlink socket is another option, and *that* one can go in epoll.) A tight loop burns a CPU core to watch a value that changes twice a day."
+  },
+  {
+    "type": "single",
+    "q": "Why is new GPIO code supposed to use `/dev/gpiochipN` (via libgpiod) instead of `/sys/class/gpio/export`?",
+    "options": [
+      "The sysfs interface is slower to toggle pins",
+      "The character device gives you an fd that owns the lines. They're released when the process exits or crashes, and you can request lines by chip and offset or by name",
+      "Only the character device supports inputs",
+      "sysfs GPIO needs a kernel module that's no longer shipped"
+    ],
+    "answer": 1,
+    "explain": "The killer problem with `/sys/class/gpio` is **ownership**. An exported pin stays exported and configured after your program dies, nobody knows who's using it, and the global pin numbers change between kernels. A gpiochip line request is an fd: close it, or crash, and the kernel cleans up. You also get atomic multi-line set/get and edge events you can `poll`/`epoll`. Speed isn't the main reason, and sysfs GPIO does support inputs. It's deprecated, not gone."
+  }
+]
