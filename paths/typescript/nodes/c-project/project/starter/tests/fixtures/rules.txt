@@ -1,0 +1,7 @@
+# category: keywords (case-insensitive, the first matching line wins)
+rent: rent
+groceries: ica, coop, willys, lidl
+
+transport: SL, taxi
+eating out: pizzeria, max burgers
+subscriptions: spotify, netflix

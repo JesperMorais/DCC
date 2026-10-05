@@ -46,9 +46,7 @@ K_TIMER_DEFINE(backlight_timer, backlight_expiry, NULL);
 
 static void backlight_kick(void) {
     backlight_on = true;
-    /* Real Zephyr restarts a running timer on k_timer_start() alone;
-     * the simulator currently needs the explicit stop (see the prompt). */
-    k_timer_stop(&backlight_timer);
+    /* k_timer_start() on a running timer restarts it: the old countdown is cancelled. */
     k_timer_start(&backlight_timer, K_MSEC(BACKLIGHT_TIMEOUT_MS), K_NO_WAIT); /* one-shot */
 }
 

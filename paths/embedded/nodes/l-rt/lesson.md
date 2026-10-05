@@ -52,13 +52,13 @@ pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);   /* needs CAP_SYS_NICE 
 /* … allocate every buffer now, never malloc() in the loop … */
 ```
 
-- **`mlockall`** pins every page in RAM, so your loop never takes a page fault. Allocate and touch everything **before** the loop.
+- **`mlockall`** pins every page in RAM, so your loop never takes a page fault. Allocate and touch everything **before** the loop. It needs `CAP_IPC_LOCK` or a big enough `RLIMIT_MEMLOCK` (`memlock` in limits.conf), and it fails with `ENOMEM`/`EPERM` otherwise, so check its return value.
 - **CPU isolation:** `isolcpus=3 nohz_full=3 rcu_nocbs=3` on the kernel command line, or cpusets/cgroups at runtime, keep the scheduler and most housekeeping off core 3. Pin your RT thread there with `pthread_setaffinity_np`, and steer IRQs away with `/proc/irq/*/smp_affinity`.
-- **`SCHED_FIFO`** runs the highest priority first and never time-slices within a priority, exactly like your Fundamentals RTOS. `SCHED_RR` adds a time slice, and `SCHED_DEADLINE` takes runtime/period budgets (EDF).
+- **`SCHED_FIFO`** runs the highest priority first, like your Fundamentals RTOS, but it **never time-slices** equal priorities: a FIFO thread runs until it blocks, yields or is preempted by a higher one. `SCHED_RR` adds the round-robin time slice (so it's the closer match to the Fundamentals scheduler), and `SCHED_DEADLINE` takes runtime/period budgets (EDF).
 
 ### Gotchas: SCHED_FIFO bites back
 
-- **RT throttling.** By default, `sched_rt_runtime_us = 950000` out of `sched_rt_period_us = 1000000`: RT threads get at most **95 %** of each second. A spinning FIFO thread gets paused for 50 ms every second, so the system stays alive and your "real-time" loop stalls. That's the right default, but know it's there. Fix the loop rather than setting the limit to -1.
+- **RT throttling.** By default, `sched_rt_runtime_us = 950000` out of `sched_rt_period_us = 1000000`: RT threads get at most **95 %** of each second. A spinning FIFO thread gets paused for 50 ms every second, so the system stays alive and your "real-time" loop stalls. That's the right default, but know it's there. Fix the loop rather than setting the limit to -1. (Since 6.12, a "fair server" deadline reservation does this job by default, with the same 50 ms per second, and it only pauses RT threads when normal tasks are actually waiting.)
 - **A busy loop at priority 99 starves everything** below it, including the kernel threads and IRQ threads that your own I/O depends on. Use priorities deliberately: control at 80, IRQ threads at 50, logging as a normal thread.
 - **Priority inversion is back, in userspace.** A plain `pthread_mutex` has **no** priority inheritance. Share one with a low-priority logger and the Fundamentals scenario returns:
 

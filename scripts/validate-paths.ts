@@ -65,6 +65,22 @@ for (const p of paths) {
     if (only.length && !only.some((o) => n.id.includes(o))) continue;
     const before = problems;
     const where = `${p.id}/${n.id}`;
+    if (n.kind === "project") {
+      // Projects have no lesson, quiz or lab; scripts/validate-projects.ts runs their tests.
+      const pr = n.project;
+      if (!pr) fail(where, "kind \"project\" needs project/project.json");
+      else {
+        if (pr.brief.split(/\s+/).length < 150) fail(where, "project/brief.md is missing or under 150 words");
+        if (!pr.review.trim()) fail(where, "project/review.md is missing");
+        if (pr.milestones.length < 3 || pr.milestones.length > 6) fail(where, `want 3–6 milestones (has ${pr.milestones.length})`);
+        for (const m of pr.milestones) if (!m.id || !m.title || !m.body || m.hints?.length !== 3) fail(`${where} ${m.id ?? "?"}`, "milestone needs id, title, body and exactly 3 hints");
+        if (new Set(pr.milestones.map((m) => m.id)).size !== pr.milestones.length) fail(where, "milestone ids must be unique");
+        for (const m of pr.milestones) for (const h of m.hints ?? []) if (/```|=>|function\s|\bconst\s/.test(h)) fail(`${where} ${m.id}`, `hints are words, not code: "${h.slice(0, 50)}…"`);
+        if (!n.requires.length) fail(where, "a project should require its section's boss");
+      }
+      if (problems === before) console.log(`  \x1b[32m✓\x1b[0m ${n.id.padEnd(16)} project, ${pr!.milestones.length} milestones`);
+      continue;
+    }
     if (!n.lesson) {
       fail(where, "missing lesson.md");
       continue;

@@ -1,0 +1,58 @@
+{
+  "title": "Expense tracker CLI",
+  "estHours": 4,
+  "folder": "expense-tracker",
+  "testsGiven": true,
+  "milestones": [
+    {
+      "id": "m1",
+      "title": "Read the export and list it",
+      "body": "Your bank exports a CSV with a header line and then one transaction per line:\n\n```\ndate,description,amount\n2026-09-01,Rent September,-8500.00\n2026-09-20,Swish from Anna,300.00\n```\n\nA negative amount is money **out** (an expense), a positive one is money **in**. The first line of the file is always the header and is never a transaction.\n\n**`list <file.csv>`** prints every transaction on its own line: the date, two spaces, the amount with exactly two decimals (a minus sign for expenses, no sign for income), two spaces, the description. After them comes a count line, `13 transactions` (or `1 transaction` for exactly one).\n\n```\n$ npm start -- list tests/fixtures/clean.csv\n2026-08-28  -412.30  ICA Kvantum\n2026-08-30  25000.00  Salary August\n...\n13 transactions\n```\n\nIf the command is missing or unknown, or the file argument is missing, print a line starting with `usage: ` to **stderr** and exit with code 1. Results go to stdout; warnings and errors always go to stderr.\n\nThe data types are in `src/types.ts`. How you split the rest into functions and files is up to you.\n\n**Done when** `npm run test:m1` is green and `npm run check` is clean.",
+      "hints": [
+        "What does one line of the file look like as text, and what should it look like once you've read it? Which parts are strings and which are numbers?",
+        "Splitting a line into fields and trimming them is string work from Records, Maps & Sets. Turning the amount into two decimals for display is the formatting part of reduce & data pipelines. Keeping money as whole cents avoids floating-point surprises, which is why the Transaction type has cents.",
+        "Read the whole file as text, split it into lines, drop the header, turn each line into a Transaction, then map each transaction to its output line and add the count line at the end. Look at the first argument to decide which command runs, and print usage for anything else."
+      ]
+    },
+    {
+      "id": "m2",
+      "title": "Survive a messy export",
+      "body": "Real exports are messy. Read each line like this, in this order, and stop at the first problem:\n\n1. A blank line (empty or only spaces) is skipped silently. It still counts for line numbers.\n2. Split on commas and trim every field. Not exactly 3 fields → `expected 3 fields, got N`\n3. The date must be `YYYY-MM-DD` with a month from 01 to 12 and a day from 01 to 31 → otherwise `bad date \"<date>\"`\n4. The description must not be empty → `empty description`\n5. The amount is an optional `+` or `-`, digits, and optionally a dot with one or two decimals (`-189`, `-89.9`, `+300`) → otherwise `bad amount \"<amount>\"`\n\nThe quoted value is the field **after** trimming. Every bad row prints a warning to stderr, in file order, with the 1-based line number of the file (the header is line 1):\n\n```\nwarning: line 7: bad amount \"abc\"\n```\n\nBad rows are skipped and everything else still works; the exit code stays 0. When rows were skipped, `list` adds the number to the count line: `4 transactions (7 skipped)`. With no bad rows, the count line stays as before.\n\nIf the CSV file can't be read, print `error: cannot read <path as given>` to stderr, print nothing to stdout, and exit with code 1.\n\n**Done when** `npm run test:m2` is green (and m1 still is).",
+      "hints": [
+        "A line is now either a transaction or a reason it isn't one. How will the code that receives it tell the two apart, and how do you make TypeScript agree?",
+        "That's a union type, narrowed with the in operator, from Unions & narrowing. The Row type in types.ts is already Transaction or BadRow, and only one of them has a reason. Regular expressions from Records, Maps & Sets check the date and amount shapes.",
+        "Write one step that turns a line and its number into a Row, checking the rules in the listed order and returning early at the first failure. Read every line into Rows, then split them into good and bad, warn about the bad ones, and pass the good ones on. Wrap the file read so a missing file becomes the error message instead of a crash."
+      ]
+    },
+    {
+      "id": "m3",
+      "title": "Categories and the monthly report",
+      "body": "**The rules file** (`--rules <file>`) maps keywords to categories, one category per line:\n\n```\n# comments and blank lines are ignored\ngroceries: ica, coop, willys\ntransport: SL, taxi\n```\n\n- The category is everything before the first `:`, trimmed. The keywords are split on commas, trimmed, and empty ones dropped.\n- A transaction gets the category of the **first line in the file** that has a keyword appearing anywhere in its description, ignoring case. \"Taxi to ICA Maxi\" is `groceries` above, because that line comes first.\n- No match, or no `--rules` flag at all: the category is `other`.\n- A line with no `:`, an empty category or no keywords is skipped with `warning: rules line N: expected \"category: keywords\"` on stderr (N is the 1-based line in the rules file).\n- If the rules file can't be read: `error: cannot read <path>`, exit 1.\n\n**`report <file.csv> <YYYY-MM> [--rules <file>]`** totals the **expenses** (negative amounts; income is left out) whose date is in that month, per category:\n\n```\n$ npm start -- report tests/fixtures/clean.csv 2026-09 --rules tests/fixtures/rules.txt\nSpending in 2026-09\nrent             8500.00\ngroceries        1147.55\ntransport         970.00\neating out        323.00\nsubscriptions     119.00\nTOTAL           11059.55\n```\n\n- Each line is the name padded with spaces to 14 characters, then the amount (positive, two decimals) right-aligned in 10 characters.\n- Largest total first. Equal totals are sorted by category name, A to Z.\n- The last line is `TOTAL` in the same format.\n- A month without any expenses prints only `no spending in 2026-07`.\n- The month must be four digits, a dash and a month from `01` to `12`. Otherwise print `error: month must be YYYY-MM` to stderr and exit 1.\n\nFlags always come **after** the positional arguments in this milestone.\n\n**Done when** `npm run test:m3` is green.",
+      "hints": [
+        "You need to go from many transactions to one number per category. What would you look up by category name while walking through them, and what do you do the first time you meet a category?",
+        "Grouping into totals is a job for a Map or a Record (Records, Maps & Sets), filled by a loop or by reduce (reduce & data pipelines). The rules flag is optional, which is how the Flags type in types.ts describes it (Interfaces & optional properties). Sorting a copy with two keys is also in reduce & data pipelines.",
+        "Parse the rules file into a list of Rules, warning about bad lines. Keep only this month's expenses, find each one's category, and add its amount to that category's running total. Turn the totals into name and amount pairs, sort by amount then name, format each line, and finish with the TOTAL line."
+      ]
+    },
+    {
+      "id": "m4",
+      "title": "The biggest expenses",
+      "body": "**`top <file.csv> <n> [--rules <file>] [--month <YYYY-MM>]`** lists the `n` largest single expenses (negative amounts only), across the whole file or only in `--month`:\n\n```\n$ npm start -- top tests/fixtures/clean.csv 3 --rules tests/fixtures/rules.txt\n1. 2026-09-01  8500.00  Rent September (rent)\n2. 2026-10-01  8500.00  Rent October (rent)\n3. 2026-09-02  970.00  SL access card (transport)\n```\n\n- Each line: the rank, `. `, the date, two spaces, the amount (positive, two decimals), two spaces, the description, a space and the category in parentheses (categorised exactly like in the report).\n- Largest first. Equal amounts: the earlier date first, and on the same date, the one that comes first in the file.\n- If there are fewer than `n` expenses, list them all. If there are none, print nothing.\n- `n` must be a whole number of at least 1. Otherwise print `error: n must be a positive whole number` to stderr, nothing to stdout, and exit 1.\n- A malformed `--month` gives the same error as in the report.\n\n**Done when** `npm run test:m4` is green.",
+      "hints": [
+        "You already categorise and filter by month for the report. How much of that can top reuse as it is, and what's the one genuinely new step?",
+        "This is a filter, sort, slice, map pipeline from reduce & data pipelines. Sorting with tie-breakers means comparing the next key only when the previous one is equal. Checking that n is a whole number is narrowing a parsed value before you trust it (Unions & narrowing).",
+        "Validate n first. Take the transactions, keep the month if one was given, keep only expenses, sort by amount then date then line number, take the first n, and format each with its 1-based rank and its category. Move the month check from the report into something both commands share."
+      ]
+    },
+    {
+      "id": "m5",
+      "title": "Month by month, and proper flags",
+      "body": "**`months <file.csv>`** prints one line per month that has at least one transaction, oldest first:\n\n```\n$ npm start -- months tests/fixtures/clean.csv\n2026-08  out 412.30  in 25000.00  net 24587.70\n2026-09  out 11059.55  in 300.00  net -10759.55\n2026-10  out 8500.00  in 0.00  net -8500.00\n```\n\n`out` is the sum of the expenses (shown positive), `in` the sum of the income, `net` is in minus out (with a minus sign when negative). All three have two decimals. Bad rows are warned about and skipped as usual.\n\n**Flags, done properly.** `--rules` and `--month` may now appear **anywhere** after the command, before, between or after the positional arguments:\n\n```\n$ npm start -- top --month 2026-09 --rules rules.txt bank.csv 1\n```\n\n- A flag that isn't `--rules` or `--month` → `error: unknown flag --colour`, exit 1.\n- A flag with no value after it (the end of the arguments, or another `--` flag) → `error: --rules needs a value`, exit 1.\n- After the flags are taken out, a wrong number of positional arguments for the command is a usage error, as in milestone 1.\n\n**Done when** `npm run test:m5` is green and the whole `npm test` suite passes.",
+      "hints": [
+        "For months you need several running totals per key, not one. What shape should each month's entry have? And for flags: when you walk through the arguments, how do you know whether the next one is a value or something new?",
+        "A Map from month to a small object with two totals (Records, Maps & Sets), and a tuple or object to return the parsed arguments (Tuples & return types). The month key is the first seven characters of the date, which sorts correctly as a string.",
+        "For months, walk the transactions once, add each amount to its month's out or in total, then sort the month keys and format each line. For flags, walk the arguments by index: anything starting with two dashes must be a known flag followed by a value, which you then skip past; everything else is positional. Check the positional count per command at the end."
+      ]
+    }
+  ]
+}

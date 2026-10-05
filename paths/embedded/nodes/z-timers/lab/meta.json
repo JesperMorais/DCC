@@ -6,6 +6,6 @@
   "hints": [
     "A `k_timer` expiry function runs in **ISR context**: it can't sleep and it can't do a 3 ms I2C read. What can it do in zero time that gets the read done in a thread? And for the backlight: what should a touch do to a one-shot timer that's already counting down?",
     "Sampler: `K_TIMER_DEFINE(sample_timer, sample_expiry, NULL)`, whose expiry just calls `k_work_submit(&sample_work)`, with `K_WORK_DEFINE(sample_work, sample_work_fn)`. Start it once in `app_main` with `k_timer_start(&sample_timer, K_MSEC(100), K_MSEC(100))`. In the work handler, `k_timer_status_get(&sample_timer)` returns how many expiries happened since the last call: anything above 1 is missed periods. Backlight: every touch turns it on and (re)starts the one-shot with `K_NO_WAIT` as the period.",
-    "Work handler: `uint32_t n = k_timer_status_get(&sample_timer); if (n > 1) missed += n - 1; sample_at[samples++] = k_uptime_get(); k_busy_wait(I2C_READ_US);`. Touch: `backlight_on = true; k_timer_stop(&backlight_timer); k_timer_start(&backlight_timer, K_MSEC(BACKLIGHT_TIMEOUT_MS), K_NO_WAIT);`. Delete the old `sampler` thread."
+    "Work handler: `uint32_t n = k_timer_status_get(&sample_timer); if (n > 1) missed += n - 1; sample_at[samples++] = k_uptime_get(); k_busy_wait(I2C_READ_US);`. Touch: `backlight_on = true; k_timer_start(&backlight_timer, K_MSEC(BACKLIGHT_TIMEOUT_MS), K_NO_WAIT);`. Calling `k_timer_start` on a running timer restarts it. Delete the old `sampler` thread."
   ]
 }

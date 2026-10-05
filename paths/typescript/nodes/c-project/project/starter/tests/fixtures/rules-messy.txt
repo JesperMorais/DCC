@@ -1,0 +1,5 @@
+groceries: ica, coop
+this line has no colon
+: nameless
+transport:   SL ,  ,taxi
+eating out:

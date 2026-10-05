@@ -62,8 +62,10 @@ static void reader_thread(void *p1, void *p2, void *p3) {
 uint32_t uploaded_cards;
 static void cloud_thread(void *p1, void *p2, void *p3) {
     (void)p1; (void)p2; (void)p3;
+    int64_t next = 0;
     for (;;) {
-        k_msleep(50);
+        next += 50;
+        k_sleep(K_TIMEOUT_ABS_MS(next)); /* uploads at 50, 100, 150, ... */
         k_mutex_lock(&log_lock, K_FOREVER);
         k_busy_wait(5000); /* slow SPI modem: the log is locked for 5 ms */
         uploaded_cards = door_log.cards;
@@ -74,12 +76,14 @@ static void cloud_thread(void *p1, void *p2, void *p3) {
 /* ---- given: redraws the e-ink display, 20 ms of CPU every 100 ms ---- */
 static void ui_thread(void *p1, void *p2, void *p3) {
     (void)p1; (void)p2; (void)p3;
+    int64_t next = 52;
     for (;;) {
+        k_sleep(K_TIMEOUT_ABS_MS(next)); /* redraws at 52, 152, 252, ... */
         k_busy_wait(20000);
-        k_msleep(80);
+        next += 100;
     }
 }
 
 K_THREAD_DEFINE(reader, 1024, reader_thread, NULL, NULL, NULL, 2, 0, 0);
-K_THREAD_DEFINE(ui, 1024, ui_thread, NULL, NULL, NULL, 6, 0, 52);
+K_THREAD_DEFINE(ui, 1024, ui_thread, NULL, NULL, NULL, 6, 0, 0);
 K_THREAD_DEFINE(cloud, 1024, cloud_thread, NULL, NULL, NULL, 10, 0, 0);

@@ -1,0 +1,16 @@
+{
+  "title": "The bike computer that froze mid-ride",
+  "profile": "embedded",
+  "estMinutes": 12,
+  "topics": [
+    "deadlock",
+    "lock ordering",
+    "mutex",
+    "circular wait"
+  ],
+  "hints": [
+    "Run it and open the Timeline. By tick 4, `nav` holds `gps_lock` and waits for `sd_lock`, while `archive` holds `sd_lock` and waits for `gps_lock`. Each waits for the other forever. Which of the four deadlock conditions is the easiest one to break here?",
+    "Break the circular wait. Pick one global order, gps before sd (nav already uses it), and make `archive` follow it too: take `gps_lock` first, then `sd_lock`, and release in reverse. Then no task can ever hold sd while waiting for gps.",
+    "In `archive_task`: `rtos_mutex_lock(gps_lock, RTOS_WAIT_FOREVER); rtos_mutex_lock(sd_lock, RTOS_WAIT_FOREVER); rtos_busy(2); archive_stamp(); rtos_mutex_unlock(sd_lock); rtos_mutex_unlock(gps_lock);`. Write the order in a comment next to the mutex declarations so the next person keeps it."
+  ]
+}

@@ -34,7 +34,7 @@ Compare it with Fundamentals: there, a register was a 32-bit number at a fixed a
 
 ### GPIO: the sysfs interface you should no longer use
 
-For years, GPIO was the poster child of sysfs: `echo 17 > /sys/class/gpio/export`, then `echo out > gpio17/direction`. It's **deprecated**. Its pin numbers are global and unstable, nothing cleans up when your program crashes, and you can't change several lines atomically.
+For years, GPIO was the poster child of sysfs: `echo 17 > /sys/class/gpio/export`, then `echo out > gpio17/direction`. It's **deprecated** (`CONFIG_GPIO_SYSFS`, superseded by the character device in Linux 4.8), and many distro kernels no longer enable it. Its pin numbers are global and unstable, nothing cleans up when your program crashes, and you can't change several lines atomically.
 
 Modern code uses the **GPIO character device** `/dev/gpiochipN` through **libgpiod**. You request lines by chip and offset (or by name from the device tree), you get an fd, and the kernel releases the lines when that fd closes. Edge events arrive as readable data on that fd, which means you can wait for them with `poll`/`epoll` (next node).
 
@@ -71,7 +71,7 @@ Return errors as **negative errno**, the kernel's own convention. The caller can
 - **Leaked fds are a slow death.** A daemon that polls a sensor once a second and leaks one fd on the error path hits `EMFILE` (usually 1024 fds) in about 17 minutes. After that, *every* `open()` in the process fails. Keep one `close()` at the bottom of the function and send all paths through it.
 - **`errno` is fragile.** Any later libc call can overwrite it, so capture `-errno` immediately.
 - **Some reads have side effects** or are slow. A hwmon read can trigger an I²C transaction that takes milliseconds, so don't call it in a tight loop.
-- **You can't `epoll` a sysfs file.** epoll refuses regular files with `-EPERM`, and a regular file is always "readable" anyway. Drivers that support change notification call `sysfs_notify()`. You then `poll()` the open attribute for **`POLLPRI | POLLERR`**, and after it wakes you, `lseek(fd, 0, SEEK_SET)` and read the value again.
+- **Waiting for a sysfs value to change is not "wait until readable".** A sysfs attribute is *always* readable, so a loop that waits for `POLLIN`/`EPOLLIN` on it spins. Drivers that support change notification call `sysfs_notify()`. You read the attribute once, then `poll()` it for **`POLLPRI | POLLERR`** (or add it to epoll with `EPOLLPRI`). When that wakes you, `lseek(fd, 0, SEEK_SET)` and read the value again. (Files on a real disk filesystem are different again: `epoll_ctl` refuses them outright with `EPERM`.)
 
 ### In the wild
 

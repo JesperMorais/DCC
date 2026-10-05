@@ -69,5 +69,6 @@ uint32_t rtos_notify_take(bool clear_on_exit, rtos_tick_t timeout);
 rtos_timer_t *rtos_timer_create(const char *name, rtos_tick_t period, bool periodic, rtos_timer_fn cb, void *arg);
 void rtos_timer_start(rtos_timer_t *t, rtos_tick_t first_delay);
 void rtos_timer_stop(rtos_timer_t *t);
+bool rtos_timer_is_active(const rtos_timer_t *t);
 
 #endif

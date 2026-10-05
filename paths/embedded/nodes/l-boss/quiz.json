@@ -10,7 +10,7 @@
       "Using a 64-byte buffer causes partial reads, which forces extra wakeups"
     ],
     "answer": 0,
-    "explain": "After the writer goes away, `read()` returns 0 **every time** and the fd stays ready (`EPOLLIN|EPOLLHUP`). Level-triggered epoll reports it on every call, and `return` doesn't change that, so you get a hot loop that delays the timer. The fix is `epoll_ctl(EPOLL_CTL_DEL)` on EOF. The other options are wrong for these reasons. `read()` on a ready fd doesn't block. Timer overruns make `read(tfd)` return a larger count, not more wakeups. A small buffer means more reads only while there's data, not a spin at EOF."
+    "explain": "After the writer goes away, `read()` returns 0 **every time** and the fd stays ready (`EPOLLHUP`). Level-triggered epoll reports it on every call, and `return` doesn't change that, so you get a hot loop that delays the timer. The fix is `epoll_ctl(EPOLL_CTL_DEL)` on EOF. The other options are wrong for these reasons. `read()` on a ready fd doesn't block. Timer overruns make `read(tfd)` return a larger count, not more wakeups. A small buffer means more reads only while there's data, not a spin at EOF."
   },
   {
     "type": "number",

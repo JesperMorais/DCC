@@ -84,13 +84,13 @@ There's no universal answer, so pick a policy deliberately:
 - **Never mix clocks.** Build the deadline with `clock_gettime(CLOCK_MONOTONIC)` and sleep on `CLOCK_MONOTONIC`.
 - **Normalise every time.** `tv_nsec = 1000000000` is invalid, and `timerfd_settime` and `clock_nanosleep` reject it with `EINVAL`.
 - **Re-arming a one-shot timer with a relative time each cycle** brings the drift back. Use `it_interval`, or absolute deadlines.
-- **`read()` on a timerfd must ask for exactly 8 bytes**, or it fails with `EINVAL`.
+- **`read()` on a timerfd needs a buffer of at least 8 bytes** (a `uint64_t`). Anything smaller fails with `EINVAL`.
 - **The first cycle is special.** Arm it at now + P, so the grid starts from a known point.
 - **Close the timerfd.** A loop that runs per job and leaks one fd per run eventually runs out.
 
 ### In the wild
 
 - **Robot controllers** (ROS 2 `ros2_control`, EtherCAT masters such as IgH/SOEM) run 1 kHz loops on `clock_nanosleep(TIMER_ABSTIME)` or timerfd, and publish overrun counters as diagnostics.
-- **Audio servers** (PipeWire, JACK) are driven by timerfds and count "xruns", which are overruns by another name.
-- **systemd timers and GLib's `g_timeout_add`** use timerfd under the hood, and `CLOCK_BOOTTIME` handles laptops that suspend.
+- **Audio servers** (PipeWire, JACK) count "xruns", which are overruns by another name. PipeWire schedules its graph from a timerfd whenever no sound card is driving it.
+- **systemd timers** (through `sd-event`) use timerfd under the hood, and `CLOCK_BOOTTIME` handles laptops that suspend.
 - **Interview insight:** "Why does `usleep(1000)` in a loop not give you 1 kHz?" Because a relative sleep adds the work time and the wakeup latency to every cycle, so the error accumulates. Use an absolute deadline on CLOCK_MONOTONIC, and watch the timerfd expiration count to *detect* misses. Mentioning that REALTIME can step under NTP marks you as someone who has shipped this.

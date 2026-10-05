@@ -13,7 +13,7 @@
       "Wrap `main`'s read-modify-write in `__disable_irq()` / restore",
       "Declare `flags` as `volatile`",
       "Use a C11 atomic, `atomic_fetch_and(&flags, ~bit)`, which compiles to an `LDREX`/`STREX` retry loop",
-      "Give each bit its own variable with a single writer, for example one `volatile bool` the ISR sets and a separate counter `main` owns",
+      "Give each variable a single writer, for example the ISR only increments `isr_count`, `main` only increments its own `handled_count`, and `main` compares the two",
       "Add a short delay before the write so the ISR has time to finish"
     ],
     "answer": [0, 2, 3],

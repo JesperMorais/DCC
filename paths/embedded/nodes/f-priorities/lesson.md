@@ -1,6 +1,6 @@
 ### 1202: the alarm that saved Apollo 11
 
-On 20 July 1969, three minutes before touchdown, the Lunar Module's guidance computer started flashing **1202** and **1201**: executive overflow. A switch left in the wrong position had the rendezvous radar flooding the CPU with work nobody needed. The computer was overloaded, and yet it didn't crash. Its executive, designed by Hal Laning and Margaret Hamilton's team, scheduled jobs **by priority**. When there wasn't enough CPU for everything, it restarted and dropped the low-priority jobs, while the high-priority guidance and display jobs kept getting the CPU. Mission control said "we're go on that alarm", and Armstrong landed.
+On 20 July 1969, during the last minutes of the descent to the Moon, the Lunar Module's guidance computer started flashing **1202** and **1201**: executive overflow. A switch left in the wrong position had the rendezvous radar flooding the CPU with work nobody needed. The computer was overloaded, and yet it didn't crash. Its executive, designed by Hal Laning and Margaret Hamilton's team, scheduled jobs **by priority**. When there wasn't enough CPU for everything, it restarted and dropped the low-priority jobs, while the high-priority guidance and display jobs kept getting the CPU. Mission control said "we're go on that alarm", and Armstrong landed.
 
 That's the promise of priority scheduling. When the CPU is short, **you** decide in advance what gets dropped.
 

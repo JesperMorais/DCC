@@ -10,7 +10,7 @@
       "A task can't send with `RTOS_WAIT_FOREVER`"
     ],
     "answer": 1,
-    "explain": "Copy semantics copy exactly `item_size` bytes, and here that's the 8-byte pointer. Every item in the queue points at the *same* `line` buffer, which keeps being overwritten. Either queue the text itself (`rtos_queue_create(4, 32)` and send `line`), or hand out buffers from a pool and pass ownership. A task may wait forever on send. Only ISRs must not."
+    "explain": "Copy semantics copy exactly `item_size` bytes, and here that's the pointer (4 bytes on a Cortex-M, 8 on your laptop). Every item in the queue points at the *same* `line` buffer, which keeps being overwritten. Either queue the text itself (`rtos_queue_create(4, 32)` and send `line`), or hand out buffers from a pool and pass ownership. A task may wait forever on send. Only ISRs must not."
   },
   {
     "type": "number",

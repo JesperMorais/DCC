@@ -91,6 +91,6 @@ They're faster and lighter, but they're not a drop-in replacement for everything
 
 ### In the wild
 
-- FreeRTOS's documentation claims notifications unblock a task up to **45% faster** than a binary semaphore, and they use no extra RAM. That's why driver code (DMA-complete, SPI-done, "radio IRQ") uses them almost everywhere.
+- FreeRTOS's documentation claims notifications unblock a task up to **45% faster** than a binary semaphore, and they need no separate object, so they use less RAM. That's why driver code (DMA-complete, SPI-done, "radio IRQ") uses them almost everywhere.
 - ESP-IDF, Amazon's FreeRTOS libraries and STM32 BSPs all use the "ISR notifies the handler task" pattern.
 - Review comments: *"this semaphore has one giver and one taker, so make it a notification"*, *"ulTaskNotifyTake(pdTRUE) but you only process one, so a burst loses events"*, *"handle is NULL if the IRQ fires before task creation"*.

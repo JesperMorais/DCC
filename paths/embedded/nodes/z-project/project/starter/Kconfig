@@ -1,0 +1,11 @@
+# The app's own Kconfig options. Zephyr picks this file up automatically
+# because it sits next to CMakeLists.txt.
+
+menu "Sensor node"
+
+# Your options go here (milestone 1).
+
+endmenu
+
+# Everything else in Zephyr. Keep this line last.
+source "Kconfig.zephyr"

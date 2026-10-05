@@ -22,12 +22,13 @@ xTimerStart(t, 0);   xTimerStop(t, 0);   xTimerReset(t, 0);   // 0 = don't wait 
 
 ### Where the callback actually runs
 
-In Fundamentals, the neutral kernel ran timer callbacks **in interrupt context**. FreeRTOS doesn't. When `configUSE_TIMERS` is on, it creates a **timer service task** (the "daemon", named `Tmr Svc`) at `configTIMER_TASK_PRIORITY`, which is **6** in this simulator. Your timer API calls and every expiry go through a **timer command queue** to that task, and it calls your callbacks one after another.
+In Fundamentals, the neutral kernel ran timer callbacks **in interrupt context**. FreeRTOS doesn't. When `configUSE_TIMERS` is on, it creates a **timer service task** (the "daemon", named `Tmr Svc`) at `configTIMER_TASK_PRIORITY`, which is **6** in this simulator. Your timer API calls (`xTimerStart`, `xTimerReset`, `xTimerStop`, …) don't touch the timer directly: they post a command to a **timer command queue**. The daemon blocks on that queue with a timeout set to the next timer's expiry time, so it wakes up either for a new command or because a timer is due. Then it calls the due callbacks one after another.
 
 ```
-xTimerStart() ─┐                      ┌─▶ blink_cb()
-xTimerReset() ─┼─▶ [timer cmd queue] ─▶ Tmr Svc (prio 6) ─┼─▶ idle_cb()
-tick expiry  ──┘                      └─▶ wifi_retry_cb()
+xTimerStart() ─┐
+xTimerReset() ─┼─▶ [timer cmd queue] ─▶ Tmr Svc (prio 6) ─┬─▶ blink_cb()
+xTimerStop()  ─┘                            ▲             ├─▶ idle_cb()
+                       next expiry due ─────┘             └─▶ wifi_retry_cb()
 ```
 
 Two big consequences follow:

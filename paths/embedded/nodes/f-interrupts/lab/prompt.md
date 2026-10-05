@@ -20,7 +20,7 @@ uint32_t uart_overruns(void);
 **`USART1_IRQHandler`** (the tests call `sim_uart_receive(byte)`, which plays the hardware and invokes your ISR)
 - If `RXNE` isn't set in `SR`, it isn't a receive interrupt. Do nothing.
 - Otherwise read the byte from `DR`, then **acknowledge**: clear `RXNE` in `SR`. The simulated USART doesn't clear it on a `DR` read, so write the 0 yourself: `USART1->SR &= ~...`.
-- If `ORE` is set, the hardware lost a byte before you got here. Count one overrun and clear `ORE` too.
+- If `ORE` is set, the hardware lost a byte before you got here. Count one overrun and clear `ORE` too. (On a real STM32F4, reading `SR` then `DR` clears both flags by itself; the simulator wants the explicit write.)
 - Push the byte into the ring. If the ring is **full**, drop the *new* byte and count it in `uart_dropped`. Never overwrite unread data, and never wait.
 
 **The ring buffer**

@@ -13,6 +13,10 @@ unsigned fixes_logged;   /* rounds completed by nav */
 unsigned files_archived; /* rounds completed by archive */
 rtos_tick_t nav_start_delay = 1; /* when nav first wakes up (the tests try several) */
 
+/* Provided by the board (the tests). Each takes 1 tick and must be called holding BOTH locks. */
+void track_append(void);
+void archive_stamp(void);
+
 static void nav_task(void *arg) {
     (void)arg;
     rtos_delay(nav_start_delay);
@@ -20,7 +24,7 @@ static void nav_task(void *arg) {
         rtos_mutex_lock(gps_lock, RTOS_WAIT_FOREVER);
         rtos_busy(2); /* read the fix */
         rtos_mutex_lock(sd_lock, RTOS_WAIT_FOREVER);
-        rtos_busy(1); /* append it to the track */
+        track_append(); /* needs the fix (gps) and the card (sd) */
         rtos_mutex_unlock(sd_lock);
         rtos_mutex_unlock(gps_lock);
         fixes_logged++;
@@ -34,7 +38,7 @@ static void archive_task(void *arg) {
         rtos_mutex_lock(sd_lock, RTOS_WAIT_FOREVER);
         rtos_busy(2); /* open the archive file */
         rtos_mutex_lock(gps_lock, RTOS_WAIT_FOREVER);
-        rtos_busy(1); /* stamp it with the GPS time */
+        archive_stamp(); /* needs the card (sd) and the GPS time (gps) */
         rtos_mutex_unlock(gps_lock);
         rtos_mutex_unlock(sd_lock);
         files_archived++;

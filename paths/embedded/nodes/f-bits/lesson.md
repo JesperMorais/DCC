@@ -70,7 +70,7 @@ Read, modify, write. Only two bits changed, and your debugger stays connected.
 
 **`1 << 31` is undefined behaviour.** The literal `1` is a signed `int`, and shifting a 1 into the sign bit can't be represented. Most compilers happen to give you `0x80000000`, but the C standard says anything may happen, and UBSan (which runs on your labs) stops the program dead. Always shift **unsigned** values: `1u << 31` or `UINT32_C(1) << 31`.
 
-**Shifting by the full width is also UB.** `1u << 32` on a 32-bit type isn't 0. It's undefined, and on ARM and x86 the hardware often uses only the low 5 bits of the shift count, so it quietly comes out as `1u << 0`. A "mask for a 32-bit-wide field" needs its own special case: `width >= 32 ? 0xFFFFFFFFu : (1u << width) - 1u`.
+**Shifting by the full width is also UB.** `1u << 32` on a 32-bit type isn't reliably 0. It's undefined. On x86 the shift instruction uses only the low 5 bits of the count, so it quietly comes out as `1u << 0` = 1. On a 32-bit ARM core (Cortex-M included) a register shift by 32 gives 0. Same source, different answers on your laptop and on the board: that's what UB looks like. A "mask for a 32-bit-wide field" needs its own special case: `width >= 32 ? 0xFFFFFFFFu : (1u << width) - 1u`.
 
 **`~` promotes too.** `~(uint8_t)0x0F` is the `int` `0xFFFFFFF0`, not `0xF0`. Do your bit maths in `uint32_t` and cast at the end.
 
@@ -79,7 +79,7 @@ Read, modify, write. Only two bits changed, and your debugger stays connected.
 ### In the wild
 
 - **CMSIS vendor headers** define every field as a `_Pos` and `_Msk` pair, for example `GPIO_MODER_MODE5_Pos` and `GPIO_MODER_MODE5_Msk`. Real drivers are full of `(reg & ~X_Msk) | (val << X_Pos)`, which is exactly the insert you'll write in the lab.
-- **Linux** has `FIELD_GET()` / `FIELD_PREP()` and `GENMASK(h, l)` in `<linux/bitfield.h>`. They exist because people kept getting this wrong.
+- **Linux** has `FIELD_GET()` / `FIELD_PREP()` in `<linux/bitfield.h>` and `GENMASK(h, l)` in `<linux/bits.h>`. They exist because people kept getting this wrong.
 - **Zephyr** has `BIT(n)`, `GENMASK`, `FIELD_GET` and `WRITE_BIT`.
 - **The SWD lockout** is so common that every STM32 forum has a pinned "connect under reset" thread. Now you know where it comes from.
 

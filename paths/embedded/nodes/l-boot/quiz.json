@@ -28,7 +28,7 @@
     "type": "multi",
     "q": "You're cutting boot time on a camera product from 9 s towards 2 s. Which changes actually help?",
     "options": [
-      "Set `bootdelay=0` and lock the U-Boot environment",
+      "Set `bootdelay=0`, so U-Boot doesn't wait for a keypress",
       "Build the drivers needed for the camera path into the kernel instead of as modules loaded by udev",
       "Add more systemd units so things start in parallel",
       "Start the camera service early, with minimal dependencies, before networking and logging",

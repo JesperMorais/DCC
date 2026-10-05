@@ -38,6 +38,42 @@ Validate with `npm run validate -- embedded.` (labs) and `npm run validate:paths
 - **Quizzes test understanding, not trivia.** Use "predict the timeline", "which bug is this", "what breaks if…". Every question has an `explain` that teaches, including why the wrong options are wrong.
 - **Labs** follow the challenge quality bar (challenges/README.md): realistic framing, the tests match the prompt exactly, hints escalate (nudge → approach → nearly the answer), and the reference solution is idiomatic and warning-free.
 
+## Projects (kind "project")
+
+One per section, unlocked by the section's boss, drawn beside it on the tree. The learner builds it **in their own editor**: the node page shows a command that copies `starter/` to `~/code/<folder>` and runs `npm install`. Milestones are ticked by the learner (honour system). A finished project is a badge: no XP, no stars, and it doesn't count towards the section. Its `covers` topics are used to suggest it on the dashboard when the dailies mark them as shaky.
+
+```
+nodes/<id>/project/
+  project.json   { "title", "estHours", "folder", "testsGiven": true|false,
+                   "milestones": [{ "id": "m1", "title", "body": "markdown", "hints": [3 strings] }] }
+  brief.md       the story and the goal (≥150 words). What you're building and why, not how
+  review.md      "How we'd structure it". Shown only after the project is done
+  starter/       what the learner copies: package.json, tsconfig.json, README.md, src/, tests/
+  solution/      the reference, copied over the starter by the validator. Never shown to the learner
+```
+
+**The balance: instructions vs. thinking.** A milestone says *what* must work and how you know it's done, never *how*. No "use reduce", no "create a Map". Scaffolding **fades** across the sections:
+
+| | Fundamentals | Core | Generics |
+|---|---|---|---|
+| What to build | spelled out per milestone | spelled out per milestone | user stories only |
+| Signatures | given (stubs that throw) | only the data types | designed by the learner |
+| Tests | given, one file per milestone, testing the functions | given, one file per milestone, testing **behaviour** (run the CLI, check stdout/files) so any structure passes | written by the learner (`testsGiven: false`); the starter has one example test showing the syntax, and the milestone bodies list what the tests must cover |
+| Files | given | suggested | the learner's |
+
+**Hints** are exactly three per milestone, escalating, and **never code** (the validator rejects code-looking hints): 1. a question that gets them thinking ("what does the data look like after each step?"), 2. the concept and which node taught it, 3. a plan in words ("parse → filter → group → sort → print").
+
+**Starter conventions.** ESM TypeScript, run with tsx and tested with Node's built-in test runner, so there are no other dependencies:
+
+- `package.json`: `"type": "module"`, scripts `"start": "tsx src/main.ts"`, `"test": "node --import tsx --test \"tests/**/*.test.ts\""`, `"test:m1": "node --import tsx --test tests/m1.test.ts"` (one per milestone when tests are given), `"check": "tsc --noEmit"`; devDependencies `tsx`, `typescript`, `@types/node`.
+- `tsconfig.json`: `strict`, `module`/`moduleResolution` `"nodenext"`, `target` `"es2022"`, `noEmit`, `allowImportingTsExtensions`, `types: ["node"]`, include `src` and `tests`. Imports use the `.ts` extension.
+- Tests: `import { test } from "node:test"; import assert from "node:assert/strict";`. Milestone tests are named `tests/<milestone id>.test.ts`.
+- `README.md`: how to run, test one milestone and type-check. Learners read this in their editor.
+
+**C projects** (paths with `"language": "c"`): plain C17 built with `make`, no npm. The starter needs a `Makefile` with targets `build` (compiles everything with `-std=gnu17 -Wall -Wextra -Werror`; it may fetch a pinned dependency first, e.g. the FreeRTOS kernel), `test` (builds and runs every milestone's tests) and `test-m1`… per tested milestone, plus `README.md`. A last, optional milestone that can't be tested on the host, such as "port it to a real board", may have no tests; say so in its body. Tests print TAP-style lines, `ok N - name` / `not ok N - name`, and end with `# pass N` and `# fail N`. A small header in `tests/` (e.g. `check.h`) does that, so no test framework is needed. Set `"verify": "manual"` only when the toolchain can't run in validation (e.g. a full Zephyr workspace); the validator then checks the structure only and says so.
+
+Validate with `npm run validate:projects`. It checks that the starter type-checks, that the given tests fail on the stubs, and that the solution type-checks and passes ≥2 tests per milestone.
+
 ## quiz.json
 
 ```json
@@ -96,7 +132,11 @@ The headers below are available. Include what you use in **both** the starter/so
 **How simulated time works**
 - 1 tick = 1 ms.
 - Code between kernel calls takes zero time. Only `rtos_busy` / `vSimulateWork` / `k_busy_wait`, delays and waiting make time pass.
-- Interrupts fire at tick boundaries. Equal priorities round-robin, one tick at a time.
+- Interrupts fire at tick boundaries. Equal priorities round-robin one tick at a time (neutral RTOS, FreeRTOS), or in 20 ms slices under Zephyr (`CONFIG_TIMESLICE_SIZE=20`, the default).
+- Zephyr relative timeouts wait one extra tick, as on real Zephyr: `k_msleep(5)` takes 6 ticks, and `k_sem_take(&s, K_MSEC(10))` times out after 11. Use `K_TIMEOUT_ABS_MS(t)` or a `k_timer` for drift-free periodic work: they land exactly on the grid.
+- Queues follow FreeRTOS: a send to a waiting receiver goes into the queue and wakes it, so a queue of length N holds N items in a burst. Zephyr's `k_msgq` copies straight into a waiting receiver, as real Zephyr does, so a burst gets one extra message through.
+- FreeRTOS `…FromISR` calls set `*pxHigherPriorityTaskWoken` only when the woken task outranks the interrupted one.
+- A task paused mid-`rtos_busy` when `sim_run()` returns resumes in the next `sim_run()`, so tests may split runs freely.
 - Tests drive time with `sim_run()` and then assert on state, counters or timing, for example `sim_first_run_at_or_after("handler", 10) == 10`.
 
 **What the simulator catches** (the test fails with a teaching message):

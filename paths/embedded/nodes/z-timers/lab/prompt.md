@@ -2,7 +2,7 @@
 
 A smart thermostat samples its temperature sensor over **I2C** (3 ms per read, and the driver sleeps while it waits on the bus) and has a touch screen with a backlight. Two complaints from the field:
 
-- The temperature log is "every 100 ms" but the timestamps creep: 100, 203, 306... That's drift. (`k_msleep(100)` *after* 3 ms of work gives a 103 ms period.)
+- The temperature log is "every 100 ms" but the timestamps creep: 101, 205, 309... That's drift. (`k_msleep(100)` sleeps 100 ms *plus one tick*, and it starts *after* 3 ms of work, so the period is 104 ms.)
 - The backlight goes dark **while people are using it**, exactly 500 ms after boot. Touches turn it on but never push the timeout back.
 
 ### Your job
@@ -28,4 +28,3 @@ A smart thermostat samples its temperature sensor over **I2C** (3 ms per read, a
 | touches at 300 and 700 | on at 1199, off at 1200, exactly one off event |
 | touch at 600 after a timeout | back on, and off again at 1100 |
 
-> **Simulator note:** in real Zephyr, `k_timer_start()` on a running timer simply restarts it. This simulator currently leaves the old countdown armed, so call `k_timer_stop()` first when you restart. It's harmless on real hardware too.

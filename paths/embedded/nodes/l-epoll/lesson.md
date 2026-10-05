@@ -58,9 +58,9 @@ Once stopping, a timeout of **0** turns `epoll_wait` into "what's ready right no
 
 ### Gotchas
 
-- **EOF looks like "ready".** When the writer closes a pipe, the read end reports `EPOLLHUP` (often with `EPOLLIN`), and `read()` returns 0, **forever**. If you don't `EPOLL_CTL_DEL` the fd, a level-triggered loop spins at 100 % CPU. Handle `EPOLLHUP`/`EPOLLERR` as well as `EPOLLIN`, and let the handler's `read()` discover the EOF.
+- **EOF looks like "ready".** When the writer closes a pipe, the read end reports `EPOLLHUP` (plus `EPOLLIN` while unread data remains), and `read()` returns 0, **forever**. If you don't `EPOLL_CTL_DEL` the fd, a level-triggered loop spins at 100 % CPU. Handle `EPOLLHUP`/`EPOLLERR` as well as `EPOLLIN`, and let the handler's `read()` discover the EOF.
 - **Regular files can't be watched.** `epoll_ctl` returns `EPERM` for them, because they're always ready.
-- **The fd is the key, not the file.** If you `close()` an fd while it's still registered, epoll may keep reporting the old open file, and the numbers get reused. Remove it before you close it.
+- **Registrations belong to the open file, not the fd number.** `close()` only removes the registration if no other fd (a `dup`, or a copy in a forked child) still refers to the same open file. Otherwise epoll keeps reporting events for an fd number you've closed, and that number may already belong to something else. `EPOLL_CTL_DEL` before you close.
 - **Ownership.** The loop owns its epoll fd and its eventfd and must close them. The fds it watches belong to the caller.
 - **`EINTR`.** `epoll_wait` can return `-1`/`EINTR` when a signal arrives. Treat that as "loop again", not as a fatal error.
 - **Busy-polling in disguise.** `epoll_wait(..., 0)` in a loop where nothing is stopping is a superloop with extra steps. Sleep with `-1`, or with a real timeout.

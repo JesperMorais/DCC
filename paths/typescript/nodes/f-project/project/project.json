@@ -1,0 +1,58 @@
+{
+  "title": "Terminal to-do list",
+  "estHours": 2.5,
+  "folder": "todo-cli",
+  "testsGiven": true,
+  "milestones": [
+    {
+      "id": "m1",
+      "title": "Add and show to-dos",
+      "body": "Fill in `addTodo`, `formatTodo` and `formatList` in `src/todo.ts`.\n\n- `addTodo` returns a **new** list with the to-do at the end, not done. Its id is one more than the highest id in the list (1 for an empty list), so ids never get reused after a removal. The text is trimmed, and blank text adds nothing.\n- `formatTodo` turns one to-do into one line, with `[x]` for done and `[ ]` for not done.\n- `formatList` puts every to-do on its own line, or says `Nothing to do!` for an empty list.\n\n```\naddTodo([], \"  buy milk \")   →  [{ id: 1, text: \"buy milk\", done: false }]\nformatList(todos)            →  \"[ ] 1. buy milk\\n[x] 2. call mum\"\n```\n\nThe tests freeze the list they pass in, so changing it throws.\n\n**Done when** `npm run test:m1` is green.",
+      "hints": [
+        "If the list has ids 1 and 4, what should the next id be? And what is the highest id in a list with nothing in it?",
+        "Finding the highest id is the accumulator pattern from Loops. Building a new list that has one more item, without touching the old one, is spread from Arrays without mutation. Turning every to-do into a line is map, from Arrow functions, map & filter, and the README toolbox shows how to glue lines together.",
+        "For addTodo: trim the text and stop early if it's empty, then walk the list keeping the biggest id seen, then return a copy of the list with the new to-do added. For formatList: handle the empty case first, then format each to-do and join the lines with a newline."
+      ]
+    },
+    {
+      "id": "m2",
+      "title": "Mark done, remove, clear",
+      "body": "Fill in `markDone`, `removeTodo` and `clearDone`.\n\n- `markDone(todos, 3)` returns a list where to-do 3 is done and everything else is as it was.\n- `removeTodo(todos, 2)` returns the list without to-do 2. The other ids stay the same: nothing is renumbered.\n- `clearDone(todos)` returns only the to-dos that aren't done yet.\n\nAn id that isn't in the list changes nothing. None of them may change the list they were given, **or the to-do objects inside it**: the tests freeze those too.\n\n**Done when** `npm run test:m2` is green.",
+      "hints": [
+        "Two of these return fewer to-dos than they got, and one returns the same number. Which is which, and what does that tell you about the tool for each?",
+        "Keeping some items is filter and changing every item is map, both from Arrow functions, map & filter. Changing one field without touching the original means building a new object with the same fields, like the status update worked example in Objects & type aliases.",
+        "markDone: go through every to-do; if its id matches, give back a copy with done set to true, otherwise give back the to-do itself. removeTodo: keep every to-do whose id is different. clearDone: keep every to-do that isn't done."
+      ]
+    },
+    {
+      "id": "m3",
+      "title": "Count and search",
+      "body": "Fill in `countLeft`, `summary` and `search`.\n\n- `countLeft` is how many to-dos aren't done.\n- `summary` is one line for the bottom of the list:\n\n| The list | `summary` |\n|---|---|\n| empty | `Nothing to do!` |\n| 3 to-dos, all done | `All 3 done!` |\n| 3 to-dos, 1 done | `2 of 3 left` |\n\n- `search(todos, \"BUY \")` returns the to-dos whose text contains `buy`, ignoring upper/lower case and spaces around the query. A blank query matches every to-do.\n\n**Done when** `npm run test:m3` is green.",
+      "hints": [
+        "summary has three possible answers. Which one has to be checked first so the others don't give a wrong answer for an empty list?",
+        "Counting is a for...of loop with an accumulator (Loops). The three summary cases are an if / else if chain where the first match wins (Decisions). Case-insensitive search means making both sides the same case before comparing, which is in Strings.",
+        "countLeft: start at zero and add one for every to-do that isn't done. summary: count what's left, then check empty, then all done, then the general case, building the text with a template string. search: clean up the query once, then keep the to-dos whose cleaned-up text contains it."
+      ]
+    },
+    {
+      "id": "m4",
+      "title": "Save between runs",
+      "body": "Fill in `loadTodos` and `saveTodos` in `src/storage.ts`, so the list survives after the program ends.\n\n- `saveTodos(file, todos)` writes the list to `file` as JSON, replacing what was there.\n- `loadTodos(file)` reads it back. If the file doesn't exist yet (the very first run), it returns an empty list instead of crashing.\n\nThe file should be readable JSON you could open in your editor. The README's toolbox lists the Node functions you need.\n\n**Done when** `npm run test:m4` is green.",
+      "hints": [
+        "A file can only hold text, and your list is an array of objects. What has to happen on the way into the file, and what on the way out?",
+        "This milestone is mostly new tools rather than new ideas: the README's toolbox has the file and JSON functions. The only decision is the if / else for a missing file, from Decisions.",
+        "saveTodos: turn the list into JSON text and write it to the file. loadTodos: if the file isn't there, return an empty list; otherwise read the text and turn the JSON back into a list."
+      ]
+    },
+    {
+      "id": "m5",
+      "title": "The command line",
+      "body": "Fill in `run` in `src/cli.ts`. It gets the words typed after `npm start` and the file to use, loads the list, does the command, saves if something changed, and **returns** the message to print (`src/main.ts` prints it).\n\n| You type | `run` returns |\n|---|---|\n| `add buy milk` | `Added 1. buy milk` (the words after `add` are joined with spaces) |\n| `add` | `What should I add? Try: npm start add buy milk` |\n| `list` | the list, an empty line, then the summary. Just `Nothing to do!` when empty |\n| `done 2` / `remove 2` | `Done: call mum` / `Removed: call mum` |\n| `done 7` / `done abc` | `No to-do with id 7` / `No to-do with id abc` |\n| `done` / `remove` (no id) | `Which to-do? Try: npm start done 2` (or `remove 2`) |\n| `clear` | `Cleared 2 done` |\n| `find buy` | the matching to-dos, or `No to-dos match \"buy\"` |\n| nothing, or `help` | `USAGE` |\n| `dance` | `Unknown command \"dance\"`, an empty line, then `USAGE` |\n\nThen try it for real: `npm start add buy milk`, `npm start list`, `npm start done 1`, and look inside `todos.json`.\n\n**Done when** `npm run test:m5` is green, `npm test` runs all five files green, and `npm run check` shows no errors.",
+      "hints": [
+        "Which word decides what happens, and what are the rest of the words for? For done and remove, what can go wrong with the id before you even look at the list?",
+        "Picking a command is an if / else if chain (Decisions). The rest of the words are a slice of the array (Arrays without mutation) joined into one string (Strings). Every change goes through the pure functions you already wrote and tested.",
+        "Load the list. Split the words into the command and the rest. For each command, check its input first and return a message if it's missing or wrong. Otherwise hand the list to what you wrote in milestones 1 to 3, save the new list, and return the confirmation. Anything you don't recognise falls through to the usage text."
+      ]
+    }
+  ]
+}

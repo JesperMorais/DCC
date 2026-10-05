@@ -43,7 +43,7 @@ Note what never happens: no `sleep()`, no polling with a timeout "just in case",
 
 **1. Lines don't respect `read()` boundaries.** A pipe, a UART or a TCP socket gives you bytes, not messages. Whatever arrives after the last `\n` belongs to the next line, so it has to survive until the next read, in a buffer that belongs to **that sensor**. One shared buffer for all sensors interleaves their half-lines, and that's a bug you only see under load.
 
-**2. EOF is a level, not an event.** Once the writer is gone, the read end stays readable forever, with `EPOLLIN|EPOLLHUP` and `read()` returning 0. If you don't `EPOLL_CTL_DEL` it, you get the 100% CPU story from the hook. The fix is one line, and forgetting it costs a night.
+**2. EOF is a level, not an event.** Once the writer is gone, the read end stays ready forever, with `EPOLLHUP` and `read()` returning 0. If you don't `EPOLL_CTL_DEL` it, you get the 100% CPU story from the hook. The fix is one line, and forgetting it costs a night.
 
 **3. Garbage is data too.** EMI on a long cable produces bytes like `"\x00\xff12"`. A sensor in fault mode prints `ERR`. Count these, skip them, and **bound** the line buffer. A sensor that never sends `\n` must not grow your memory, or overflow it.
 

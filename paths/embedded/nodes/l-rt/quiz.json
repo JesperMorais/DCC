@@ -34,7 +34,7 @@
       "The timer tick is 50 ms"
     ],
     "answer": 1,
-    "explain": "**RT throttling** is the kernel's safety net: if RT threads use their 950 ms budget, they're paused for the remaining 50 ms of the period so that normal tasks (your shell, sshd, the watchdog daemon) can run. A busy-spinning RT thread hits it every second. C has no garbage collector. Inversion requires a shared lock, and a spinner doesn't block. Linux ticks are 1–4 ms, and tickless besides. The fix is to **block** (timerfd, clock_nanosleep) instead of spinning, not to disable throttling."
+    "explain": "**RT throttling** is the kernel's safety net: if RT threads use their 950 ms budget, they're paused for the remaining 50 ms of the period so that normal tasks (your shell, sshd, the watchdog daemon) can run. A busy-spinning RT thread hits it every second. C has no garbage collector. Inversion requires a shared lock, and a spinner doesn't block. The Linux tick is 1–10 ms (HZ=1000 down to 100), and often tickless besides. The fix is to **block** (timerfd, clock_nanosleep) instead of spinning, not to disable throttling. (On 6.12+ kernels the `fair_server` deadline reservation provides the same 50 ms/1 s guarantee for normal tasks.)"
   },
   {
     "type": "single",

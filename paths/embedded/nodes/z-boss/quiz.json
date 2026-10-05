@@ -1,0 +1,51 @@
+[
+  {
+    "type": "single",
+    "q": "A teammate's report timer does the whole job in its expiry function. What's wrong with it?",
+    "code": "static void report_expiry(struct k_timer *t) {\n    k_mutex_lock(&stats_lock, K_FOREVER);\n    struct hub_stats snap = stats;\n    k_mutex_unlock(&stats_lock);\n    uart_send_report(&snap); /* 2 ms */\n}",
+    "options": [
+      "Nothing: k_timer expiry functions run in the system workqueue",
+      "The expiry runs in the system clock ISR: a mutex can't be taken there, and 2 ms of sending blocks other interrupts. Submit a k_work item instead",
+      "It should use a k_sem instead of a k_mutex, because semaphores are ISR-safe to take",
+      "The timer should be started with K_NO_WAIT to make the expiry run in a thread"
+    ],
+    "answer": 1,
+    "explain": "A `k_timer` expiry function is called from the **system clock interrupt**. `k_mutex_lock()` is illegal in an ISR (Zephyr asserts), and any long work there delays every other interrupt. The fix is a one-line expiry that calls `k_work_submit()`, so the handler runs in a thread on the system workqueue. Expiry functions don't run on the workqueue by themselves. Swapping in a `k_sem` doesn't help: an ISR may *give* a semaphore, but it can only *take* one with `K_NO_WAIT`, and you'd lose priority inheritance anyway. `k_timer_start()` has no option that moves the expiry into a thread."
+  },
+  {
+    "type": "single",
+    "q": "`processing` runs at a cooperative priority (-2). The report timer fires while processing is in the middle of its 1 ms filter. When does the report work run?",
+    "options": [
+      "Immediately: the system workqueue is at -1, so it preempts processing",
+      "When processing finishes the filter and blocks or yields, so the report lands late",
+      "Never: cooperative threads starve the workqueue forever",
+      "Immediately, because work items run in ISR context"
+    ],
+    "answer": 1,
+    "explain": "A cooperative thread is never preempted by another **thread**, whatever that thread's priority. Interrupts still run, so the timer fires and the work item is queued on time, but the workqueue thread only gets the CPU once processing gives it up, at its next `k_msgq_get()` that blocks. Note that -1 is also *less* urgent than -2. The workqueue isn't starved forever, because processing blocks between messages. And work handlers run in the workqueue's thread, not in an ISR. Keep processing preemptible (0 or higher) so the workqueue can interrupt it."
+  },
+  {
+    "type": "single",
+    "q": "The stats lock is a `k_sem` initialised to 1. `logger` (least urgent) holds it when a `ble` burst (middle priority) starts. Then `processing` (most urgent) needs the lock. What happens?",
+    "options": [
+      "processing waits only for the rest of the logger's 5 ms write",
+      "processing waits for the whole 30 ms BLE burst plus the rest of the write, and the 4-slot queue overflows",
+      "Deadlock: processing and logger wait for each other",
+      "ble is blocked too, because it has lower priority than processing"
+    ],
+    "answer": 1,
+    "explain": "Classic unbounded priority inversion, as on Mars Pathfinder. A semaphore has no owner, so the kernel can't boost the logger. `ble` outranks the logger and keeps the CPU for its whole burst, while `processing` waits on a lock held by a thread that isn't running. Option A is what you get with a `k_mutex`: the logger is raised to processing's priority and finishes its write first. There's no deadlock, since nobody holds one lock while waiting for another. And `ble` doesn't need the lock, so nothing blocks it."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these report handlers produce a consistent snapshot without making `processing` wait more than necessary?",
+    "options": [
+      "Lock, copy `stats` into a local, unlock, then do the 2 ms send from the copy",
+      "Read `stats.processed` and `stats.sum` without the lock, since each read is a single 32-bit load",
+      "Lock, do the 2 ms send straight from `stats`, unlock",
+      "Lock, copy `processed`, unlock; lock again, copy `sum`, unlock; then send"
+    ],
+    "answer": [0],
+    "explain": "Only A is both consistent and short. B: each load is atomic on its own, but the pair isn't. The reporter can run between `processed++` and `sum += value`, and the two values disagree. C is consistent, but it holds the lock for the whole 2 ms send, so processing waits up to 2 ms every report. Inheritance limits who can stretch a critical section, not how long it is. D releases the lock between the two reads, so processing can update in between: same tearing as B, with extra steps."
+  }
+]

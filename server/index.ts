@@ -19,9 +19,9 @@ import {
   ratingFor,
   START_RATING,
 } from "./engine.ts";
-import { labSolved, nodeView, pathView, progressOf, submitQuiz } from "./pathProgress.ts";
+import { labSolved, nodeView, pathView, progressOf, setMilestone, submitQuiz } from "./pathProgress.ts";
 import { loadPaths } from "./paths.ts";
-import { focusFor } from "./weakness.ts";
+import { focusFor, projectIdeas } from "./weakness.ts";
 import { HARNESS_DTS } from "./runner/harness.ts";
 import { runChallenge } from "./runner/index.ts";
 import { load, reset, save, today, type Attempt, type Experience } from "./store.ts";
@@ -102,7 +102,7 @@ app.get("/api/state", (c) => {
   const lang = langParam(c);
   const d = dashboard(data, challenges, lang);
   save(data); // dashboard may have assigned today's daily
-  return c.json({ ...d, focus: focusFor(data, paths, challenges, lang) });
+  return c.json({ ...d, focus: focusFor(data, paths, challenges, lang), projectIdeas: projectIdeas(data, paths, challenges, lang) });
 });
 
 function startLanguage(lang: Lang, experience: Experience) {
@@ -378,6 +378,19 @@ app.post("/api/paths/:path/nodes/:node/quiz", async (c) => {
   const data = load();
   if (pathView(data, p, labsById(), challenges).nodes.find((n) => n.id === node.id)?.status === "locked") return c.json({ error: "locked" }, 403);
   const r = submitQuiz(data, p, node, Array.isArray(answers) ? answers : []);
+  save(data);
+  return c.json(r);
+});
+
+app.post("/api/paths/:path/nodes/:node/milestone", async (c) => {
+  const p = paths.find((x) => x.id === c.req.param("path"));
+  const node = p?.nodes.find((n) => n.id === c.req.param("node"));
+  if (!p || !node?.project) return c.json({ error: "not found" }, 404);
+  const { id, done } = await c.req.json<{ id: string; done: boolean }>();
+  if (!node.project.milestones.some((m) => m.id === id)) return c.json({ error: "unknown milestone" }, 400);
+  const data = load();
+  if (pathView(data, p, labsById(), challenges).nodes.find((n) => n.id === node.id)?.status === "locked") return c.json({ error: "locked" }, 403);
+  const r = setMilestone(data, p, node, id, !!done);
   save(data);
   return c.json(r);
 });

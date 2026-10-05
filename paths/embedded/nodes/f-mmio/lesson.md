@@ -16,7 +16,9 @@ On a microcontroller, peripherals don't have a special instruction set. They sit
 A peripheral is a block of registers at fixed offsets from a **base address**:
 
 ```
-GPIOA base = 0x40020000      (simplified: the layout mcu.h uses)
+GPIOA base = 0x40020000      (simplified: the layout mcu.h uses;
+                              the real F4 has OTYPER, OSPEEDR and PUPDR
+                              in between, which is why its ODR is at +0x14)
   +0x00  MODER   pin modes
   +0x04  IDR     input levels (read-only)
   +0x08  ODR     output levels
@@ -31,14 +33,14 @@ typedef struct {
 } GPIO_TypeDef;
 #define GPIOA ((GPIO_TypeDef *)0x40020000u)
 
-GPIOA->ODR |= 1u << 5;   // a store to 0x40020008
+GPIOA->ODR |= 1u << 5;   // a load and a store at base + 0x08
 ```
 
 `mcu.h` in your labs is built exactly like this. The only difference is that the "silicon" is a C simulator.
 
 ### Why `volatile`
 
-`volatile` tells the compiler that this memory can change, or be observed, **behind your back**. Every read in the source must become a real load and every write a real store, in the order you wrote them, with nothing cached, merged or deleted.
+`volatile` tells the compiler that this memory can change, or be observed, **behind your back**. Every read in the source must become a real load and every write a real store, in the order you wrote them relative to other `volatile` accesses, with nothing cached, merged or deleted.
 
 Without it, the compiler is allowed to:
 - **cache reads**, so your polling loop spins forever (the story above)

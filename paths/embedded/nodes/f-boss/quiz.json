@@ -1,0 +1,59 @@
+[
+  {
+    "type": "multi",
+    "q": "A sensor's bytes arrive on USART1, one interrupt per byte. Which of these belong in `USART1_IRQHandler`?",
+    "options": [
+      "Read `DR` and clear `RXNE` (and `ORE`) in `SR`",
+      "Copy the byte into the parser's queue with `RTOS_NO_WAIT`",
+      "Run the 1 ms calibration lookup on the finished reading",
+      "Lock the data mutex and store the reading in the shared stats",
+      "Increment a drop counter if the queue is full"
+    ],
+    "answer": [0, 1, 4],
+    "explain": "An ISR does the minimum: take the byte off the hardware, acknowledge it, hand it on without waiting, and count what it couldn't hand on. A 1 ms calculation in an ISR delays every other interrupt and every task (our simulator rejects `rtos_busy` in an ISR outright). A mutex needs an owner that can block, and an ISR can do neither. Locking and storing are the parser task's job."
+  },
+  {
+    "type": "single",
+    "q": "The data lock is a binary semaphore. At tick 234 the EEPROM writer (priority 1) takes it for a 3 ms page write. At 235 the display (priority 2) starts a 70 ms redraw, and the parser (priority 3) needs the lock. When does the parser get it?",
+    "options": [
+      "At 237, when the page write is done",
+      "Only after the redraw finishes and the EEPROM writer gets back on the CPU to finish its page write, around tick 307",
+      "Never: this is a deadlock",
+      "Straight away, because the parser has the highest priority"
+    ],
+    "answer": 1,
+    "explain": "This is **unbounded priority inversion**, Pathfinder's bug. The parser waits for the EEPROM writer, the writer can't run because the display outranks it, and the display doesn't care about the lock. A semaphore has no owner, so the kernel can't help. With a **mutex with priority inheritance**, the writer is boosted to 3, finishes at about 237, and the parser continues. It isn't a deadlock, because nobody waits in a cycle: it ends when the redraw ends. Priority doesn't let you take a lock someone else holds."
+  },
+  {
+    "type": "single",
+    "q": "The parser runs every 25 ms and the alarm check every 100 ms, yet the alarm gets the higher priority. Why is that right?",
+    "options": [
+      "It isn't: rate-monotonic scheduling says the shorter period always wins",
+      "The alarm must start with zero jitter, while the parser has a queue that gives it tens of ms of slack. Priority should follow the deadline",
+      "Safety tasks always get the highest priority, whatever their timing",
+      "The alarm takes longer, so it needs more priority to finish"
+    ],
+    "answer": 1,
+    "explain": "Rate-monotonic ordering is optimal when each deadline equals its period. Here they don't. The alarm's deadline is \"start on the tick\", which is 0 ms of slack. The parser's real deadline is \"before the 8-byte queue overflows\", about 50 ms. Deadline-monotonic ordering puts the tighter deadline first. \"Important\" isn't a timing property: a safety task with a loose deadline can sit lower. Run time doesn't decide priority either. Long jobs at high priority just starve everyone else."
+  },
+  {
+    "type": "number",
+    "q": "A colleague writes the alarm task as `for (;;) { alarm_self_check(); /* 2 ms */ check(); rtos_delay(100); }`, and it first runs at tick 0. Nothing else gets in its way. At which tick does the **10th** check start?",
+    "answer": 918,
+    "tolerance": 0,
+    "unit": "tick",
+    "explain": "`rtos_delay(100)` counts from when the work *ends*, so the real period is 102 ms: 0, 102, 204, ..., 9 × 102 = **918**. That's drift: the error grows every cycle and is never corrected. `rtos_delay_until(&next, 100)` wakes on a fixed grid (0, 100, 200, ...), and the 2 ms of work just shortens each sleep."
+  },
+  {
+    "type": "single",
+    "q": "The uplink task does `lock; r.min = min; r.max = max; unlock; lock; min = INT16_MAX; max = INT16_MIN; unlock; modem_send(&r);`. What can go wrong?",
+    "options": [
+      "Nothing: every access to the shared stats is under the lock",
+      "A reading stored between the two lock holds is in neither report: it's wiped by the reset before the next window counts it",
+      "It deadlocks, because it locks the same mutex twice",
+      "The modem send is too slow"
+    ],
+    "answer": 1,
+    "explain": "Locking each access isn't enough. The **whole read-and-reset** has to be one atomic step. Between the two holds, the parser can store a new extreme reading. The reset then erases it, and the next report never sees it: a 9.5 °C spike vanishes from the cold-chain record. Locking twice *in a row* isn't a deadlock (only re-locking while you still hold the lock is), and sending outside the lock is exactly right."
+  }
+]

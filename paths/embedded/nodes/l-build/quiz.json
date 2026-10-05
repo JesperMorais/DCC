@@ -33,7 +33,7 @@
       "The I²C address in `reg` is wrong, which makes the driver silently skip probing"
     ],
     "answer": [0, 1, 2],
-    "explain": "Binding happens on an **exact `compatible` match**. A mismatch means the driver's `probe()` is never called, and nothing is logged. A disabled parent bus means its children never get devices created. A different DTB from the one you edited is a classic: check the live tree in `/proc/device-tree`. A **wrong `reg`** is different. The driver *does* bind and `probe()` runs, but its first I²C transfer fails, so you'd see a probe error in dmesg (for example `-EREMOTEIO`/`-ENXIO`), not silence."
+    "explain": "Binding happens on an **exact `compatible` match**. A mismatch means the driver's `probe()` is never called, and nothing is logged. A disabled parent bus means its children never get devices created. A different DTB from the one you edited is a classic: check the live tree in `/proc/device-tree`. A **wrong `reg`** is different. The driver *does* bind and `probe()` runs, but its first I²C transfer fails, so the driver logs a probe failure in dmesg (tmp102 prints `error reading config register`), not silence. The I²C client also still shows up under `/sys/bus/i2c/devices/`, just without a bound driver."
   },
   {
     "type": "single",

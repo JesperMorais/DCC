@@ -57,7 +57,7 @@ On a Cortex-M this takes about 1–2 µs. It costs something, but it's cheap com
 - **Ready**: wants the CPU, but someone more important has it.
 - **Blocked**: waiting for time (`rtos_delay`) or an event (semaphore, queue). It uses **zero** CPU and isn't even considered by the scheduler.
 
-When *no* task is ready, the CPU runs the **idle** task, which on real hardware executes `WFI` and sleeps. That's where a battery product gets its battery life.
+When *no* task is ready, the CPU runs the **idle** task, which on real hardware typically executes `WFI` and sleeps (in FreeRTOS via an idle hook or tickless idle). That's where a battery product gets its battery life.
 
 ### Why blocking beats busy-waiting
 

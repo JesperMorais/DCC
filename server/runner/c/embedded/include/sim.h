@@ -25,10 +25,13 @@ void sim_mark(const char *label);                            /* annotate the tim
 
 /* Equal-priority tasks share the CPU tick by tick (default true). */
 void sim_set_time_slicing(bool on);
+void sim_set_time_slice(rtos_tick_t ticks); /* round-robin quantum for equal priorities (default 1 tick; Zephyr 20) */
 
 /* ---- for API facades (FreeRTOS / Zephyr) ---- */
 rtos_task_t *sim_task_create_ex(const char *name, rtos_task_fn fn, void *arg, int priority, bool cooperative, rtos_tick_t start_delay);
 void sim_isr_yield(void);          /* portYIELD_FROM_ISR(pdTRUE): switch right after this ISR */
+bool sim_isr_woke_higher(void);
+void sim_queue_handoff(rtos_queue_t *q, bool on); /* Zephyr msgq semantics: copy straight into a waiting receiver */   /* FromISR helpers: did this ISR wake a task above the interrupted one? */
 void sim_set_isr_auto_yield(bool on); /* neutral API: true. FreeRTOS: wake-ups from ISRs wait for the next tick unless yielded */
 void sim_on_start(void (*fn)(void)); /* run once, before the first scheduled tick */
 void *sim_calloc(size_t size); /* kernel-owned memory, freed after each test */

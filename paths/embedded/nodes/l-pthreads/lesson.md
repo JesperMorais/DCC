@@ -69,7 +69,7 @@ With `if`, consumer A pops from an empty ring. It reads garbage, and `count` wra
 
 ### Priority inheritance is opt-in
 
-A glibc `PTHREAD_MUTEX_INITIALIZER` mutex uses `PTHREAD_PRIO_NONE`. The fast path is a single atomic instruction in userspace, and the kernel isn't involved until there's contention. A PI mutex has to tell the kernel *who* owns it (a PI-futex, `FUTEX_LOCK_PI`), so that the kernel can boost the owner. That bookkeeping costs a little, and most desktop programs don't need it, so the default is off. On a real-time system you turn it on:
+A glibc `PTHREAD_MUTEX_INITIALIZER` mutex uses `PTHREAD_PRIO_NONE`. Its fast path is a single atomic instruction in userspace, and the kernel isn't involved until there's contention. A PI mutex keeps an uncontended fast path too, but it stores the owner's **thread ID** in the futex word, so that on contention the kernel (`FUTEX_LOCK_PI`) knows *whom* to boost, and it walks the chain of blocked owners to do it. That contended path costs more, and most desktop programs don't need it, so the default is off. On a real-time system you turn it on:
 
 ```c
 pthread_mutexattr_t a;

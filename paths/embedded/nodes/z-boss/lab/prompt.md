@@ -7,7 +7,7 @@ You're bringing up the firmware for an industrial vibration hub: an IMU on SPI, 
                                                                   ▲
  report_timer (100 ms) ──▶ report_work (system workqueue) ────────┤
  logger thread (legacy, given: holds the lock for 5 ms every 50 ms)┘
- ble thread (given): 30 ms of CPU, then sleeps 70 ms. Starts at 51 ms.
+ ble thread (given): 30 ms of CPU every 100 ms, starting at 51 ms.
 ```
 
 ### Build it

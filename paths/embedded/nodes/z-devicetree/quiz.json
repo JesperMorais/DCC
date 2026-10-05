@@ -1,16 +1,16 @@
 [
   {
     "type": "single",
-    "q": "Fix this overlay. The BME280 on `i2c1` is never found: `DEVICE_DT_GET(DT_NODELABEL(env_sensor))` won't even link. The board's `.dts` has `&i2c1 { status = \"disabled\"; ... }`.",
+    "q": "Fix this overlay. The BME280 on `i2c1` is never found: `DEVICE_DT_GET(DT_NODELABEL(env_sensor))` won't even build. The board's `.dts` has `&i2c1 { status = \"disabled\"; ... }`.",
     "code": "&i2c1 {\n    env_sensor: bme280@76 {\n        compatible = \"bosch,bme280\";\n        reg = <0x76>;\n    };\n};",
     "options": [
       "Change `reg = <0x76>` to `reg = <76>`",
-      "Add `status = \"okay\";` to `&i2c1`: a disabled bus disables everything on it",
+      "Add `status = \"okay\";` to `&i2c1`: a sensor on a disabled bus has no controller device to talk through",
       "Rename the node to `env_sensor`",
       "Add `CONFIG_BME280=y` to the overlay"
     ],
     "answer": 1,
-    "explain": "A node is only instantiated if it **and its parents** are `okay`. The board left `i2c1` disabled, so the sensor beneath it never gets a driver instance and `DEVICE_DT_GET` has nothing to link to. 0x76 is the correct I2C address (the unit address `@76` is hex too). The label `env_sensor:` is what `DT_NODELABEL` uses, and node names can stay as they are. Kconfig symbols go in `.conf` files, never in a devicetree overlay."
+    "explain": "The sensor node itself is `okay` (a missing `status` means okay, and `status` isn't inherited from the parent), so the BME280 driver is built for it. But that driver instance needs the `i2c1` controller device, and the board left `i2c1` disabled, so that device was never defined and compiling the BME280 driver fails (`__device_dts_ord_N` undeclared, N being the bus node). Enable the bus. 0x76 is the correct I2C address (the unit address `@76` is hex too). The label `env_sensor:` is what `DT_NODELABEL` uses, and node names can stay as they are. Kconfig symbols go in `.conf` files, never in a devicetree overlay."
   },
   {
     "type": "single",
@@ -34,7 +34,7 @@
       "`DEVICE_DT_GET(DT_NODELABEL(bme))` resolves to the driver instance at compile/link time",
       "At startup, `device_is_ready(bme)` confirms the driver's init succeeded"
     ],
-    "explain": "The tree describes the hardware. The binding (matched by `compatible`) checks it, and bad or missing properties fail the build. The generator turns it into macros. `DEVICE_DT_GET` turns a node into a `const struct device *` at build time (a missing or disabled node is a link error, not a NULL). Finally `device_is_ready()` covers what the build can't know: did the sensor actually answer during init?"
+    "explain": "The tree describes the hardware. The binding (matched by `compatible`) checks it, and bad or missing properties fail the build. The generator turns it into macros. `DEVICE_DT_GET` turns a node into a `const struct device *` at build time (a missing or disabled node fails the build, not a NULL at runtime). Finally `device_is_ready()` covers what the build can't know: did the sensor actually answer during init?"
   },
   {
     "type": "single",

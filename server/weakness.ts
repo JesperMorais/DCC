@@ -41,6 +41,7 @@ export function weaknesses(data: Data, path: LoadedPath, challenges: Challenge[]
     .sort((a, b) => a.finishedAt!.localeCompare(b.finishedAt!));
   const out = new Map<string, Weakness>();
   for (const node of path.nodes) {
+    if (node.kind === "project") continue; // projects are suggested separately, see projectIdeas
     const covers = new Set(node.covers ?? []);
     if (!covers.size) continue;
     const relevant = finished.filter((a) => byId.get(a.challengeId)!.topics.some((t) => covers.has(t)));
@@ -57,6 +58,21 @@ export function weaknesses(data: Data, path: LoadedPath, challenges: Challenge[]
     out.set(node.id, { since, reason: last.reason, challenge: { id: c.id, title: c.title }, cleanSolves });
   }
   return out;
+}
+
+/** Unlocked, unfinished projects that exercise what the dailies marked as shaky. */
+export function projectIdeas(data: Data, paths: LoadedPath[], challenges: Challenge[], lang: string) {
+  return paths
+    .filter((p) => p.language === lang)
+    .flatMap((p) => {
+      const weak = weaknesses(data, p, challenges);
+      const shaky = new Set(p.nodes.filter((n) => weak.has(n.id)).flatMap((n) => n.covers ?? []));
+      const prog = data.paths?.[p.id]?.nodes ?? {};
+      return p.nodes
+        .filter((n) => n.project && !prog[n.id]?.completedAt && n.requires.every((r) => prog[r]?.completedAt))
+        .map((n) => ({ path: p.id, node: n.id, title: n.project!.title, practises: (n.covers ?? []).filter((t) => shaky.has(t)) }))
+        .filter((x) => x.practises.length);
+    });
 }
 
 /** Dashboard list: the nodes to practise in this language, most recent first. */

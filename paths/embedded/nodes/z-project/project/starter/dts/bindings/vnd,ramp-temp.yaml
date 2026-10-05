@@ -1,0 +1,27 @@
+description: |
+  A pretend temperature sensor for native_sim. Every sample fetch produces the
+  next value of a repeating ramp: start, start + step, start + 2 * step, ...
+  for ramp-steps values, and then it starts over at start.
+
+  Example: start 20000, step 500 and 4 ramp steps give
+  20.000, 20.500, 21.000, 21.500, 20.000, 20.500, ... degrees Celsius.
+
+compatible: "vnd,ramp-temp"
+
+include: base.yaml
+
+properties:
+  start-millicelsius:
+    type: int
+    required: true
+    description: First value of the ramp, in millidegrees Celsius.
+
+  step-millicelsius:
+    type: int
+    required: true
+    description: How much each sample adds to the previous one, in millidegrees Celsius.
+
+  ramp-steps:
+    type: int
+    required: true
+    description: How many values the ramp has before it starts over. Must be at least 1.

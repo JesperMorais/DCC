@@ -1,0 +1,53 @@
+[
+  {
+    "type": "single",
+    "q": "Which bug is this? A FreeRTOS product freezes a few times a year in the field. Every function takes at most one lock *itself*, and code review found nothing.",
+    "code": "void log_msg(const char *s) {\n    xSemaphoreTake(uart_mtx, portMAX_DELAY);\n    uart_write(s);\n    xSemaphoreGive(uart_mtx);\n}\n\nvoid sensor_task(void *p) {          // every 10 ms\n    for (;;) {\n        xSemaphoreTake(i2c_mtx, portMAX_DELAY);\n        read_sensor();\n        log_msg(\"read ok\");           // still holding i2c_mtx\n        xSemaphoreGive(i2c_mtx);\n        vTaskDelay(pdMS_TO_TICKS(10));\n    }\n}\n\nvoid console_task(void *p) {         // on a UART command\n    xSemaphoreTake(uart_mtx, portMAX_DELAY);\n    print_sensor_status();           // takes i2c_mtx inside\n    xSemaphoreGive(uart_mtx);\n}",
+    "options": [
+      "Priority inversion: console_task should use priority inheritance",
+      "Deadlock: sensor_task takes i2c → uart (via log_msg), console_task takes uart → i2c, a hidden opposite lock order",
+      "Self-deadlock: log_msg relocks a mutex its caller already holds",
+      "A race on the UART: uart_write isn't protected"
+    ],
+    "answer": 1,
+    "explain": "The two orders are hidden inside function calls: sensor_task holds `i2c_mtx` and calls `log_msg`, which takes `uart_mtx`. console_task holds `uart_mtx` and calls something that takes `i2c_mtx`. If a console command arrives while the sensor is mid-read, each waits for the other forever. FreeRTOS mutexes already have inheritance, and inheritance can't break a cycle anyway. It isn't self-deadlock, because each task locks two *different* mutexes, and the UART is protected. The fix: log after releasing `i2c_mtx`, or agree on one order for the whole codebase."
+  },
+  {
+    "type": "multi",
+    "q": "nav takes gps → sd and archive takes sd → gps, as in the lesson. Which changes make deadlock **impossible**, not just less likely? (Select all that apply.)",
+    "options": [
+      "archive takes gps first, then sd, like nav",
+      "Create both mutexes with priority inheritance",
+      "Add `rtos_delay(1)` between archive's two locks",
+      "Replace the two mutexes with one mutex that covers both the GPS and the SD card",
+      "archive waits at most 5 ticks for gps; on timeout it unlocks sd, backs off and retries",
+      "Give archive a higher priority than nav"
+    ],
+    "answer": [0, 3, 4],
+    "explain": "A global order breaks **circular wait**, one lock means there's nothing to order, and release-on-timeout breaks **hold and wait**: archive never waits indefinitely while holding sd (watch out for livelock if both tasks did it with the same back-off). Inheritance shortens waits but can't break a cycle. A delay and a priority swap only change *which* interleavings happen. The cycle is still possible with a different wake-up time, which is exactly why the lab tries several."
+  },
+  {
+    "type": "single",
+    "q": "A team adopts the rule *\"every task takes `adc_lock` before `spi_lock` before `flash_lock`, and never the other way round.\"* Which of the four Coffman conditions does this rule break?",
+    "options": [
+      "Mutual exclusion",
+      "Hold and wait",
+      "No preemption",
+      "Circular wait"
+    ],
+    "answer": 3,
+    "explain": "Tasks still hold one lock while waiting for the next (hold and wait), locks are still exclusive, and nobody takes a lock away. But a cycle needs someone to wait for a lock that comes *earlier* in the order while holding a later one, and the rule forbids exactly that. Every wait points \"forward\", so the waits can't loop back on themselves."
+  },
+  {
+    "type": "single",
+    "q": "What breaks? A product has three tasks. `nav` and `archive` deadlock as in the lesson. `led` blinks the status LED every 500 ms and also kicks the hardware watchdog. What does the rider see?",
+    "options": [
+      "The watchdog resets the board within a second",
+      "Nothing: the RTOS detects the deadlock and restarts both tasks",
+      "The LED keeps blinking happily, but the screen and the track log are frozen until the battery is pulled",
+      "The idle task gets all the CPU, so the LED stops too"
+    ],
+    "answer": 2,
+    "explain": "This is a **partial** deadlock. `led` never touches gps or sd, so it keeps running and keeps kicking the watchdog, which therefore never fires. RTOSes like FreeRTOS don't detect deadlocks (the simulator's `sim_deadlocked()` only fires when *every* task is stuck). The fix is a watchdog with per-task check-ins: nav, archive and led each set a flag, and the watchdog is kicked only when all of them have checked in recently."
+  }
+]

@@ -1,0 +1,3 @@
+travel: bus
+books: book
+fun: cinema, arcade

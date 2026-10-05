@@ -25,7 +25,7 @@
     "answer": 3,
     "tolerance": 0,
     "unit": "calls",
-    "explain": "1024 / 272 = 3.76, so 3 frames fit (816 bytes) and the 4th one runs off the end. On a Cortex-M with no MPU, the 4th call doesn't crash. It silently overwrites whatever sits below the stack (often `.bss` or another task's stack). That's why safety standards ban unbounded recursion and why you measure stack high-water marks."
+    "explain": "1024 / 272 = 3.76, so 3 frames fit (816 bytes) and the 4th one runs off the end. On a Cortex-M with no MPU, the 4th call doesn't crash right away. It silently overwrites whatever sits below the stack (often `.bss` or another task's stack). That's why safety standards ban unbounded recursion and why you measure stack high-water marks."
   },
   {
     "type": "single",

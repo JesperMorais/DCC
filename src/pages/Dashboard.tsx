@@ -40,7 +40,7 @@ export default function DashboardPage({ state }: { state: Dashboard }) {
         <RatingCard stats={stats} level={level} lang={state.language} />
       </div>
 
-      {state.focus.length > 0 && <FocusCard focus={state.focus} />}
+      {state.focus.length > 0 && <FocusCard focus={state.focus} ideas={state.projectIdeas} />}
 
       <div className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-4">
         <StatTile
@@ -208,7 +208,7 @@ function DailyCard({ state }: { state: Dashboard }) {
 }
 
 /** Skill-tree nodes a rough daily pointed at. A recommendation only: the daily stays open either way. */
-function FocusCard({ focus }: { focus: Dashboard["focus"] }) {
+function FocusCard({ focus, ideas }: { focus: Dashboard["focus"]; ideas: Dashboard["projectIdeas"] }) {
   return (
     <section className="card mt-5 border-warn/40 p-5">
       <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-warn uppercase">
@@ -237,6 +237,20 @@ function FocusCard({ focus }: { focus: Dashboard["focus"] }) {
           </li>
         ))}
       </ul>
+      {ideas.map((p) => (
+        <Link
+          key={`${p.path}/${p.node}`}
+          to={`/paths/${p.path}/${p.node}`}
+          className="mt-3 flex items-center gap-3 rounded-lg border border-dashed border-line-strong px-3 py-2.5 text-sm transition-colors hover:bg-surface-2"
+        >
+          <Icon name="flag" size={16} className="shrink-0 text-accent" />
+          <span className="min-w-0 flex-1">
+            <span className="font-medium text-ink">Practise it for real: {p.title}</span>
+            <span className="block truncate text-xs text-muted">Uses {p.practises.join(", ")}</span>
+          </span>
+          <Icon name="chevron" size={14} className="shrink-0 text-muted" />
+        </Link>
+      ))}
     </section>
   );
 }

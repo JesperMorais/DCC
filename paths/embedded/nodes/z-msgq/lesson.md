@@ -52,7 +52,7 @@ void imu_isr(void) {
 }
 ```
 
-That's right for **control and sensing**, where a sample from 20 ms ago is worse than useless. It's safe here because the ISR can't be interrupted by the consumer: the get and the put happen as one unit from the thread's point of view. If a *thread* did the same dance, another producer could slip in between, so you'd want `k_msgq_purge` or a lock.
+That's right for **control and sensing**, where a sample from 20 ms ago is worse than useless. It's safe here because the ISR can't be interrupted by the consumer: the get and the put happen as one unit from the thread's point of view. If a *thread* did the same dance, another producer could slip in between the get and the put, so you'd wrap the pair in `irq_lock()`/`irq_unlock()` (or a lock shared by all producers).
 
 **Whatever you choose, count it.** A `dropped` counter turns "it feels laggy" into a number in your telemetry. The invariant `produced == consumed + dropped + still_queued` is a great debug assertion.
 

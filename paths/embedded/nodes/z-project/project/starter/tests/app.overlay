@@ -1,0 +1,35 @@
+/*
+ * Sensors with known values for the tests. The app samples "ambient" through
+ * the ambient-temp alias; milestone 2's tests use "probe" and "fresh" on
+ * their own, so nothing else disturbs their ramps.
+ */
+
+/ {
+	aliases {
+		ambient-temp = &ambient;
+	};
+
+	/* 20.000, 20.500, 21.000, 21.500, then again */
+	ambient: ambient-sensor {
+		compatible = "vnd,ramp-temp";
+		start-millicelsius = <20000>;
+		step-millicelsius = <500>;
+		ramp-steps = <4>;
+	};
+
+	/* 5.000, 5.250, 5.500, then again */
+	probe: probe-sensor {
+		compatible = "vnd,ramp-temp";
+		start-millicelsius = <5000>;
+		step-millicelsius = <250>;
+		ramp-steps = <3>;
+	};
+
+	/* 1.250, 2.250, then again. Only one test reads it. */
+	fresh: fresh-sensor {
+		compatible = "vnd,ramp-temp";
+		start-millicelsius = <1250>;
+		step-millicelsius = <1000>;
+		ramp-steps = <2>;
+	};
+};

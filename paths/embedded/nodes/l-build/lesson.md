@@ -40,7 +40,7 @@ Choose **Buildroot** when the rootfs is small and the device just needs to do on
 - **`.bbappend`:** a modification to *someone else's* recipe, kept in *your* layer: extra patches, config fragments, a different `defconfig`.
 - **Layer (`meta-*`):** a git repo of recipes and config. Examples are `meta-openembedded`, the vendor's `meta-imx` (the **BSP layer**), and your own `meta-acme`.
 - **`MACHINE`:** which board you're building for, selecting the kernel, DTBs and bootloader. **`DISTRO`:** policy (init system, libc, features).
-- **bitbake:** the task engine. `bitbake acme-image` resolves the dependencies and runs `do_fetch → do_patch → do_compile → do_install → do_package…` for each recipe.
+- **bitbake:** the task engine. `bitbake acme-image` resolves the dependencies and runs `do_fetch → do_unpack → do_patch → do_configure → do_compile → do_install → do_package…` for each recipe.
 
 ```
 # meta-acme/recipes-kernel/linux/linux-imx_%.bbappend
@@ -52,7 +52,7 @@ The golden rule: **never edit the vendor's layer or poky**. Put every change in 
 
 ### The device tree, Linux edition
 
-You met devicetree in Zephyr. Linux invented it. A **DTB** describes hardware that can't be discovered by probing: which UART is at which address, what's on I²C bus 2, which GPIO resets the sensor. U-Boot passes it to the kernel at boot.
+If you took the Zephyr branch, you met devicetree there. Zephyr borrowed it from Linux, which in turn adopted it from Open Firmware on PowerPC and made it the standard way to describe ARM boards. A **DTB** describes hardware that can't be discovered by probing: which UART is at which address, what's on I²C bus 2, which GPIO resets the sensor. U-Boot passes it to the kernel at boot.
 
 ```dts
 /* acme-board.dts */

@@ -14,16 +14,16 @@
   },
   {
     "type": "single",
-    "q": "You add `CONFIG_BME280=y` to `prj.conf`. The build succeeds, but `device_is_ready(bme)` returns false at boot. In `build/zephyr/.config` you find `# CONFIG_BME280 is not set`. What is the most likely cause?",
+    "q": "You add `CONFIG_BME280=y` to `prj.conf` and call `DEVICE_DT_GET(DT_NODELABEL(bme280))`. The link fails with `undefined reference to '__device_dts_ord_42'`. In `build/zephyr/.config` you find `# CONFIG_BME280 is not set`. What is the most likely cause?",
     "code": "config BME280\n    bool \"BME280 sensor\"\n    depends on DT_HAS_BOSCH_BME280_ENABLED\n    depends on SENSOR",
     "options": [
       "prj.conf is ignored when an overlay exists",
-      "A `depends on` isn't satisfied (e.g. `CONFIG_SENSOR` is off, or there's no enabled bosch,bme280 node), so Kconfig silently dropped your `=y`",
+      "A `depends on` isn't satisfied (e.g. `CONFIG_SENSOR` is off, or there's no enabled bosch,bme280 node), so Kconfig dropped your `=y` with only a warning and kept building",
       "You need `select BME280` in prj.conf instead of `=y`",
-      "The driver is compiled but the linker removed it as unused"
+      "The driver is compiled but the linker removed it as unused, so add `-Wl,--no-gc-sections`"
     ],
     "answer": 1,
-    "explain": "A `=y` in prj.conf is a *request*. If a `depends on` is false, Kconfig drops the assignment and only prints a warning (\"assigned the value y but got the value n\"). Fix the dependency: enable `CONFIG_SENSOR`, and make sure the devicetree has an enabled node with `compatible = \"bosch,bme280\"`. `select` only exists inside Kconfig files, not prj.conf. prj.conf and overlays work together, and the linker isn't the problem here: the driver was never compiled at all."
+    "explain": "A `=y` in prj.conf is a *request*. If a `depends on` is false, Kconfig drops the assignment, prints a warning (\"was assigned the value 'y' but got the value 'n'. Check these unsatisfied dependencies: ...\") and the build carries on. A typo such as `CONFIG_BME28O=y` would have stopped the build instead. With no driver built, nothing defines the device instance for your node, hence the missing `__device_dts_ord_*` symbol. Fix the dependency: enable `CONFIG_SENSOR`, and make sure the devicetree has an enabled node with `compatible = \"bosch,bme280\"`. `select` only exists inside Kconfig files, not prj.conf. prj.conf and overlays work together, and the linker isn't the culprit: the driver was never compiled at all. (Had it compiled and linked, a `device_is_ready()` of false would point at a failed init instead: the chip not answering on the bus.)"
   },
   {
     "type": "multi",

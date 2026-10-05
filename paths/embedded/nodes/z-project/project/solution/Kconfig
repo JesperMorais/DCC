@@ -1,0 +1,31 @@
+# The app's own Kconfig options. Zephyr picks this file up automatically
+# because it sits next to CMakeLists.txt.
+
+menu "Sensor node"
+
+config SENSOR_NODE_SAMPLE_MS
+	int "Sampling period (ms)"
+	range 10 10000
+	default 100
+	help
+	  How often the sampler thread reads the ambient sensor.
+
+config SENSOR_NODE_REPORT_MS
+	int "Initial report period (ms)"
+	range 10 60000
+	default 1000
+	help
+	  How often a report is logged. "node period" changes it at runtime.
+
+config SENSOR_NODE_QUEUE_LEN
+	int "Sample queue length"
+	range 1 64
+	default 8
+	help
+	  How many samples can wait between the sampler and the processing
+	  thread before new ones are dropped.
+
+endmenu
+
+# Everything else in Zephyr. Keep this line last.
+source "Kconfig.zephyr"

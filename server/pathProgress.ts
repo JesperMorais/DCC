@@ -36,7 +36,7 @@ export function nodeStatus(p: PathProgress, node: PathNode, weak = false): NodeS
   if (np?.completedAt) return "done";
   const unlocked = weak || node.requires.every((r) => p.nodes[r]?.completedAt);
   if (!unlocked) return "locked";
-  return np && (np.quizAttempts > 0 || np.labSolved) ? "in-progress" : "available";
+  return np && (np.quizAttempts > 0 || np.labSolved || Object.keys(np.milestones ?? {}).length) ? "in-progress" : "available";
 }
 
 /** Marks the node complete once all its parts are done; returns what changed. */
@@ -44,6 +44,12 @@ function maybeComplete(path: LoadedPath, p: PathProgress, node: PathNode) {
   const np = (p.nodes[node.id] ??= blank());
   const needsLab = !!node.labId;
   const unlockedBefore = path.nodes.filter((n) => nodeStatus(p, n) !== "locked").map((n) => n.id);
+  if (node.project) {
+    // A project is done when every milestone is ticked. It's a badge: no stars, no XP.
+    if (np.completedAt || !node.project.milestones.every((m) => np.milestones?.[m.id])) return { completed: false, xpGained: 0, unlocked: [] as string[] };
+    np.completedAt = new Date().toISOString();
+    return { completed: true, xpGained: 0, unlocked: [] as string[] };
+  }
   if (np.completedAt || !np.quizPassed || (needsLab && !np.labSolved)) return { completed: false, xpGained: 0, unlocked: [] as string[] };
   np.completedAt = new Date().toISOString();
   const cleanLab = needsLab ? np.labHints === 0 : np.quizFirstTry;
@@ -81,8 +87,8 @@ export function pathView(data: Data, path: LoadedPath, labs: Map<string, Challen
       quizPassed: !!np?.quizPassed,
       labSolved: !!np?.labSolved,
       hasLab: !!n.labId,
-      estMinutes: 6 + (lab?.estMinutes ?? 2),
-      ready: !!n.lesson,
+      estMinutes: n.project ? n.project.estHours * 60 : 6 + (lab?.estMinutes ?? 2),
+      ready: !!(n.lesson || n.project),
     };
   });
   const gateDone = !!path.gate && !!p.nodes[path.gate]?.completedAt;
@@ -94,15 +100,16 @@ export function pathView(data: Data, path: LoadedPath, labs: Map<string, Challen
     gate: path.gate ?? null,
     gateDone,
     branch: p.branch ?? null,
+    // Projects are optional side quests: they don't count towards sections or stars.
     sections: path.sections.map((s) => {
-      const inSec = nodes.filter((n) => n.section === s.id);
+      const inSec = nodes.filter((n) => n.section === s.id && n.kind !== "project");
       return { ...s, total: inSec.length, done: inSec.filter((n) => n.status === "done").length };
     }),
     nodes,
     xp,
     rank: rankFor(xp, path.ranks),
     stars: nodes.reduce((s, n) => s + n.stars, 0),
-    maxStars: nodes.length * 3,
+    maxStars: nodes.filter((n) => n.kind !== "project").length * 3,
   };
 }
 
@@ -133,6 +140,17 @@ export function nodeView(data: Data, path: LoadedPath, node: PathNode, labs: Map
       profile: lab.profile ?? null,
       solved: np.labSolved,
     },
+    project: node.project && {
+      title: node.project.title,
+      estHours: node.project.estHours,
+      testsGiven: node.project.testsGiven,
+      brief: node.project.brief,
+      // C projects build with make; the README says what to run first.
+      starterCommand: `cp -r "${node.project.starterDir}" ~/code/${node.project.folder} && cd ~/code/${node.project.folder}${node.project.language === "typescript" ? " && npm install" : ""}`,
+      milestones: node.project.milestones.map((m) => ({ ...m, doneAt: np.milestones?.[m.id] ?? null })),
+      // The write-up is a reward for finishing, not something to read instead of thinking.
+      review: np.completedAt ? node.project.review : null,
+    },
     requires: node.requires.map((r) => ({ id: r, title: path.nodes.find((n) => n.id === r)?.title ?? r, done: !!p.nodes[r]?.completedAt })),
     nextNodes,
     position: idx + 1,
@@ -160,5 +178,14 @@ export function labSolved(data: Data, path: LoadedPath, node: PathNode, hintsUse
   np.labSolved = true;
   if (hintsUsed === 0) np.cleanLabAt = new Date().toISOString();
   np.labHints = np.labHints === null ? hintsUsed : Math.min(np.labHints, hintsUsed);
+  return { ...maybeComplete(path, p, node), progress: np };
+}
+
+export function setMilestone(data: Data, path: LoadedPath, node: PathNode, milestone: string, done: boolean) {
+  const p = progressOf(data, path.id);
+  const np = (p.nodes[node.id] ??= blank());
+  np.milestones ??= {};
+  if (done) np.milestones[milestone] ??= new Date().toISOString();
+  else delete np.milestones[milestone];
   return { ...maybeComplete(path, p, node), progress: np };
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type NodeView, type QuizResult } from "../api";
 import { LessonContent } from "../components/LessonContent";
 import { Mascot, TessLoading } from "../components/Mascot";
+import { ProjectView } from "../components/ProjectView";
 import { Quiz } from "../components/Quiz";
 import { LANGUAGES } from "../lang";
 import { Icon } from "../ui";
@@ -73,7 +74,7 @@ export default function NodePage() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-white uppercase" style={{ background: c }}>
-              {node.kind === "boss" ? "Boss" : node.kind === "lesson" ? "Lesson" : "Lesson + lab"}
+              {node.kind === "boss" ? "Boss" : node.kind === "project" ? "Project" : node.kind === "lesson" ? "Lesson" : "Lesson + lab"}
             </span>
             {done && (
               <span className="text-sm text-[#f2b33d]">
@@ -101,84 +102,91 @@ export default function NodePage() {
         </div>
       )}
 
-      {/* progress strip */}
-      <div className="mt-5 grid grid-cols-3 gap-2 text-xs">
-        <Step label="Read the lesson" done={node.progress.quizAttempts > 0 || done} icon="book" />
-        <Step label="Pass the quiz" done={node.progress.quizPassed} icon="target" />
-        <Step label={node.lab ? "Solve the lab" : "No lab here"} done={!node.lab || node.progress.labSolved} icon="code" muted={!node.lab} />
-      </div>
-
-      <article className="mt-8">
-        <LessonContent source={node.lesson} />
-      </article>
-
-      <section className="mt-10">
-        <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold">
-          <Icon name="target" size={18} /> Check your understanding
-        </h2>
-        <p className="mb-4 text-sm text-ink-2">Get them all right to pass. Wrong answers come with an explanation, and you can try again.</p>
-        <Quiz
-          path={pathId}
-          node={nodeId}
-          questions={node.quiz}
-          passed={node.progress.quizPassed}
-          onResult={(r) => {
-            if (r.completed) setCelebrate(r);
-            load();
-          }}
-        />
-      </section>
-
-      {node.lab && (
-        <section className="mt-10">
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-            <Icon name="code" size={18} /> {node.kind === "boss" ? "Boss lab" : "Lab"}
-          </h2>
-          <div className="card flex flex-wrap items-center gap-4 p-5" style={{ borderColor: `${c}66` }}>
-            <span className="grid size-12 place-items-center rounded-xl text-white" style={{ background: c }}>
-              <Icon name={node.kind === "boss" ? "trophy" : node.lab.profile === "linux" ? "terminal" : node.language === "c" ? "cpu" : "code"} size={22} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold">{node.lab.title}</div>
-              <div className="text-xs text-muted">
-                {node.language === "c" ? `C · ${node.lab.profile === "linux" ? "real Linux APIs" : "simulated MCU + RTOS, with a live timeline"}` : langName} · ~
-                {node.lab.estMinutes} min
-              </div>
-            </div>
-            {node.lab.solved ? (
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-good-soft px-3 py-2 text-sm font-medium text-good">
-                <Icon name="check" size={15} /> Solved
-              </span>
-            ) : null}
-            <button className="btn btn-primary" onClick={() => navigate(`/solve/${node.lab!.id}`)}>
-              <Icon name="play" size={13} /> {node.lab.solved ? "Open again" : "Start the lab"}
-            </button>
+      {node.project ? (
+        <ProjectView pathId={pathId} nodeId={nodeId} project={node.project} color={c} onChange={load} />
+      ) : (
+        <>
+          {/* progress strip */}
+          <div className="mt-5 grid grid-cols-3 gap-2 text-xs">
+            <Step label="Read the lesson" done={node.progress.quizAttempts > 0 || done} icon="book" />
+            <Step label="Pass the quiz" done={node.progress.quizPassed} icon="target" />
+            <Step label={node.lab ? "Solve the lab" : "No lab here"} done={!node.lab || node.progress.labSolved} icon="code" muted={!node.lab} />
           </div>
-        </section>
-      )}
 
-      {done && (
-        <section className="mt-10 rounded-2xl border border-good/30 bg-good-soft p-5">
-          <div className="flex items-center gap-4">
-            <Mascot mood="cheer" size={72} className="shrink-0" />
-            <div className="flex-1">
-              <div className="font-semibold text-ink">Node complete · +{node.progress.xp} XP</div>
-              <div className="text-sm text-ink-2">
-                {node.nextNodes.length ? "Unlocked next:" : "That's the end of this branch. Legendary."}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {node.nextNodes.map((n) => (
-                  <button key={n.id} className="btn btn-primary h-8 text-xs" onClick={() => navigate(`/paths/${pathId}/${n.id}`)} disabled={n.status === "locked"}>
-                    {n.title} <Icon name="chevron" size={12} />
-                  </button>
-                ))}
-                <button className="btn h-8 text-xs" onClick={() => navigate(`/paths/${pathId}`)}>
-                  Back to the tree
+          <article className="mt-8">
+            <LessonContent source={node.lesson} />
+          </article>
+
+          <section className="mt-10">
+            <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold">
+              <Icon name="target" size={18} /> Check your understanding
+            </h2>
+            <p className="mb-4 text-sm text-ink-2">Get them all right to pass. Wrong answers come with an explanation, and you can try again.</p>
+            <Quiz
+              path={pathId}
+              node={nodeId}
+              questions={node.quiz}
+              passed={node.progress.quizPassed}
+              onResult={(r) => {
+                if (r.completed) setCelebrate(r);
+                load();
+              }}
+            />
+          </section>
+
+          {node.lab && (
+            <section className="mt-10">
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                <Icon name="code" size={18} /> {node.kind === "boss" ? "Boss lab" : "Lab"}
+              </h2>
+              <div className="card flex flex-wrap items-center gap-4 p-5" style={{ borderColor: `${c}66` }}>
+                <span className="grid size-12 place-items-center rounded-xl text-white" style={{ background: c }}>
+                  <Icon name={node.kind === "boss" ? "trophy" : node.lab.profile === "linux" ? "terminal" : node.language === "c" ? "cpu" : "code"} size={22} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold">{node.lab.title}</div>
+                  <div className="text-xs text-muted">
+                    {node.language === "c" ? `C · ${node.lab.profile === "linux" ? "real Linux APIs" : "simulated MCU + RTOS, with a live timeline"}` : langName} · ~
+                    {node.lab.estMinutes} min
+                  </div>
+                </div>
+                {node.lab.solved ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-good-soft px-3 py-2 text-sm font-medium text-good">
+                    <Icon name="check" size={15} /> Solved
+                  </span>
+                ) : null}
+                <button className="btn btn-primary" onClick={() => navigate(`/solve/${node.lab!.id}`)}>
+                  <Icon name="play" size={13} /> {node.lab.solved ? "Open again" : "Start the lab"}
                 </button>
               </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          )}
+
+          {done && (
+            <section className="mt-10 rounded-2xl border border-good/30 bg-good-soft p-5">
+              <div className="flex items-center gap-4">
+                <Mascot mood="cheer" size={72} className="shrink-0" />
+                <div className="flex-1">
+                  <div className="font-semibold text-ink">Node complete · +{node.progress.xp} XP</div>
+                  <div className="text-sm text-ink-2">
+                    {node.nextNodes.length ? "Unlocked next:" : "That's the end of this branch. Legendary."}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {node.nextNodes.map((n) => (
+                      <button key={n.id} className="btn btn-primary h-8 text-xs" onClick={() => navigate(`/paths/${pathId}/${n.id}`)} disabled={n.status === "locked"}>
+                        {n.title} <Icon name="chevron" size={12} />
+                      </button>
+                    ))}
+                    <button className="btn h-8 text-xs" onClick={() => navigate(`/paths/${pathId}`)}>
+                      Back to the tree
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+        </>
       )}
 
       {celebrate && (

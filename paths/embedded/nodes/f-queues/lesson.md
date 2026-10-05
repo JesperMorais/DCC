@@ -1,6 +1,6 @@
 ### The sushi belt
 
-Picture a conveyor-belt sushi bar. The chef puts plates on the belt at his pace, and you take them off at yours. Neither of you waits for the other, *until* the belt is full (the chef has to stop, or plates fall off the end) or empty (you sit there hungry). The belt has a fixed number of slots. When the chef is faster than the diners for a while, the belt absorbs the burst.
+Picture a conveyor-belt sushi bar. The chef puts plates on the belt at their pace, and you take them off at yours. Neither of you waits for the other, *until* the belt is full (the chef has to stop, or plates fall off the end) or empty (you sit there hungry). The belt has a fixed number of slots. When the chef is faster than the diners for a while, the belt absorbs the burst.
 
 That belt is an RTOS **queue**. It's the most important building block in firmware architecture, because it lets two tasks with different rhythms work together without sharing a single variable.
 

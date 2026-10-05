@@ -1,0 +1,8 @@
+/*
+ * Devicetree overlay for this app. With no boards/<board>.overlay present,
+ * Zephyr uses app.overlay for every board, including native_sim and
+ * native_sim/native/64. Your sensor node goes here (milestone 2).
+ */
+
+/ {
+};

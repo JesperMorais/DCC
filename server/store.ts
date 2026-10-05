@@ -56,6 +56,8 @@ export interface NodeProgress {
   labHints: number | null;
   /** Latest time the quiz was passed (all answers right). Re-passing it counts as practice. */
   quizPassedAt?: string;
+  /** Project milestones ticked off: id → when. */
+  milestones?: Record<string, string>;
   /** Latest time the lab was solved without hints. */
   cleanLabAt?: string;
   completedAt?: string;

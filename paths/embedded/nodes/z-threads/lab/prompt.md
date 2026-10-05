@@ -4,9 +4,9 @@ A battery-powered pump runs Zephyr on an nRF52840. Three threads share the CPU, 
 
 | Thread | What it does | Timing |
 |---|---|---|
-| `control` | reads the encoder and updates the motor PWM, 1 ms of work | released every **10 ms** (0, 10, 20, ...) |
+| `control` | reads the encoder and updates the motor PWM, 1 ms of work | released every **10 ms** (0, 10, 20, ...), sleeping with an absolute timeout so it never drifts |
 | `radio` | a BLE-style TX burst: preamble, payload, CRC, 1 ms each | wakes at 9, 59, 109, ... |
-| `logger` | erases and programs one flash page, **25 ms** of CPU | then sleeps 5 ms, forever |
+| `logger` | erases and programs one flash page, **25 ms** of CPU | then `k_msleep(5)`, forever |
 
 Since the last firmware update the pump *stutters*. The previous engineer came from FreeRTOS and picked the priorities you see in the starter. **Fix the three `#define`s. Don't change the thread bodies.**
 

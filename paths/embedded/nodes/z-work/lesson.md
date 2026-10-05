@@ -36,7 +36,7 @@ A work item is either **idle**, **pending** (queued, not started yet) or **runni
 |---|---|
 | idle | queued, returns **1** |
 | pending (queued) | **nothing happens**, returns **0** |
-| running | queued again, so it will run once more after this run |
+| running | queued again, returns **2**: it will run once more after this run |
 
 This is deliberate. Submitting is a *request for attention*, not an event record. But it means:
 

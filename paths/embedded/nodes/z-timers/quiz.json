@@ -29,7 +29,7 @@
       "Start a new `K_TIMER_DEFINE` for each touch"
     ],
     "answer": 1,
-    "explain": "A period of `K_NO_WAIT` makes it one-shot, and calling `k_timer_start` on a running timer restarts it with the new duration, so each touch pushes the deadline back. Option A is a periodic timer that would switch the light off every 500 ms regardless of touches. Sleeping in an ISR is illegal. Timers are static objects, and you can't define one per event at runtime."
+    "explain": "A period of `K_NO_WAIT` makes it one-shot, and calling `k_timer_start` on a running timer restarts it with the new duration, so each touch pushes the deadline back. Option A is a periodic timer that would switch the light off every 500 ms regardless of touches. Sleeping in an ISR is illegal. `K_TIMER_DEFINE` is a compile-time definition, not a statement you can run per touch, and a fresh timer per touch would leave the earlier countdowns running anyway."
   },
   {
     "type": "multi",

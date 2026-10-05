@@ -16,7 +16,7 @@ Every `xTaskCreate`, `xQueueCreate` and `xTimerCreate` allocates RAM for a stack
 | `heap_4` | ✓ | first-fit **with coalescing** of adjacent free blocks | the general-purpose default when you really do create and delete at runtime |
 | `heap_5` | ✓ | heap_4 across **several non-contiguous regions** | internal SRAM + CCM + external SDRAM. Call `vPortDefineHeapRegions()` first |
 
-All of them except heap_3 carve memory out of one array of `configTOTAL_HEAP_SIZE` bytes. `xPortGetFreeHeapSize()` and `xPortGetMinimumEverFreeHeapSize()` tell you how much is left, now and at the worst moment so far. Log the second one in your test builds.
+heap_1, heap_2 and heap_4 carve memory out of one array of `configTOTAL_HEAP_SIZE` bytes; heap_5 uses the regions you hand it, and heap_3 uses whatever the linker gave the C library. `xPortGetFreeHeapSize()` tells you how much is left now, and with heap_4/heap_5 `xPortGetMinimumEverFreeHeapSize()` tells you how little was left at the worst moment so far. Log the second one in your test builds.
 
 ### Static allocation: no heap at all
 
@@ -36,7 +36,7 @@ static StaticQueue_t    log_qcb;
 QueueHandle_t q = xQueueCreateStatic(8, sizeof(log_msg_t), log_storage, &log_qcb);
 ```
 
-The benefit is that **the linker does your capacity planning**. If it doesn't fit, the build fails, not the product three weeks into a field trial. You also supply memory for the idle task (and the timer task) through `vApplicationGetIdleTaskMemory()`. Set `configSUPPORT_DYNAMIC_ALLOCATION 0` and nobody can sneak a `malloc` in. That's the Fundamentals "memory without malloc" lesson, applied to the kernel.
+The benefit is that **the linker does your capacity planning**. If it doesn't fit, the build fails, not the product three weeks into a field trial. You also supply memory for the idle task through `vApplicationGetIdleTaskMemory()`, and for the timer task through `vApplicationGetTimerTaskMemory()`. Set `configSUPPORT_DYNAMIC_ALLOCATION 0` and nobody can sneak a `malloc` in. That's the Fundamentals "memory without malloc" lesson, applied to the kernel.
 
 ### Sizing stacks: measure, don't guess
 
@@ -87,6 +87,6 @@ A hardware watchdog kicked from a timer interrupt, or from the idle hook, only p
 
 ### In the wild
 
-- MISRA C and most automotive and medical coding standards **ban dynamic allocation after initialisation**, so heap_1 or full static allocation it is. (SAFERTOS, the certified FreeRTOS derivative, is static-only.)
+- MISRA C forbids the standard library's `malloc`/`free` outright (Rule 21.3), and most automotive and medical coding standards **ban dynamic allocation after initialisation**, so heap_1 or full static allocation it is. (SAFERTOS, the certified FreeRTOS derivative, is static-only.)
 - Field crash logs from fleets regularly come back as "stack overflow in task X" because someone added a `snprintf("%f")`. That's why high-water marks are often reported in production telemetry.
 - Review comments: *"what's the measured high-water mark for this task?"*, *"no configASSERT on xQueueCreate"*, *"enable configCHECK_FOR_STACK_OVERFLOW 2 in debug builds"*, *"the watchdog is kicked from SysTick — that proves nothing"*.

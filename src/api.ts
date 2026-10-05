@@ -1,16 +1,16 @@
 // Typed client for the local API. Types come straight from the server code,
 // so a change on one side is a compile error on the other.
 import type { Dashboard as EngineDashboard } from "../server/engine.ts";
-import type { Focus } from "../server/weakness.ts";
+import type { Focus, projectIdeas } from "../server/weakness.ts";
 import type { RunResult } from "../server/runner/index.ts";
 import type { Attempt } from "../server/store.ts";
 import type { Experience, Lang } from "../shared/languages.ts";
 
 /** The dashboard plus the skill-tree nodes a rough daily pointed at. */
-export type Dashboard = EngineDashboard & { focus: Focus[] };
+export type Dashboard = EngineDashboard & { focus: Focus[]; projectIdeas: ReturnType<typeof projectIdeas> };
 export type { Focus, RunResult, Attempt, Experience, Lang };
 export type { Diagnostic, SimTrace } from "../server/runner/index.ts";
-import type { nodeView, pathView, submitQuiz } from "../server/pathProgress.ts";
+import type { nodeView, pathView, setMilestone, submitQuiz } from "../server/pathProgress.ts";
 export type PathView = ReturnType<typeof pathView>;
 export type NodeView = ReturnType<typeof nodeView>;
 export type QuizResult = ReturnType<typeof submitQuiz>;
@@ -125,6 +125,8 @@ export const api = {
   path: (id: string) => call<PathView>(`/paths/${id}`),
   node: (path: string, node: string) => call<NodeView>(`/paths/${path}/nodes/${node}`),
   submitQuiz: (path: string, node: string, answers: unknown[]) => call<QuizResult>(`/paths/${path}/nodes/${node}/quiz`, { method: "POST", body: { answers } }),
+  setMilestone: (path: string, node: string, id: string, done: boolean) =>
+    call<ReturnType<typeof setMilestone>>(`/paths/${path}/nodes/${node}/milestone`, { method: "POST", body: { id, done } }),
   chooseBranch: (path: string, branch: string) => call(`/paths/${path}/branch`, { method: "POST", body: { branch } }),
   harness: () => fetch("/api/harness").then((r) => r.text()),
 };

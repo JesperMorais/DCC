@@ -10,6 +10,7 @@
 
 #define CONTROL_PERIOD_MS 10
 #define RADIO_PERIOD_MS 50
+#define RADIO_FIRST_MS 9
 
 uint32_t control_runs;
 uint32_t radio_bursts;
@@ -24,19 +25,20 @@ static void control_thread(void *p1, void *p2, void *p3) {
         k_busy_wait(1000); /* read encoder, update PWM: 1 ms */
         control_runs++;
         next += CONTROL_PERIOD_MS;
-        int64_t left = next - k_uptime_get();
-        if (left > 0) k_msleep((int32_t)left);
+        k_sleep(K_TIMEOUT_ABS_MS(next)); /* until the next release: no drift */
     }
 }
 
 static void radio_thread(void *p1, void *p2, void *p3) {
     (void)p1; (void)p2; (void)p3;
+    int64_t next = RADIO_FIRST_MS;
     for (;;) {
+        k_sleep(K_TIMEOUT_ABS_MS(next)); /* the radio's slot: 9, 59, 109, ... */
         k_busy_wait(1000); /* preamble */
         k_busy_wait(1000); /* payload  */
         k_busy_wait(1000); /* CRC      */
         radio_bursts++;
-        k_msleep(RADIO_PERIOD_MS - 3);
+        next += RADIO_PERIOD_MS;
     }
 }
 
@@ -50,5 +52,5 @@ static void logger_thread(void *p1, void *p2, void *p3) {
 }
 
 K_THREAD_DEFINE(control, 1024, control_thread, NULL, NULL, NULL, CONTROL_PRIO, 0, 0);
-K_THREAD_DEFINE(radio, 1024, radio_thread, NULL, NULL, NULL, RADIO_PRIO, 0, 9);
+K_THREAD_DEFINE(radio, 1024, radio_thread, NULL, NULL, NULL, RADIO_PRIO, 0, 0);
 K_THREAD_DEFINE(logger, 2048, logger_thread, NULL, NULL, NULL, LOGGER_PRIO, 0, 0);

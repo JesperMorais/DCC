@@ -107,8 +107,10 @@ static void hub_main(void *p1, void *p2, void *p3) {
 uint32_t flash_writes;
 static void logger_thread(void *p1, void *p2, void *p3) {
     (void)p1; (void)p2; (void)p3;
+    int64_t next = 0;
     for (;;) {
-        k_msleep(50);
+        next += 50;
+        k_sleep(K_TIMEOUT_ABS_MS(next)); /* flash writes at 50, 100, 150, ... */
         k_mutex_lock(&stats_lock, K_FOREVER);
         k_busy_wait(5000); /* legacy code: writes stats to flash while holding the lock */
         flash_writes++;
@@ -118,13 +120,15 @@ static void logger_thread(void *p1, void *p2, void *p3) {
 
 static void ble_thread(void *p1, void *p2, void *p3) {
     (void)p1; (void)p2; (void)p3;
+    int64_t next = 51;
     for (;;) {
-        k_busy_wait(30000); /* connection event + advertising */
-        k_msleep(70);
+        k_sleep(K_TIMEOUT_ABS_MS(next)); /* connection events at 51, 151, 251, ... */
+        k_busy_wait(30000);              /* connection event + advertising */
+        next += 100;
     }
 }
 
 K_THREAD_DEFINE(hub, 1024, hub_main, NULL, NULL, NULL, 0, 0, 0);
 K_THREAD_DEFINE(processing, 2048, processing_thread, NULL, NULL, NULL, PROCESSING_PRIO, 0, 0);
-K_THREAD_DEFINE(ble, 2048, ble_thread, NULL, NULL, NULL, BLE_PRIO, 0, 51);
+K_THREAD_DEFINE(ble, 2048, ble_thread, NULL, NULL, NULL, BLE_PRIO, 0, 0);
 K_THREAD_DEFINE(logger, 1024, logger_thread, NULL, NULL, NULL, LOGGER_PRIO, 0, 0);

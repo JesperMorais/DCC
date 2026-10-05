@@ -19,7 +19,7 @@ TEST(back_to_back_cards_are_all_counted) {
 TEST(silence_is_a_timeout_not_a_card) {
     sim_run(350);
     EXPECT_EQ(door_log.cards, 0);
-    EXPECT_EQ(door_log.timeouts, 3); /* at 100, 200 and 300 ms */
+    EXPECT_EQ(door_log.timeouts, 3); /* at 101, 202 and 303: a relative K_MSEC(100) waits 100 ms + 1 tick */
 }
 
 TEST(a_card_restarts_the_timeout_window) {
@@ -39,7 +39,7 @@ TEST(nested_logging_does_not_deadlock) {
 }
 
 TEST(the_lock_holder_inherits_priority_during_an_upload) {
-    /* cloud (prio 10) holds the log 50..55. A card at 51 makes the reader (prio 2)
+    /* cloud (prio 10) locks the log at 50 for 5 ms of work (it unlocks at 57, after being preempted). A card at 51 makes the reader (prio 2)
      * want the lock at 53, and ui (prio 6) wakes at 52 to burn 20 ms. */
     sim_irq_at(51, "card", card_isr);
     sim_run(60);

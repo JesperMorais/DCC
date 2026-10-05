@@ -1,0 +1,19 @@
+/*
+ * Devicetree overlay for this app. With no boards/<board>.overlay present,
+ * Zephyr uses app.overlay for every board, including native_sim and
+ * native_sim/native/64.
+ */
+
+/ {
+	aliases {
+		ambient-temp = &ambient;
+	};
+
+	/* 21.000, 21.250, ... 22.750, then again */
+	ambient: ambient-sensor {
+		compatible = "vnd,ramp-temp";
+		start-millicelsius = <21000>;
+		step-millicelsius = <250>;
+		ramp-steps = <8>;
+	};
+};

@@ -26,14 +26,14 @@
   },
   {
     "type": "single",
-    "q": "A colleague writes the field mask as `(1u << width) - 1u` and calls it with `width = 32` to read a whole register. On their ARM board the result is `0`. Why?",
+    "q": "A colleague writes the field mask as `(1u << width) - 1u` and calls it with `width = 32` to read a whole register. In the unit tests on their x86 laptop the result is `0`. Why?",
     "options": [
-      "Shifting a 32-bit value by 32 is undefined. The CPU used the shift count mod 32, so `1u << 32` became `1u`, and `1 - 1` = 0",
+      "Shifting a 32-bit value by 32 is undefined. The x86 CPU used the shift count mod 32, so `1u << 32` became `1u`, and `1 - 1` = 0",
       "`1u << 32` correctly gives 0x1_0000_0000, but it's truncated to 0",
       "Unsigned subtraction wrapped around to 0",
       "The compiler optimised the mask away because it's constant"
     ],
     "answer": 0,
-    "explain": "Shifting by **the type's width or more** is undefined in C, and it's not \"shift everything out\". x86 and ARM (for register shifts) use only the low 5 bits of the count, so `<< 32` behaves like `<< 0`. You get `1u`, minus 1, which is a mask of zero. The fix is to special-case it: `width >= 32 ? 0xFFFFFFFFu : (1u << width) - 1u`. The value never becomes 33 bits, and `1 - 1` = 0 isn't a wraparound."
+    "explain": "Shifting by **the type's width or more** is undefined in C, and it's not \"shift everything out\". x86 uses only the low 5 bits of the count, so `<< 32` behaves like `<< 0`. You get `1u`, minus 1, which is a mask of zero. (On a 32-bit ARM core a register shift by 32 gives 0, so the same code happens to produce `0xFFFFFFFF` there. A bug that passes on the board and fails on the laptop is classic UB.) The fix is to special-case it: `width >= 32 ? 0xFFFFFFFFu : (1u << width) - 1u`. The value never becomes 33 bits, and `1 - 1` = 0 isn't a wraparound."
   }
 ]

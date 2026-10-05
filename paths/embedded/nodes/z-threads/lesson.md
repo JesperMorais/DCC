@@ -35,7 +35,7 @@ k_tid_t tid = k_thread_create(&rx_thread, rx_stack, K_THREAD_STACK_SIZEOF(rx_sta
                               K_PRIO_PREEMPT(5), 0, K_NO_WAIT);
 ```
 
-Prefer `K_THREAD_DEFINE` for threads that live forever, which is most of them. It's declarative, it's visible to tooling, and the stack is sized at compile time. Use `k_thread_create` when you need to choose at runtime: a worker per connection, or a thread that's started only after a self-test passes. The last argument is a start delay, and so is the last `0` in `K_THREAD_DEFINE`. Either way, **every thread gets its own stack, and you size it.** There's no heap fallback. A stack that's too small corrupts memory silently unless you enable `CONFIG_STACK_SENTINEL` or hardware stack protection (`CONFIG_HW_STACK_PROTECTION`). The entry function takes three `void *` arguments, which saves you a struct for simple cases.
+Prefer `K_THREAD_DEFINE` for threads that live forever, which is most of them. It's declarative, it's visible to tooling, and the stack is sized at compile time. Use `k_thread_create` when you need to choose at runtime: a worker per connection, or a thread that's started only after a self-test passes. The last argument is a start delay, and so is the last `0` in `K_THREAD_DEFINE`. A non-zero delay is a relative timeout like any other, so it gets the extra tick too: a delay of 50 first runs at 51. Either way, **every thread gets its own stack, and you size it.** There's no heap fallback. A stack that's too small corrupts memory silently unless you enable `CONFIG_STACK_SENTINEL` or hardware stack protection (`CONFIG_HW_STACK_PROTECTION`). The entry function takes three `void *` arguments, which saves you a struct for simple cases.
 
 The helper macros make intent readable: `K_PRIO_COOP(x)` is `-(CONFIG_NUM_COOP_PRIORITIES - x)`, which is always negative. `K_PRIO_PREEMPT(x)` is just `x`.
 
@@ -64,17 +64,19 @@ Never make something cooperative when:
 
 ### Worked example: a coop thread delays even a *first* run
 
-Here's a subtle one. `boot` is coop (-1) and spends its first 5 ms initialising a radio. `ctl` is preemptible (0), and the first thing it does is `k_msleep(1)`. You'd expect `ctl` to wake at tick 1. It wakes at **6**. Both threads are ready at boot. `boot` is more urgent and coop, so `ctl` doesn't even get to *execute its first line* (the `k_msleep`) until `boot` sleeps at tick 5. Then it sleeps for 1 ms from *there*. Coop threads don't just delay wake-ups, they delay everything.
+Here's a subtle one. `boot` is coop (-1) and spends its first 5 ms initialising a radio. `ctl` is preemptible (0), and the first thing it does is `k_msleep(1)`. You'd expect `ctl` to wake at tick 1 or 2. It wakes at **7**. Both threads are ready at boot. `boot` is more urgent and coop, so `ctl` doesn't even get to *execute its first line* (the `k_msleep`) until `boot` sleeps at tick 5. Then it sleeps for 1 ms from *there*. Coop threads don't just delay wake-ups, they delay everything.
+
+Why 7 and not 6? A relative timeout in Zephyr means *at least* that long, and the kernel can't tell how far into the current tick you are, so it **adds one tick**: `k_msleep(1)` called at tick 5 returns at tick 7 (with 1 ms ticks). `k_timer` periods don't get the extra tick, so timers stay on their grid. Also note that native_sim ticks at 100 Hz by default (10 ms ticks), so there the same code wakes after 20 ms; set `CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000` to get 1 ms ticks.
 
 ### Gotchas
 
 - **`k_yield()` from a coop thread only lets equal-or-more-urgent threads run.** A preemptible thread at priority 5 still waits. To let *everyone* run, actually sleep (`k_msleep(1)`) or block on something.
 - **"More urgent" is not "faster".** Making everything coop or very urgent gives you a superloop with extra steps. Rate-monotonic thinking still applies: the shorter the deadline, the more urgent.
-- **Time slicing** (`CONFIG_TIMESLICING`) only rotates *equal-priority preemptible* threads. Coop threads never get sliced.
+- **Time slicing** is on by default (`CONFIG_TIMESLICING=y`, `CONFIG_TIMESLICE_SIZE=20` ms) and only rotates *equal-priority preemptible* threads at or below `CONFIG_TIMESLICE_PRIORITY` (0 by default, so every preemptible priority). Coop threads never get sliced. Two busy threads at the same priority take turns in 20 ms slices; a slice size of 0 turns rotation off, and then a thread keeps the CPU against equal-priority peers until it blocks or yields.
 - **`main()` is a thread too**, at priority 0 by default (`CONFIG_MAIN_THREAD_PRIORITY`). When it returns, the kernel keeps running the other threads.
 
 ### In the wild
 
-- **Bluetooth on nRF52/nRF53:** the host's RX and TX threads are cooperative by default (`CONFIG_BT_RX_PRIO`), so the stack's internal state machines never get interleaved. That's also why a Bluetooth callback that blocks or runs long breaks your connection.
+- **Bluetooth on nRF52/nRF53:** the host's RX processing runs cooperatively, either in its own thread at `K_PRIO_COOP(CONFIG_BT_RX_PRIO)` or, in recent releases, on the (cooperative) system workqueue, so the stack's internal state machines never get interleaved. That's also why a Bluetooth callback that blocks or runs long breaks your connection.
 - **Motor drives and power supplies** keep the control loop preemptible and very urgent (or in an ISR), and push everything slow (flash logging, shells, telemetry) down into high-numbered preemptible threads.
 - **Shell and logging backends** (`CONFIG_SHELL_THREAD_PRIORITY`, `CONFIG_LOG_PROCESS_THREAD_PRIORITY`) default to *low urgency*, meaning a high number, so debug output never steals time from real work.

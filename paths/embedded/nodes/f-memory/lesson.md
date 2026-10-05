@@ -1,6 +1,6 @@
-January 2004, sol 18 on Mars. The rover **Spirit** stopped talking sensibly to Earth and started rebooting, over and over, about a hundred times. The cause wasn't radiation or a hardware fault. Spirit's flash filesystem had collected thousands of files since launch, and the table that tracked them kept growing in RAM until memory ran out. Each reboot tried to mount the filesystem, ran out of memory again, and rebooted.
+January 2004, sol 18 on Mars. The rover **Spirit** stopped talking sensibly to Earth and started rebooting, over and over, dozens of times. The cause wasn't radiation or a hardware fault. Spirit's flash filesystem had collected thousands of files since launch, and the table that tracked them kept growing in RAM until memory ran out. Each reboot tried to mount the filesystem, ran out of memory again, and rebooted.
 
-JPL fixed it from 100 million km away. The lesson stuck: in a system that must never stop, **memory you allocate at runtime is memory you can run out of at runtime.**
+JPL fixed it from more than 150 million km away. The lesson stuck: in a system that must never stop, **memory you allocate at runtime is memory you can run out of at runtime.**
 
 ### Where your variables actually live
 
@@ -50,7 +50,7 @@ free list: 3 → 0 → 6 → 7 → END      (head = 3)
 - **Fragmentation is impossible.** Every hole is exactly one block, so any free block fits any request.
 - **Exhaustion is bounded and testable.** You know at compile time that there are exactly 8. Size the pool for the worst case and *test* the empty-pool path.
 
-A free list can be an array of indices, or it can live **inside the free blocks themselves**: the first bytes of each free block hold the "next" pointer, so the bookkeeping costs zero extra RAM. That second trick is how FreeRTOS's `heap_1`/`heap_4`, Zephyr's `k_mem_slab` and countless driver pools work.
+A free list can be an array of indices, or it can live **inside the free blocks themselves**: the first bytes of each free block hold the "next" pointer, so the bookkeeping costs zero extra RAM. That second trick is how Zephyr's `k_mem_slab` and countless driver pools work, and FreeRTOS's `heap_4` keeps its (variable-size) free list inside the free blocks the same way.
 
 ### Worked example: catching a double free
 

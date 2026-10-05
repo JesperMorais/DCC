@@ -18,12 +18,12 @@ K_TIMER_DEFINE(sample_timer, expiry, NULL);  /* expiry fn, stop fn (optional) */
 
 k_timer_start(&sample_timer, K_MSEC(100), K_MSEC(100));  /* first, then period */
 k_timer_start(&idle_timer,   K_MSEC(500), K_NO_WAIT);    /* one-shot */
-k_timer_stop(&sample_timer);                             /* calls the stop fn, if any */
+k_timer_stop(&sample_timer);                             /* calls the stop fn, if it was running */
 ```
 
 - **Duration** is the delay until the first expiry. **Period** is the interval after that, and `K_NO_WAIT` (zero) means **one-shot**.
-- **Periodic timers don't drift.** Expiries land on a fixed grid (100, 200, 300...) however long your handling takes, much like `rtos_delay_until` in Fundamentals and unlike `k_msleep(100)` in a loop.
-- **Calling `k_timer_start()` on a running timer restarts it** with the new duration. That's how you build "timeout since the last activity".
+- **Periodic timers don't drift.** Expiries land on a fixed grid (100, 200, 300...) however long your handling takes, much like `rtos_delay_until` in Fundamentals and unlike `k_msleep(100)` in a loop (which drifts by your work time *plus* the extra tick every relative timeout gets). For a thread loop, `k_sleep(K_TIMEOUT_ABS_MS(next))` with `next += 100` is the drift-free equivalent.
+- **Calling `k_timer_start()` on a running timer restarts it** with the new duration (and resets its status count). That's how you build "timeout since the last activity".
 - **The expiry function may only do ISR-safe things:** give a semaphore, put to a msgq with `K_NO_WAIT`, submit work, write a GPIO, set a flag.
 
 ### The pattern: timer → work

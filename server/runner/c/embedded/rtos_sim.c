@@ -41,12 +41,14 @@ struct rtos_task {
     enum wait wait;
     void *wait_obj;
     void *wait_buf; /* queue item source/destination while blocked */
+    bool got_item;  /* a handoff queue copied an item straight into wait_buf */
     bool timed, timed_out;
     rtos_tick_t wake_at;
     rtos_tick_t eligible_at; /* woken by an ISR without a yield: runs from the next tick */
     unsigned long long seq;  /* FIFO order among equal priorities */
     uint32_t notify;
     rtos_tick_t ran;
+    rtos_tick_t slice_used; /* ticks run since it last got the CPU */
     ucontext_t ctx;
     void *stack;
     int index;
@@ -54,13 +56,16 @@ struct rtos_task {
 
 struct rtos_sem { unsigned count, max; };
 struct rtos_mutex { rtos_task_t *owner; bool pi; };
-struct rtos_queue { unsigned char *buf; size_t len, size, head, count; };
+/* handoff: Zephyr copies a message straight into a waiting receiver. FreeRTOS (and the neutral RTOS) store it
+ * in the queue and wake the receiver, which takes it when it runs, so a burst never gets an extra slot. */
+struct rtos_queue { unsigned char *buf; size_t len, size, head, count; bool handoff; };
 struct rtos_timer { char name[32]; rtos_tick_t period, next; bool periodic, active; rtos_timer_fn cb; void *arg; };
 
 struct irq { rtos_tick_t next, period; const char *name; void (*isr)(void); bool pending; };
 
 static struct {
     bool init, started, in_isr, deadlock_reported, time_slicing, isr_auto_yield, isr_yield_requested;
+    rtos_tick_t slice; /* round-robin quantum in ticks */
     rtos_task_t *tasks[MAX_TASKS];
     int ntasks;
     rtos_task_t *current;
@@ -70,6 +75,7 @@ static struct {
     int critical;
     int switches;
     int last_run; /* task index that ran last, -1 idle */
+    int isr_woke_prio; /* highest priority an ISR made ready during this ISR, -1 none */
     struct irq irqs[MAX_IRQS];
     int nirqs;
     rtos_timer_t *timers[MAX_TIMERS];
@@ -109,6 +115,7 @@ static void ensure_init(void) {
     if (S.init) return;
     S.init = true;
     S.time_slicing = true;
+    S.slice = 1;
     S.isr_auto_yield = true;
     S.last_run = -2;
 }
@@ -153,6 +160,7 @@ static void make_ready(rtos_task_t *t, bool from_isr) {
     t->timed = false;
     t->seq = ++S.seq;
     t->eligible_at = (from_isr && !S.isr_auto_yield) ? S.now + 1 : S.now;
+    if (from_isr && t->prio > S.isr_woke_prio) S.isr_woke_prio = t->prio;
     ev("ready", t->name, "");
 }
 
@@ -198,6 +206,7 @@ static void run_isr(struct irq *q) {
     bool was = S.in_isr;
     S.in_isr = true;
     S.isr_yield_requested = false;
+    S.isr_woke_prio = -1;
     ev("irq", q->name, "");
     q->isr();
     if (S.isr_yield_requested) {
@@ -211,6 +220,7 @@ static void fire_timer(rtos_timer_t *t) {
     bool was = S.in_isr;
     S.in_isr = true;
     S.isr_yield_requested = false;
+    S.isr_woke_prio = -1;
     ev("timer", t->name, "");
     t->cb(t->arg);
     if (S.isr_yield_requested)
@@ -278,8 +288,16 @@ static void trampoline(void) {
 
 /* ------------------------------------------------------------------ public: control */
 void sim_set_time_slicing(bool on) { ensure_init(); S.time_slicing = on; }
+void sim_set_time_slice(rtos_tick_t ticks) { ensure_init(); S.slice = ticks ? ticks : 1; }
 void sim_set_isr_auto_yield(bool on) { ensure_init(); S.isr_auto_yield = on; }
 void sim_isr_yield(void) { S.isr_yield_requested = true; }
+/* Did this ISR make ready a task that outranks the one it interrupted (the task that ran last, or idle)?
+ * That's when FreeRTOS's FromISR calls set *pxHigherPriorityTaskWoken. */
+bool sim_isr_woke_higher(void) {
+    const rtos_task_t *was = S.last_run >= 0 ? S.tasks[S.last_run] : NULL;
+    int interrupted = was && was->state != BLOCKED && was->state != DONE ? was->prio : -1;
+    return S.isr_woke_prio > interrupted;
+}
 bool sim_in_isr(void) { return S.in_isr; }
 void sim_on_start(void (*fn)(void)) {
     ensure_init();
@@ -313,6 +331,7 @@ void sim_run(rtos_tick_t ticks) {
             continue;
         }
         if (S.last_run != t->index) {
+            t->slice_used = 0; /* a fresh time slice each time it's switched in */
             if (S.last_run >= -1) S.switches++;
             S.last_run = t->index;
             ev("run", t->name, "");
@@ -472,9 +491,15 @@ void rtos_busy(rtos_tick_t ticks) {
     if (!S.current) sim_fail("rtos_busy() must run inside a task");
     rtos_task_t *me = S.current;
     for (rtos_tick_t i = 0; i < ticks; i++) {
-        while (S.now >= S.end) switch_to_scheduler(); /* out of simulated time: pause here */
+        while (S.now >= S.end) {
+            /* Out of simulated time: pause here, still runnable, so the next sim_run() resumes this task.
+             * It keeps its seq, so it resumes first among equals. */
+            me->state = READY;
+            switch_to_scheduler();
+        }
         record_tick(me->index);
         me->ran++;
+        me->slice_used++;
         S.now++;
         tick_events();
         if (S.critical) continue;
@@ -482,7 +507,7 @@ void rtos_busy(rtos_tick_t ticks) {
             me->state = READY;
             ev("preempt", me->name, "");
             switch_to_scheduler();
-        } else if (i + 1 < ticks && should_rotate(me)) {
+        } else if (i + 1 < ticks && me->slice_used >= S.slice && should_rotate(me)) {
             me->state = READY;
             me->seq = ++S.seq;
             switch_to_scheduler();
@@ -680,6 +705,8 @@ rtos_queue_t *rtos_queue_create(size_t length, size_t item_size) {
     return q;
 }
 
+void sim_queue_handoff(rtos_queue_t *q, bool on) { if (q) q->handoff = on; }
+
 static void q_push(rtos_queue_t *q, const void *item) {
     memcpy(q->buf + ((q->head + q->count) % q->len) * q->size, item, q->size);
     q->count++;
@@ -694,14 +721,19 @@ static void q_pop(rtos_queue_t *q, void *out) {
 bool rtos_queue_send(rtos_queue_t *q, const void *item, rtos_tick_t timeout) {
     if (!q || !item) sim_fail("rtos_queue_send(NULL, ...)");
     rtos_task_t *r = q->count == 0 ? best_waiter(W_QRECV, q) : NULL;
-    if (r) {
+    if (r && q->handoff) {
         memcpy(r->wait_buf, item, q->size); /* straight into the waiting receiver */
+        r->got_item = true;
         make_ready(r, S.in_isr);
         after_wake();
         return true;
     }
     if (q->count < q->len) {
         q_push(q, item);
+        if (r) {
+            make_ready(r, S.in_isr); /* it takes the item from the queue when it runs */
+            after_wake();
+        }
         return true;
     }
     if (timeout == RTOS_NO_WAIT) return false;
@@ -715,23 +747,29 @@ bool rtos_queue_send(rtos_queue_t *q, const void *item, rtos_tick_t timeout) {
 
 bool rtos_queue_receive(rtos_queue_t *q, void *out, rtos_tick_t timeout) {
     if (!q || !out) sim_fail("rtos_queue_receive(NULL, ...)");
-    if (q->count > 0) {
-        q_pop(q, out);
-        rtos_task_t *s = best_waiter(W_QSEND, q);
-        if (s) {
-            q_push(q, s->wait_buf);
-            make_ready(s, S.in_isr);
-            after_wake();
+    rtos_tick_t deadline = timeout == RTOS_WAIT_FOREVER ? RTOS_WAIT_FOREVER : S.now + timeout;
+    for (;;) {
+        if (q->count > 0) {
+            q_pop(q, out);
+            rtos_task_t *s = best_waiter(W_QSEND, q);
+            if (s) {
+                q_push(q, s->wait_buf);
+                make_ready(s, S.in_isr);
+                after_wake();
+            }
+            return true;
         }
-        return true;
+        if (timeout == RTOS_NO_WAIT || (deadline != RTOS_WAIT_FOREVER && S.now >= deadline)) return false;
+        require_task("rtos_queue_receive");
+        if (S.critical) sim_fail("blocking on an empty queue inside a critical section");
+        ev("wait", S.current->name, "queue empty");
+        S.current->wait_buf = out;
+        S.current->got_item = false;
+        block(W_QRECV, q, deadline == RTOS_WAIT_FOREVER ? RTOS_WAIT_FOREVER : deadline - S.now);
+        if (S.current->timed_out) return false;
+        if (S.current->got_item) return true; /* handed over directly (Zephyr) */
+        /* Woken because an item arrived: loop and take it, unless a higher-priority receiver got there first. */
     }
-    if (timeout == RTOS_NO_WAIT) return false;
-    require_task("rtos_queue_receive");
-    if (S.critical) sim_fail("blocking on an empty queue inside a critical section");
-    ev("wait", S.current->name, "queue empty");
-    S.current->wait_buf = out;
-    block(W_QRECV, q, timeout);
-    return !S.current->timed_out;
 }
 
 size_t rtos_queue_count(const rtos_queue_t *q) { return q ? q->count : 0; }
@@ -783,6 +821,7 @@ void rtos_timer_start(rtos_timer_t *t, rtos_tick_t first_delay) {
 void rtos_timer_stop(rtos_timer_t *t) {
     if (t) t->active = false;
 }
+bool rtos_timer_is_active(const rtos_timer_t *t) { return t && t->active; }
 
 /* ------------------------------------------------------------------ trace export + cleanup */
 static void json_str(FILE *f, const char *s) {

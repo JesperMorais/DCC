@@ -24,13 +24,13 @@
     "q": "The logger runs at the **lowest** priority and waits for the flash with `while (!flash_ready) rtos_busy(1);`. The higher-priority tasks still meet their deadlines. What's still wrong? Select all that apply.",
     "options": [
       "The CPU never goes idle, so the MCU can't sleep and the battery drains",
-      "Any task at the logger's priority or below gets no CPU",
+      "Any task below the logger's priority gets no CPU at all",
       "CPU-load measurements read about 100%, hiding how much headroom you really have",
       "The higher-priority tasks will eventually be starved too",
       "Nothing: low-priority busy-waiting is harmless"
     ],
     "answer": [0, 1, 2],
-    "explain": "A busy-waiting task is **running**, not blocked. Higher priorities still preempt it, so they're fine, but it soaks up every spare cycle. The idle task never runs (no `WFI`, no sleep), equal or lower tasks starve, and your load metric is useless. With `rtos_delay(1)` (or better, a semaphore) the task is **blocked** while it waits and costs nothing."
+    "explain": "A busy-waiting task is **running**, not blocked. Higher priorities still preempt it, so they're fine, but it soaks up every spare cycle. The idle task never runs (no `WFI`, no sleep), lower tasks starve (an equal-priority task only gets its round-robin share), and your load metric is useless. With `rtos_delay(1)` (or better, a semaphore) the task is **blocked** while it waits and costs nothing."
   },
   {
     "type": "single",

@@ -59,7 +59,7 @@ BaseType_t xTaskNotifyGive(TaskHandle_t t) {
 void vTaskNotifyGiveFromISR(TaskHandle_t t, BaseType_t *woken) {
     frt_isr_mode();
     rtos_notify_give(t);
-    if (woken) *woken = pdTRUE;
+    if (woken && sim_isr_woke_higher()) *woken = pdTRUE; /* real FreeRTOS only ever sets it, never clears it */
 }
 uint32_t ulTaskNotifyTake(BaseType_t clear, TickType_t timeout) { return rtos_notify_take(clear != pdFALSE, timeout); }
 
@@ -89,7 +89,7 @@ BaseType_t xQueueSendFromISR(QueueHandle_t q, const void *item, BaseType_t *woke
     configASSERT(q != NULL);
     if (!sim_in_isr()) sim_fail("xQueueSendFromISR() called outside an ISR — use xQueueSend() in tasks");
     bool ok = rtos_queue_send(q->q, item, RTOS_NO_WAIT);
-    if (ok && woken) *woken = pdTRUE;
+    if (ok && woken && sim_isr_woke_higher()) *woken = pdTRUE;
     return ok ? pdPASS : errQUEUE_FULL;
 }
 BaseType_t xQueueSendToBackFromISR(QueueHandle_t q, const void *item, BaseType_t *woken) { return xQueueSendFromISR(q, item, woken); }
@@ -140,7 +140,7 @@ BaseType_t xSemaphoreGiveFromISR(SemaphoreHandle_t s, BaseType_t *woken) {
     if (s->mutex) sim_fail("mutexes can't be given from an ISR");
     if (!sim_in_isr()) sim_fail("xSemaphoreGiveFromISR() called outside an ISR — use xSemaphoreGive() in tasks");
     bool ok = rtos_sem_give(s->sem);
-    if (ok && woken) *woken = pdTRUE;
+    if (ok && woken && sim_isr_woke_higher()) *woken = pdTRUE;
     return ok ? pdTRUE : pdFALSE;
 }
 UBaseType_t uxSemaphoreGetCount(SemaphoreHandle_t s) { return s && s->sem ? rtos_sem_count(s->sem) : 0; }

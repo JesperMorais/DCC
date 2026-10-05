@@ -1,6 +1,6 @@
 ### "It builds on my machine" (it didn't)
 
-Every Zephyr developer has lived this one. You add `#include <zephyr/drivers/sensor.h>`, call `sensor_sample_fetch()`, and get a *linker* error, or worse, `device_is_ready()` returns false at runtime. The C is fine. The driver simply isn't in the image, because nobody **asked** for it. In Zephyr the code you write is only one of four inputs to the build. Learn the other three and the mystery errors go away.
+Every Zephyr developer has lived this one. You add `#include <zephyr/drivers/sensor.h>`, grab the sensor with `DEVICE_DT_GET()`, and get a *linker* error about some `__device_dts_ord_42` you've never heard of. The C is fine. The driver simply isn't in the image, because nobody **asked** for it. In Zephyr the code you write is only one of four inputs to the build. Learn the other three and the mystery errors go away.
 
 In Fundamentals you wrote `rtos.h` code and pressed Run. A real Zephyr product is assembled from roughly 2 million lines of kernel, drivers, protocol stacks and HALs, and the build's job is to throw away everything you *didn't* ask for.
 
@@ -73,8 +73,10 @@ config BME280
     select I2C if $(dt_compat_on_bus,$(DT_COMPAT_BOSCH_BME280),i2c)
 ```
 
-- **`depends on`** sets a precondition. If `SENSOR` is `n`, then `BME280` *cannot* be `y`, whatever you write. Kconfig quietly drops your request and prints only a warning.
+- **`depends on`** sets a precondition. If `SENSOR` is `n`, then `BME280` *cannot* be `y`, whatever you write. Kconfig drops your request, prints a warning and **carries on building**.
 - **`select`** forces another symbol on. Enabling `BME280` on an I2C bus turns `I2C` on for you. (`select` ignores the selected symbol's own dependencies, which is why it's used sparingly.)
+
+Other mistakes in `prj.conf` stop the build instead, with *"error: Aborting due to Kconfig warnings"* (checked on Zephyr 4.2): assigning a symbol that doesn't exist (a typo such as `CONFIG_SENOSR=y`), an `int` outside its `range`, or a symbol with no prompt, such as `DT_HAS_BOSCH_BME280_ENABLED`, which only Kconfig itself sets. The unmet `depends on` is the one that lets the build succeed, which makes it the dangerous one.
 
 `west build -t menuconfig` (or `guiconfig`) opens an interactive editor for the resolved configuration. Press `?` on a symbol and it shows *why* it has its value and what it depends on. Changes there are temporary (they live in `build/zephyr/.config`), so copy what you learn back into `prj.conf`.
 
@@ -88,16 +90,17 @@ A **board** (`nrf52840dk/nrf52840`, `nucleo_f429zi`) brings its own devicetree (
 
 ### Worked example: "why isn't my driver enabled?"
 
-You add a BME280 to your custom board's overlay and write `CONFIG_BME280=y`. At boot, `device_is_ready(bme)` is false. Debug it in order:
+You add a BME280 to your custom board's overlay, write `CONFIG_BME280=y`, and use `DEVICE_DT_GET(DT_NODELABEL(bme280))`. The link fails with `undefined reference to '__device_dts_ord_42'`. That symbol is the device instance a driver would have defined for your node, so no driver did. Debug it in order:
 
-1. `build/zephyr/.config`: is `CONFIG_BME280=y` there? If it isn't, a dependency failed. The build log has a warning like *"CONFIG_BME280 was assigned the value y but got the value n"*.
-2. menuconfig, `?` on BME280: it says `depends on SENSOR (=n)`. Add `CONFIG_SENSOR=y`.
+1. `build/zephyr/.config`: is `CONFIG_BME280=y` there? If it isn't, a dependency failed. The build log has a warning like *"BME280 was assigned the value 'y' but got the value 'n'. Check these unsatisfied dependencies: SENSOR (=n)"*, and the build went on without the driver.
+2. The warning names the culprit, `SENSOR (=n)`; menuconfig's `?` on BME280 shows the same in its dependency list. Add `CONFIG_SENSOR=y`.
 3. Still false? Check `build/zephyr/zephyr.dts` (the final, merged devicetree). Your node says `status = "disabled"`, or the `compatible` string is misspelled, so no driver ever matched it.
+4. It links, but `device_is_ready(bme)` is false at boot? Now the driver *is* in the image and its init failed: the chip didn't answer on the bus (wrong address, no power, bad wiring). That's a hardware question, not a build one.
 
 ### Gotchas
 
 - **Pristine builds.** CMake caches the board and the config. After changing the board or overlay *file names*, run `west build -p always`.
-- **Kconfig warnings are errors in disguise.** A dropped `=y` compiles fine and fails at runtime.
+- **The unmet-dependency warning is an error in disguise.** A typo or an out-of-range value stops the build, but a `=y` dropped for a missing dependency is only a warning: the image builds and the feature is missing at runtime. Read the Kconfig warnings at the top of the build log.
 - **Don't edit `.config` by hand.** It's regenerated on every build.
 - **Stack sizes live in Kconfig too** (`CONFIG_MAIN_STACK_SIZE`, `CONFIG_SYSTEM_WORKQUEUE_STACK_SIZE`). The kernel objects you'll meet next (threads, the workqueue) are configured here.
 - **A heads-up for the next node:** Zephyr flips the Fundamentals priority rule. In `rtos.h` a bigger number was more urgent. In Zephyr a **smaller** number is more urgent, and **negative** numbers are cooperative.

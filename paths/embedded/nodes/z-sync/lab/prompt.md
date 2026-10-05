@@ -11,7 +11,7 @@ Facilities reports that people "sometimes have to badge twice", the "reader offl
 
 1. **ISR → semaphore → thread.** `card_isr` must not do the work and must not block. It signals `card_sem`, and the reader starts on the **same tick** as the interrupt (no polling).
 2. **Every badge counts.** Three badges 1 ms apart (each takes 2 ms to process) must give `door_log.cards == 3`.
-3. **Heartbeat timeouts.** The reader waits at most `READER_TIMEOUT_MS` (100 ms). If `k_sem_take` returns **`-EAGAIN`**, that is *not* a badge: call `log_timeout()`. After 350 ms of silence: `cards == 0`, `timeouts == 3`.
+3. **Heartbeat timeouts.** The reader waits at most `READER_TIMEOUT_MS` (100 ms). If `k_sem_take` returns **`-EAGAIN`**, that is *not* a badge: call `log_timeout()`. After 350 ms of silence: `cards == 0`, `timeouts == 3`. (They land at 101, 202 and 303: like real Zephyr, a relative `K_MSEC(100)` waits 100 ms *plus one tick*, so it's never shorter than asked.)
 4. **The timeout window restarts after each badge.** A badge at 60 ms means no timeout at 100 ms.
 5. **Shared log under a real `k_mutex`.** `log_card()` and `log_timeout()` lock the log and then call `log_touch()`, which locks it **again**. That's fine with a Zephyr mutex, because it's recursive. `door_log.updates` must match the number of changes, and nothing may deadlock.
 6. **No priority inversion.** A badge at 51 ms (while `cloud` holds the lock and `ui` wakes at 52) must be fully processed by 60 ms. With a mutex, `cloud` inherits the reader's priority until it unlocks.

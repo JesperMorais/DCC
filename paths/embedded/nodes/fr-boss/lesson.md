@@ -25,13 +25,13 @@ Each box is a lesson you've done:
 
 ### Three design decisions to get right
 
-**1. Resync after an overrun, don't burst.** For a step counter, catching up missed cycles is right. For a motor loop, catching up means running several cycles back to back on **stale** encoder data and integrating a big error into the PID all at once, which kicks the motor. When `xTaskDelayUntil` returns `pdFALSE`, count the overrun and set `last_wake = xTaskGetTickCount()`. The next cycle is then a clean period from *now*.
+**1. Resync after an overrun, don't burst.** For a step counter, catching up missed cycles is right. For a motor loop, catching up means running several cycles back to back on **stale** encoder data and integrating a big error into the PID all at once, which kicks the motor. When `xTaskDelayUntil` returns `pdFALSE`, count the overrun and set `last_wake = xTaskGetTickCount()`. The call didn't block, so one fresh cycle runs right away, and the 1 ms grid restarts from *now* instead of trying to catch up.
 
 **2. Hold locks for a copy, never for work.** Priority inheritance limits inversion, but it doesn't remove the wait. If telemetry holds the setpoint mutex for its 3 ms CAN frame, the 1 ms control task waits up to 3 ms, *with* inheritance, and misses cycles. The FreeRTOS fix is the Fundamentals fix: copy the value under the lock, release, then do the slow part. In the timeline, look for telemetry ever running at control's priority. If it does, it held the lock while control wanted it.
 
 **3. Know what your watchdog can and can't see.** The watchdog callback runs in Tmr Svc at priority 6. If the control task (priority 7) **spins**, the daemon never runs and the software watchdog is blind. That is precisely why real products back it with a **hardware** watchdog (IWDG) that the supervisor kicks only when check-ins are healthy. In this lab the injected fault is a *blocking* hang: an encoder SPI transfer that waits on a DMA completion which comes 20 ms late. Control is blocked, the CPU is free, and the software watchdog can and must trip within about two windows. When it trips, `motor_disable()` turns off the gate driver at once, and the control loop **latches** a PWM of 0, so the motor doesn't restart when the encoder comes back.
 
-A subtle one: the callback **reads and clears** `g_checkins`. If control could run between the read and the clear, a check-in would be lost. On real hardware, an ISR or a multi-core port can interleave exactly there. Wrap the read and clear in `taskENTER_CRITICAL()`/`taskEXIT_CRITICAL()`. Keep it two lines long.
+A subtle one: the callback **reads and clears** `g_checkins`. Control outranks the daemon, so if a tick wakes control between the read and the clear, it preempts the callback right there, its check-in lands in the gap and is wiped by the clear. (An ISR or a second core on an SMP port can interleave the same way.) Wrap the read and clear in `taskENTER_CRITICAL()`/`taskEXIT_CRITICAL()`. Keep it two lines long.
 
 ### How you'll be graded
 

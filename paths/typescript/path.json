@@ -191,6 +191,28 @@
       "covers": []
     },
     {
+      "id": "f-project",
+      "section": "fundamentals",
+      "row": 5,
+      "col": 1.7,
+      "kind": "project",
+      "title": "Project: terminal to-do list",
+      "requires": [
+        "f-boss"
+      ],
+      "covers": [
+        "arrays",
+        "for...of",
+        "objects",
+        "type aliases",
+        "strings",
+        "if/else",
+        "immutability",
+        "map",
+        "filter"
+      ]
+    },
+    {
       "id": "c-interfaces",
       "section": "core",
       "row": 6.4,
@@ -290,6 +312,28 @@
       "covers": []
     },
     {
+      "id": "c-project",
+      "section": "core",
+      "row": 9.4,
+      "col": 1.7,
+      "kind": "project",
+      "title": "Project: expense tracker CLI",
+      "requires": [
+        "c-boss"
+      ],
+      "covers": [
+        "interfaces",
+        "union types",
+        "narrowing",
+        "reduce",
+        "Map",
+        "Record",
+        "string parsing",
+        "filter/sort/map pipelines",
+        "optional properties"
+      ]
+    },
+    {
       "id": "g-generics",
       "section": "generics",
       "row": 10.8,
@@ -382,6 +426,26 @@
         "g-classes"
       ],
       "covers": []
+    },
+    {
+      "id": "g-project",
+      "section": "generics",
+      "row": 13.8,
+      "col": 1.7,
+      "kind": "project",
+      "title": "Project: typed event bus & store",
+      "requires": [
+        "g-boss"
+      ],
+      "covers": [
+        "generics",
+        "generic constraints",
+        "keyof",
+        "discriminated unions",
+        "classes",
+        "utility types",
+        "mapped types"
+      ]
     }
   ]
 }

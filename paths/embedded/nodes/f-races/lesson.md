@@ -75,7 +75,7 @@ __disable_irq();
 if (was_enabled) __enable_irq();
 ```
 
-This is exactly why FreeRTOS has `taskENTER_CRITICAL_FROM_ISR()` returning a saved mask, and why Zephyr's `irq_lock()` returns a key that you pass to `irq_unlock(key)`.
+This is exactly why FreeRTOS has `taskENTER_CRITICAL_FROM_ISR()` returning a saved mask (its task-level `taskENTER_CRITICAL()` solves the same problem with a nesting counter instead), and why Zephyr's `irq_lock()` returns a key that you pass to `irq_unlock(key)`.
 
 ### Worked example: a torn 64-bit uptime
 

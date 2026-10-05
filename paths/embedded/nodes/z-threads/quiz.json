@@ -1,11 +1,11 @@
 [
   {
     "type": "single",
-    "q": "Predict the timeline. Both threads exist at boot. At which tick does `ctl` **wake from its sleep** and record the time?",
+    "q": "Predict the timeline. Both threads exist at boot. At which tick does `ctl` **wake from its sleep** and record the time? (1 tick = 1 ms: `CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000`.)",
     "code": "static void boot_fn(void *a, void *b, void *c) {\n    k_busy_wait(5000);   /* 5 ms of radio init */\n    k_msleep(100);\n}\nstatic void ctl_fn(void *a, void *b, void *c) {\n    k_msleep(1);\n    woke_at = k_uptime_get();\n}\nK_THREAD_DEFINE(boot, 1024, boot_fn, NULL, NULL, NULL, -1, 0, 0);\nK_THREAD_DEFINE(ctl,  1024, ctl_fn,  NULL, NULL, NULL,  0, 0, 0);",
-    "options": ["1", "5", "6", "105"],
-    "answer": 2,
-    "explain": "`boot` (-1) is more urgent **and cooperative**, so it runs first and keeps the CPU through its 5 ms busy-wait. `ctl` doesn't even get to execute its first line until `boot` sleeps at tick 5. Only then does it call `k_msleep(1)`, so it wakes at **6**. Tick 1 assumes `ctl` ran at boot. Tick 5 is when it *starts*, not when it wakes. 105 would mean waiting for `boot`'s sleep to end, but sleeping releases the CPU."
+    "options": ["1", "5", "6", "7", "105"],
+    "answer": 3,
+    "explain": "`boot` (-1) is more urgent **and cooperative**, so it runs first and keeps the CPU through its 5 ms busy-wait. `ctl` doesn't even get to execute its first line until `boot` sleeps at tick 5. Only then does it call `k_msleep(1)`, and a relative timeout in Zephyr gets **one extra tick** (it means *at least* 1 ms, and the call may come partway through a tick), so it wakes at **7**. 6 forgets that extra tick. 1 assumes `ctl` ran at boot. 5 is when it *starts*, not when it wakes. 105 would mean waiting for `boot`'s sleep to end, but sleeping releases the CPU."
   },
   {
     "type": "multi",
@@ -30,7 +30,7 @@
       "control = 2, logger = 2: time slicing will sort it out"
     ],
     "answer": 2,
-    "explain": "Lower number = more urgent, so control gets the smaller number and the long, deadline-free job gets the largest. Option A is the FreeRTOS habit, and in Zephyr it makes control the *least* urgent. Option B makes the logger cooperative: it can't be preempted, so control waits up to 25 ms. (Flash drivers protect their own critical parts; the *thread* doesn't need to be coop.) Option D round-robins at tick granularity, so control can still be a tick late, and it hides your intent."
+    "explain": "Lower number = more urgent, so control gets the smaller number and the long, deadline-free job gets the largest. Option A is the FreeRTOS habit, and in Zephyr it makes control the *least* urgent. Option B makes the logger cooperative: it can't be preempted, so control waits up to 25 ms. (Flash drivers protect their own critical parts; the *thread* doesn't need to be coop.) Option D: equal priorities never preempt each other. With the default 20 ms time slice, control can wait up to 20 ms for the logger's slice to end, far over its 1 ms budget (and with slicing off, the whole 25 ms page). It also hides your intent."
   },
   {
     "type": "single",

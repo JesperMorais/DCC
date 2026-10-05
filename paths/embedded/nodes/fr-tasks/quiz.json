@@ -5,7 +5,7 @@
     "code": "xTaskCreate(radio_task, \"radio\", 1024, NULL, 3, NULL);",
     "options": ["1 KB", "4 KB", "256 bytes", "It depends on configTICK_RATE_HZ"],
     "answer": 1,
-    "explain": "The stack depth is in **words**. 1024 words × 4 bytes = **4 KB**. If the author meant 1 KB, they wasted 3 KB of RAM, which is a lot on a 64 KB part. 256 bytes would be the answer if the number were bytes divided by 4. The tick rate has nothing to do with stacks. (ESP-IDF is the odd one out: its `xTaskCreate` takes bytes.)"
+    "explain": "The stack depth is in **words**. 1024 words × 4 bytes = **4 KB**. If the author meant 1 KB, they wasted 3 KB of RAM, which is a lot on a 64 KB part. 256 bytes comes from dividing by 4 instead of multiplying. The tick rate has nothing to do with stacks. (ESP-IDF is the odd one out: its `xTaskCreate` takes bytes.)"
   },
   {
     "type": "single",
@@ -30,7 +30,7 @@
       "control 3, comms 2, ui 1"
     ],
     "answer": [0, 3],
-    "explain": "Valid priorities are 0..7, and only the **order** matters for scheduling, so A and D are both fine. B uses 10, which is out of range: FreeRTOS clamps it to 7, and the simulator rejects it. C puts the logger at 0, which shares the idle task's priority. That's legal, but the logger then time-slices with idle and only runs when nothing else wants the CPU. That's rarely what you meant, and it can starve the idle task's cleanup."
+    "explain": "Valid priorities are 0..7, and only the **order** matters for scheduling, so A and D are both fine. B uses 10, which is out of range: FreeRTOS trips `configASSERT` (or, without asserts, silently clamps it to 7), and the simulator rejects it. C puts the logger at 0, which shares the idle task's priority. That's legal, but the logger then time-slices with idle and only runs when nothing else wants the CPU. That's rarely what you meant, and it can starve the idle task's cleanup."
   },
   {
     "type": "single",

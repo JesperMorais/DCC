@@ -43,7 +43,8 @@ export default function PathPage() {
 
   const color = (section: string) => view.sections.find((s) => s.id === section)?.color ?? "var(--accent)";
   const byId = new Map(view.nodes.map((n) => [n.id, n]));
-  const frontier = view.nodes.find((n) => n.status === "in-progress") ?? view.nodes.find((n) => n.status === "available");
+  const onPath = view.nodes.filter((n) => n.kind !== "project");
+  const frontier = onPath.find((n) => n.status === "in-progress") ?? onPath.find((n) => n.status === "available");
   const gateNode = view.gate ? byId.get(view.gate) : undefined;
   const gatePos = view.gate ? layout.pos.get(view.gate) : undefined;
   const hat = view.language === "c" ? "hardhat" : undefined;
@@ -136,9 +137,9 @@ export default function PathPage() {
             {/* gate banner */}
             {gatePos && (
               <g>
-                <line x1={30} x2={layout.width - 30} y1={gatePos.y + ROW_H * 0.52} y2={gatePos.y + ROW_H * 0.52} stroke="var(--border-strong)" strokeDasharray="4 6" />
-                <rect x={layout.width / 2 - 92} y={gatePos.y + ROW_H * 0.52 - 12} width={184} height={24} rx={12} fill="var(--surface)" stroke="var(--border-strong)" />
-                <text x={layout.width / 2} y={gatePos.y + ROW_H * 0.52 + 4} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--text-2)">
+                <line x1={30} x2={layout.width - 30} y1={gatePos.y + ROW_H * 0.8} y2={gatePos.y + ROW_H * 0.8} stroke="var(--border-strong)" strokeDasharray="4 6" />
+                <rect x={layout.width / 2 - 92} y={gatePos.y + ROW_H * 0.8 - 12} width={184} height={24} rx={12} fill="var(--surface)" stroke="var(--border-strong)" />
+                <text x={layout.width / 2} y={gatePos.y + ROW_H * 0.8 + 4} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--text-2)">
                   {view.gateDone ? "Branches unlocked" : "Beat the boss to pick a branch"}
                 </text>
               </g>
@@ -151,7 +152,18 @@ export default function PathPage() {
                 const src = byId.get(r)!;
                 const lit = src.status === "done";
                 const my = (a.y + b.y) / 2;
-                void my;
+                if (n.kind === "project")
+                  // A side quest: a short dashed spur from the boss (beside it, or below it at the end of a branch).
+                  return (
+                    <path
+                      key={`${r}-${n.id}`}
+                      d={Math.abs(a.x - b.x) < 1 ? `M${a.x} ${a.y + R + LABEL_H} L${b.x} ${b.y - R - 4}` : `M${a.x + R + 8} ${a.y} L${b.x - R - 2} ${b.y}`}
+                      fill="none"
+                      stroke={lit ? color(n.section) : "var(--border-strong)"}
+                      strokeWidth={2}
+                      strokeDasharray="3 5"
+                    />
+                  );
                 return (
                   <path
                     key={`${r}-${n.id}`}
@@ -171,7 +183,8 @@ export default function PathPage() {
               const c = color(n.section);
               const boss = n.kind === "boss";
               const r = boss ? R + 6 : R;
-              const icon: IconName = n.status === "locked" ? "lock" : n.status === "done" ? "check" : boss ? "trophy" : n.kind === "lesson" ? "book" : "code";
+              const project = n.kind === "project";
+              const icon: IconName = n.status === "locked" ? "lock" : n.status === "done" ? "check" : boss ? "trophy" : project ? "flag" : n.kind === "lesson" ? "book" : "code";
               const fill = n.status === "done" ? c : "var(--surface)";
               const ring = n.weak ? "var(--warn)" : n.status === "locked" ? "var(--border-strong)" : c;
               return (
@@ -186,7 +199,9 @@ export default function PathPage() {
                   {(n.status === "available" || n.status === "in-progress") && (
                     <circle cx={p.x} cy={p.y} r={r + 7} fill="none" stroke={c} strokeWidth={2} opacity={0.35} className="tree-pulse" />
                   )}
-                  {boss ? (
+                  {project ? (
+                    <rect x={p.x - r} y={p.y - r} width={r * 2} height={r * 2} rx={10} fill={fill} stroke={ring} strokeWidth={3} strokeDasharray={n.status === "done" ? undefined : "6 4"} />
+                  ) : boss ? (
                     <polygon
                       points={Array.from({ length: 6 }, (_, k) => {
                         const ang = (Math.PI / 3) * k - Math.PI / 2;
@@ -217,7 +232,7 @@ export default function PathPage() {
                     </g>
                   )}
                   {/* stars */}
-                  {n.status === "done" && (
+                  {n.status === "done" && !project && (
                     <text x={p.x} y={p.y + r + 13} textAnchor="middle" fontSize={11} fill="#f2b33d" letterSpacing={1}>
                       {"★".repeat(n.stars)}
                       <tspan fill="var(--border-strong)">{"★".repeat(3 - n.stars)}</tspan>
@@ -245,8 +260,9 @@ export default function PathPage() {
             >
               <div className="text-sm font-semibold text-ink">{hover.title}</div>
               <div className="mt-1 text-muted">
-                {hover.kind === "boss" ? "Boss lab" : hover.kind === "lesson" ? "Lesson + quiz" : "Lesson + quiz + lab"} · ~{hover.estMinutes + (hover.kind === "lesson" ? 0 : 0)} min ·{" "}
-                {hover.xp} XP
+                {hover.kind === "project"
+                  ? `Optional project · your own editor · ~${Math.round(hover.estMinutes / 60)} h`
+                  : `${hover.kind === "boss" ? "Boss lab" : hover.kind === "lesson" ? "Lesson + quiz" : "Lesson + quiz + lab"} · ~${hover.estMinutes} min · ${hover.xp} XP`}
               </div>
               {hover.status === "locked" && (
                 <div className="mt-2 text-ink-2">Needs: {hover.requires.map((r) => byId.get(r)?.title).join(", ")}</div>

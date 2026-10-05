@@ -1,6 +1,6 @@
-July 20, 1969, a few minutes before the first Moon landing. The Apollo Guidance Computer flashes **1202**, then **1201**: *executive overflow*. A switch had been left in a position that made the rendezvous radar hammer the computer with interrupts, and those interrupts were eating about 15% of the CPU. The landing software couldn't finish its work in time.
+July 20, 1969, a few minutes before the first Moon landing. The Apollo Guidance Computer flashes **1202**, then **1201**: *executive overflow*. A radar switch had been left in a position that made the rendezvous radar's interface hammer the computer with spurious counter-update requests (hardware "cycle steals", tiny interrupts handled in hardware), and they were eating about 13% of the CPU. The landing software couldn't finish its work in time.
 
-What saved the landing was good interrupt design. The computer shed low-priority jobs, restarted and kept flying, and Armstrong landed. Interrupts are the most powerful tool in firmware and the easiest to abuse.
+What saved the landing was good real-time design. The computer shed low-priority jobs, restarted and kept flying, and Armstrong landed. Interrupts are the most powerful tool in firmware and the easiest to abuse.
 
 ### Polling vs interrupts
 
@@ -74,7 +74,9 @@ void USART1_IRQHandler(void) {
 - **Power-of-two sizes** let you wrap with `& (SIZE - 1)` instead of `%`. Division can take dozens of cycles on small cores.
 - **Forgetting to acknowledge** an interrupt leaves you stuck in it forever, and the main loop never runs again.
 - **`volatile` on the indices** is required, and it's also *all* you get. It works here only because of the single-writer design.
+- **`volatile` only orders `volatile` accesses.** The compiler may still move a plain `buf[]` access across an index update (say, read `buf[tail]` *after* storing the new `tail`, when the ISR may already be refilling that slot). On a single core the ISR runs to completion, so its own store order can't be observed half-done, but the consumer side can bite. Production rings make `buf` `volatile` too, or use C11 atomics (release on publish, acquire on read). With two cores or DMA you also need real memory barriers.
 - **Overrun is not a buffer-full condition.** ORE means the hardware lost a byte *before* the ISR ran. Overflow means you lost one *after*. They have different causes and different fixes.
+- **Know how your part clears its flags.** On a real STM32F4, ORE is read-only: reading `SR` and then `DR` clears it. Status bits that *are* cleared by writing 0 (`rc_w0`, like TC) should be cleared with a plain write such as `USART1->SR = ~USART_SR_TC`, not `&= ~`. A read-modify-write can clear a flag that the hardware set between your read and your write. The simulator in the lab accepts the explicit clear; the reference manual is the authority on real silicon.
 
 ### In the wild
 

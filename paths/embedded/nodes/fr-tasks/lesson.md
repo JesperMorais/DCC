@@ -87,7 +87,7 @@ Inside `sensor_task`, `pvParameters` is `&cfg`. Cast it back with `sensor_cfg_t 
 ### Gotchas
 
 - **Passing a pointer to a local as `pvParameters`.** If `main()`'s stack frame is reused once the scheduler starts, which it is on many ports, the task reads garbage. Use `static` or global storage.
-- **Leaving gaps in priorities "for later"** wastes nothing at runtime. Asking for priority 10 when the maximum is 8 is a configuration error. Real FreeRTOS silently clamps it to the maximum, which makes it a silent bug. The simulator fails the test so you notice.
+- **Leaving gaps in priorities "for later"** wastes nothing at runtime. Asking for priority 10 when the maximum is 8 is a configuration error. Real FreeRTOS trips `configASSERT` if you defined it; without asserts it silently clamps the priority to `configMAX_PRIORITIES - 1`, which makes it a silent bug. The simulator fails the test so you notice.
 - **Equal priorities time-slice** (`configUSE_TIME_SLICING`). Two busy tasks at the same priority alternate every tick. That's fine for background work, but it's a surprise if you expected one to finish first.
 
 ### In the wild

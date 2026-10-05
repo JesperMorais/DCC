@@ -35,7 +35,7 @@ Each `open()` creates a new `struct file`. It has a `void *private_data` field t
 struct sensor_reader *r = filp->private_data;
 ```
 
-Two programs that open the same device each get their own reader, with their own statistics and their own read position, while sharing one `sensor_dev`.
+Two programs that open the same device each get their own reader, with their own statistics, while sharing one `sensor_dev` (and its one ring: whoever reads a sample consumes it).
 
 ### The read path, worked through
 

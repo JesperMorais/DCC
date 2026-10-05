@@ -35,7 +35,7 @@
       "It makes SCHED_FIFO unnecessary"
     ],
     "answer": [0, 2, 3],
-    "explain": "PI is opt-in. The default mutex is a pure userspace futex with no owner bookkeeping, which makes it a bit cheaper. Setting `PTHREAD_PRIO_INHERIT` needs no privileges, and it does exactly what the Fundamentals inheritance mutex did: the owner temporarily runs at the highest waiter's priority, so a medium task can't starve it. It doesn't replace a real-time policy, though. Priorities only mean something under SCHED_FIFO/RR, and *that* needs CAP_SYS_NICE or rtprio."
+    "explain": "PI is opt-in. The default mutex's futex only says locked/unlocked/contended, and the kernel never boosts anyone, which makes contention a bit cheaper. Setting `PTHREAD_PRIO_INHERIT` needs no privileges, and it does exactly what the Fundamentals inheritance mutex did: the owner temporarily runs at the highest waiter's priority, so a medium task can't starve it. It doesn't replace a real-time policy, though. Priorities only mean something under SCHED_FIFO/RR, and *that* needs CAP_SYS_NICE or rtprio."
   },
   {
     "type": "single",

@@ -1,0 +1,2 @@
+# The test image uses the app's Kconfig options (which also source Zephyr's).
+rsource "../Kconfig"

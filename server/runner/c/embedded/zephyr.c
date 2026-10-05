@@ -7,7 +7,25 @@
 /* Zephyr prio (lower = more urgent, <0 = cooperative) → simulator prio (higher = more urgent). */
 static int to_sim(int zprio) { return 100 - zprio; }
 static int from_sim(int sprio) { return 100 - sprio; }
-static rtos_tick_t ticks_of(k_timeout_t t) { return t.ticks < 0 ? RTOS_WAIT_FOREVER : (rtos_tick_t)t.ticks; }
+/* A relative timeout waits one extra tick, as in real Zephyr (kernel/timeout.c adds 1 so a wait is never
+ * shorter than asked, even when it starts just before a tick). k_timer compensates, so timers stay on their grid. */
+static rtos_tick_t ticks_of(k_timeout_t t) {
+    if (t.ticks == -1) return RTOS_WAIT_FOREVER;
+    if (t.ticks < -1) { /* absolute: wait until that tick, at least one tick */
+        int64_t until = -2 - t.ticks, now = (int64_t)rtos_now();
+        return until > now ? (rtos_tick_t)(until - now) : 1;
+    }
+    return t.ticks == 0 ? 0 : (rtos_tick_t)t.ticks + 1;
+}
+
+/* Zephyr defaults: CONFIG_TIMESLICING=y, CONFIG_TIMESLICE_SIZE=20 (ms) for preemptible threads of equal priority. */
+static void z_mode(void) {
+    static bool done;
+    if (!done) {
+        done = true;
+        sim_set_time_slice(20);
+    }
+}
 
 static void check_prio(int prio) {
     if (prio < -CONFIG_NUM_COOP_PRIORITIES || prio > K_LOWEST_APPLICATION_THREAD_PRIO)
@@ -24,13 +42,14 @@ k_tid_t k_thread_create(struct k_thread *thread, void *stack, size_t stack_size,
     (void)stack;
     (void)options;
     if (!thread) sim_fail("k_thread_create(NULL, ...)");
+    z_mode();
     if (stack_size < 256) sim_fail("a %zu-byte thread stack is too small", stack_size);
     check_prio(prio);
     thread->entry = entry;
     thread->p1 = p1;
     thread->p2 = p2;
     thread->p3 = p3;
-    rtos_tick_t d = delay.ticks < 0 ? RTOS_WAIT_FOREVER : (rtos_tick_t)delay.ticks;
+    rtos_tick_t d = ticks_of(delay); /* a start delay is a relative timeout too: +1 tick */
     if (d == RTOS_WAIT_FOREVER) sim_fail("K_FOREVER start delays aren't supported in the simulator");
     thread->task = sim_task_create_ex("thread", thread_tramp, thread, to_sim(prio), prio < 0, d);
     return thread;
@@ -52,10 +71,12 @@ static void start_statics(void) {
         t->p1 = statics[i].p1;
         t->p2 = statics[i].p2;
         t->p3 = statics[i].p3;
-        t->task = sim_task_create_ex(statics[i].name, thread_tramp, t, to_sim(statics[i].prio), statics[i].prio < 0, (rtos_tick_t)statics[i].delay);
+        rtos_tick_t delay = statics[i].delay > 0 ? (rtos_tick_t)statics[i].delay + 1 : 0; /* as on real Zephyr: 50 ms starts at 51 */
+        t->task = sim_task_create_ex(statics[i].name, thread_tramp, t, to_sim(statics[i].prio), statics[i].prio < 0, delay);
     }
 }
 void dts_z_register_static(struct k_thread *t, const char *name, k_thread_entry_t entry, void *p1, void *p2, void *p3, int prio, int delay_ms) {
+    z_mode();
     if (nstatics == 0) sim_on_start(start_statics);
     if (nstatics < 32) statics[nstatics++] = (typeof(statics[0])){t, name, entry, p1, p2, p3, prio, delay_ms};
 }
@@ -148,13 +169,17 @@ int k_mutex_unlock(struct k_mutex *m) {
 
 /* ---- message queues ---- */
 static void msgq_lazy(struct k_msgq *q) {
-    if (!q->q) q->q = rtos_queue_create(q->max_msgs, q->msg_size);
+    if (!q->q) {
+        q->q = rtos_queue_create(q->max_msgs, q->msg_size);
+        sim_queue_handoff(q->q, true); /* k_msgq_put copies straight into a waiting k_msgq_get */
+    }
 }
 void k_msgq_init(struct k_msgq *q, char *buffer, size_t msg_size, uint32_t max_msgs) {
     (void)buffer;
     q->msg_size = msg_size;
     q->max_msgs = max_msgs;
     q->q = rtos_queue_create(max_msgs, msg_size);
+    sim_queue_handoff(q->q, true);
 }
 int k_msgq_put(struct k_msgq *q, const void *data, k_timeout_t timeout) {
     msgq_lazy(q);
@@ -185,7 +210,9 @@ static void workq_thread(void *arg) {
         struct k_work *w;
         rtos_queue_receive(workq, &w, RTOS_WAIT_FOREVER);
         w->pending = false;
+        w->running = true;
         w->handler(w);
+        w->running = false;
     }
 }
 static void ensure_workq(void) {
@@ -204,6 +231,7 @@ void dts_z_work_used(void) {
 void k_work_init(struct k_work *w, k_work_handler_t handler) {
     w->handler = handler;
     w->pending = false;
+    w->running = false;
     if (sim_in_isr()) dts_z_work_used();
     else ensure_workq();
 }
@@ -213,7 +241,7 @@ int k_work_submit(struct k_work *w) {
     if (w->pending) return 0;
     w->pending = true;
     if (!rtos_queue_send(workq, &w, RTOS_NO_WAIT)) sim_fail("the system workqueue is full");
-    return 1;
+    return w->running ? 2 : 1;
 }
 bool k_work_is_pending(const struct k_work *w) { return w && w->pending; }
 
@@ -232,13 +260,15 @@ void k_timer_init(struct k_timer *t, k_timer_expiry_t expiry, k_timer_stop_t sto
 void k_timer_start(struct k_timer *t, k_timeout_t duration, k_timeout_t period) {
     bool periodic = period.ticks > 0;
     rtos_tick_t first = duration.ticks <= 0 ? 1 : (rtos_tick_t)duration.ticks;
+    if (t->t) rtos_timer_stop(t->t); /* restarting a running timer: the old schedule is cancelled, no stop fn */
     t->t = rtos_timer_create("k_timer", periodic ? (rtos_tick_t)period.ticks : first, periodic, timer_cb, t);
     t->status = 0;
     rtos_timer_start(t->t, first);
 }
 void k_timer_stop(struct k_timer *t) {
+    bool was_running = rtos_timer_is_active(t->t);
     if (t->t) rtos_timer_stop(t->t);
-    if (t->stop) t->stop(t);
+    if (was_running && t->stop) t->stop(t); /* Zephyr only calls the stop fn if the timer was running */
 }
 uint32_t k_timer_status_get(struct k_timer *t) {
     uint32_t s = t->status;

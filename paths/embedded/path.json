@@ -37,7 +37,14 @@
       "col": 0,
       "kind": "lab",
       "title": "Bits & registers",
-      "requires": []
+      "requires": [],
+      "covers": [
+        "bit manipulation",
+        "shifts",
+        "masks",
+        "uint32_t",
+        "bit flags"
+      ]
     },
     {
       "id": "f-mmio",
@@ -48,6 +55,10 @@
       "title": "Memory-mapped I/O & volatile",
       "requires": [
         "f-bits"
+      ],
+      "covers": [
+        "embedded",
+        "pointers"
       ]
     },
     {
@@ -59,6 +70,14 @@
       "title": "Memory without malloc",
       "requires": [
         "f-bits"
+      ],
+      "covers": [
+        "memory ownership",
+        "ownership",
+        "buffers",
+        "caller buffers",
+        "capacity checks",
+        "malloc/free"
       ]
     },
     {
@@ -70,6 +89,10 @@
       "title": "Interrupts & ring buffers",
       "requires": [
         "f-mmio"
+      ],
+      "covers": [
+        "ring buffers",
+        "modular indexing"
       ]
     },
     {
@@ -93,6 +116,13 @@
       "title": "Superloops & state machines",
       "requires": [
         "f-interrupts"
+      ],
+      "covers": [
+        "enums",
+        "switch",
+        "default case",
+        "function pointers",
+        "callbacks"
       ]
     },
     {
@@ -179,16 +209,38 @@
       "row": 8,
       "col": 0,
       "kind": "boss",
-      "title": "Boss: the sensor pipeline",
+      "title": "Boss: the vaccine-fridge monitor",
       "requires": [
         "f-queues",
         "f-deadlock"
       ]
     },
     {
+      "id": "f-project",
+      "section": "fundamentals",
+      "row": 8,
+      "col": 1.7,
+      "kind": "project",
+      "title": "Project: UART command shell",
+      "requires": [
+        "f-boss"
+      ],
+      "covers": [
+        "bit manipulation",
+        "masks",
+        "ring buffers",
+        "modular indexing",
+        "enums",
+        "switch",
+        "function pointers",
+        "parsing",
+        "embedded"
+      ]
+    },
+    {
       "id": "fr-tasks",
       "section": "freertos",
-      "row": 9,
+      "row": 9.6,
       "col": -3,
       "kind": "lab",
       "title": "FreeRTOS tasks & the API",
@@ -199,7 +251,7 @@
     {
       "id": "fr-periodic",
       "section": "freertos",
-      "row": 10,
+      "row": 10.6,
       "col": -3,
       "kind": "lab",
       "title": "Periodic tasks with vTaskDelayUntil",
@@ -210,7 +262,7 @@
     {
       "id": "fr-isr",
       "section": "freertos",
-      "row": 11,
+      "row": 11.6,
       "col": -3,
       "kind": "lab",
       "title": "FromISR & portYIELD_FROM_ISR",
@@ -221,7 +273,7 @@
     {
       "id": "fr-notify",
       "section": "freertos",
-      "row": 12,
+      "row": 12.6,
       "col": -3,
       "kind": "lab",
       "title": "Task notifications",
@@ -232,7 +284,7 @@
     {
       "id": "fr-queues",
       "section": "freertos",
-      "row": 13,
+      "row": 13.6,
       "col": -3,
       "kind": "lab",
       "title": "Queue-driven architecture",
@@ -243,7 +295,7 @@
     {
       "id": "fr-timers",
       "section": "freertos",
-      "row": 14,
+      "row": 14.6,
       "col": -3,
       "kind": "lab",
       "title": "Software timers & the daemon task",
@@ -254,7 +306,7 @@
     {
       "id": "fr-memory",
       "section": "freertos",
-      "row": 15,
+      "row": 15.6,
       "col": -3,
       "kind": "lesson",
       "title": "Heaps, static allocation & stack overflow",
@@ -265,7 +317,7 @@
     {
       "id": "fr-boss",
       "section": "freertos",
-      "row": 16,
+      "row": 16.6,
       "col": -3,
       "kind": "boss",
       "title": "Boss: motor controller with a watchdog",
@@ -274,9 +326,21 @@
       ]
     },
     {
+      "id": "fr-project",
+      "section": "freertos",
+      "row": 17.6,
+      "col": -3,
+      "kind": "project",
+      "title": "Project: real FreeRTOS on Linux",
+      "requires": [
+        "fr-boss"
+      ],
+      "covers": []
+    },
+    {
       "id": "z-build",
       "section": "zephyr",
-      "row": 9,
+      "row": 9.6,
       "col": 0,
       "kind": "lesson",
       "title": "west, Kconfig & the build",
@@ -287,7 +351,7 @@
     {
       "id": "z-threads",
       "section": "zephyr",
-      "row": 10,
+      "row": 10.6,
       "col": 0,
       "kind": "lab",
       "title": "Threads: cooperative vs preemptive",
@@ -298,7 +362,7 @@
     {
       "id": "z-sync",
       "section": "zephyr",
-      "row": 11,
+      "row": 11.6,
       "col": 0,
       "kind": "lab",
       "title": "k_sem & k_mutex",
@@ -309,7 +373,7 @@
     {
       "id": "z-msgq",
       "section": "zephyr",
-      "row": 12,
+      "row": 12.6,
       "col": 0,
       "kind": "lab",
       "title": "Message queues",
@@ -320,7 +384,7 @@
     {
       "id": "z-work",
       "section": "zephyr",
-      "row": 13,
+      "row": 13.6,
       "col": 0,
       "kind": "lab",
       "title": "Workqueues: deferring ISR work",
@@ -331,7 +395,7 @@
     {
       "id": "z-timers",
       "section": "zephyr",
-      "row": 14,
+      "row": 14.6,
       "col": 0,
       "kind": "lab",
       "title": "k_timer & periodic work",
@@ -342,7 +406,7 @@
     {
       "id": "z-devicetree",
       "section": "zephyr",
-      "row": 15,
+      "row": 15.6,
       "col": 0,
       "kind": "lesson",
       "title": "Devicetree & bindings",
@@ -353,7 +417,7 @@
     {
       "id": "z-boss",
       "section": "zephyr",
-      "row": 16,
+      "row": 16.6,
       "col": 0,
       "kind": "boss",
       "title": "Boss: the sensor hub",
@@ -362,9 +426,21 @@
       ]
     },
     {
+      "id": "z-project",
+      "section": "zephyr",
+      "row": 17.6,
+      "col": 0,
+      "kind": "project",
+      "title": "Project: Zephyr on native_sim",
+      "requires": [
+        "z-boss"
+      ],
+      "covers": []
+    },
+    {
       "id": "l-boot",
       "section": "linux",
-      "row": 9,
+      "row": 9.6,
       "col": 3,
       "kind": "lesson",
       "title": "The boot chain",
@@ -375,7 +451,7 @@
     {
       "id": "l-build",
       "section": "linux",
-      "row": 10,
+      "row": 10.6,
       "col": 3,
       "kind": "lesson",
       "title": "Buildroot, Yocto & the device tree",
@@ -386,18 +462,22 @@
     {
       "id": "l-sysfs",
       "section": "linux",
-      "row": 11,
+      "row": 11.6,
       "col": 3,
       "kind": "lab",
       "title": "Everything is a file: sysfs",
       "requires": [
         "l-build"
+      ],
+      "covers": [
+        "parsing",
+        "strings"
       ]
     },
     {
       "id": "l-epoll",
       "section": "linux",
-      "row": 12,
+      "row": 12.6,
       "col": 3,
       "kind": "lab",
       "title": "Event loops with epoll",
@@ -408,7 +488,7 @@
     {
       "id": "l-timerfd",
       "section": "linux",
-      "row": 13,
+      "row": 13.6,
       "col": 3,
       "kind": "lab",
       "title": "Periodic loops: timerfd & absolute time",
@@ -419,7 +499,7 @@
     {
       "id": "l-pthreads",
       "section": "linux",
-      "row": 14,
+      "row": 14.6,
       "col": 3,
       "kind": "lab",
       "title": "pthreads & priority-inheritance mutexes",
@@ -430,7 +510,7 @@
     {
       "id": "l-rt",
       "section": "linux",
-      "row": 15,
+      "row": 15.6,
       "col": 3,
       "kind": "lesson",
       "title": "PREEMPT_RT & latency",
@@ -441,7 +521,7 @@
     {
       "id": "l-driver",
       "section": "linux",
-      "row": 16,
+      "row": 16.6,
       "col": 3,
       "kind": "lab",
       "title": "Character drivers: file_operations",
@@ -452,12 +532,29 @@
     {
       "id": "l-boss",
       "section": "linux",
-      "row": 17,
+      "row": 17.6,
       "col": 3,
       "kind": "boss",
       "title": "Boss: the data-acquisition daemon",
       "requires": [
         "l-driver"
+      ]
+    },
+    {
+      "id": "l-project",
+      "section": "linux",
+      "row": 18.6,
+      "col": 3,
+      "kind": "project",
+      "title": "Project: sensor logging daemon",
+      "requires": [
+        "l-boss"
+      ],
+      "covers": [
+        "parsing",
+        "strings",
+        "pointers",
+        "buffers"
       ]
     }
   ]

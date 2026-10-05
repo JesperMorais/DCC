@@ -1,0 +1,11 @@
+{
+  "title": "Boss: the vaccine-fridge monitor",
+  "profile": "embedded",
+  "estMinutes": 25,
+  "topics": ["registers", "ISR to task", "queues", "state machine", "priorities", "mutex", "priority inversion", "periodic tasks"],
+  "hints": [
+    "Go in the order of the data and run the tests after each step: hw_init and the ISR (the first and fourth tests), then the parser's state machine, then the lock and the priorities (watch the Timeline around tick 235), then the alarm, then the uplink. For the priorities, ask who has the tightest deadline, not who is most important.",
+    "The ISR is the usual pattern: check RXNE, read DR, clear RXNE and ORE, then `rtos_queue_send(..., RTOS_NO_WAIT)` and count a failure. The parser is a `switch` over the four states, and only `GOT_LSB` does real work. A binary semaphore has no owner, so the kernel can't lend priority to whoever holds it: make the data lock an `rtos_mutex_create(true)`. Priorities: alarm above parser above the display (2); uplink below the display. The alarm and the uplink both use `rtos_delay_until` with `next` set once before the loop. The uplink copies *and resets* under the lock, then sends after unlocking.",
+    "Lock: `static rtos_mutex_t *g_data_lock;`, `data_lock()` calls `rtos_mutex_lock(g_data_lock, RTOS_WAIT_FOREVER)`, and `monitor_start` does `g_data_lock = rtos_mutex_create(true);`. Priorities: `PRIO_ALARM 4`, `PRIO_PARSER 3`, `PRIO_UPLINK 1`. PB5 as output: `GPIOB->MODER = (GPIOB->MODER & ~(3u << 10)) | (1u << 10);`. In the parser's `GOT_LSB` case: `state = WAIT_SYNC; if (b != (msb ^ lsb)) { g_bad_frames++; break; }` then `int16_t t = calibrate((int16_t)(uint16_t)((msb << 8) | lsb));` and store it under the lock. Alarm: `bool lost = rtos_now() - latest_tick > SENSOR_TIMEOUT; bool out = frames > 0 && (latest < TEMP_LOW || latest > TEMP_HIGH);`."
+  ]
+}

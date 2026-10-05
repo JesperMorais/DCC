@@ -33,7 +33,7 @@
       "It prevents the watchdog from tripping"
     ],
     "answer": 0,
-    "explain": "After a 20 ms stall, catch-up runs about 20 cycles in a burst. Each sees the same old encoder reading, and the integrator winds up in microseconds. Resyncing gives the next cycle a clean period from *now*. xTaskDelayUntil handles overruns fine (it reports them), resyncing doesn't speed anything up, and the watchdog trip comes from the missed check-ins *during* the stall, which resyncing doesn't hide."
+    "explain": "After a 20 ms stall, catch-up runs about 20 cycles in a burst. Each sees the same old encoder reading, and the integrator winds up in microseconds. Resyncing runs one fresh cycle and restarts the grid from *now*. xTaskDelayUntil handles overruns fine (it reports them), resyncing doesn't speed anything up, and the watchdog trip comes from the missed check-ins *during* the stall, which resyncing doesn't hide."
   },
   {
     "type": "multi",

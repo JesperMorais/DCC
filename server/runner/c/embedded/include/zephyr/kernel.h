@@ -29,6 +29,9 @@ typedef struct { int64_t ticks; } k_timeout_t;
 #define K_TICKS(t) ((k_timeout_t){(int64_t)(t)})
 #define K_MSEC(ms) ((k_timeout_t){(int64_t)(ms)})
 #define K_SECONDS(s) ((k_timeout_t){(int64_t)(s) * 1000})
+/* Absolute timeouts (encoded as in Zephyr: -2 - tick). No extra tick: the drift-free way to sleep until a deadline. */
+#define K_TIMEOUT_ABS_TICKS(t) ((k_timeout_t){-2 - (int64_t)(t)})
+#define K_TIMEOUT_ABS_MS(t) K_TIMEOUT_ABS_TICKS(t)
 #define K_TIMEOUT_EQ(a, b) ((a).ticks == (b).ticks)
 
 #define printk printf
@@ -101,13 +104,13 @@ uint32_t k_msgq_num_free_get(struct k_msgq *q);
 /* ---- work queue: items run one at a time on the system workqueue thread (prio -1, cooperative) ---- */
 struct k_work;
 typedef void (*k_work_handler_t)(struct k_work *work);
-struct k_work { k_work_handler_t handler; bool pending; };
+struct k_work { k_work_handler_t handler; bool pending; bool running; };
 void dts_z_work_used(void);
 #define K_WORK_DEFINE(name, handler)                                                        \
-    struct k_work name = {(handler), false};                                                \
+    struct k_work name = {(handler), false, false};                                                \
     __attribute__((constructor)) static void dts_z_work_##name(void) { dts_z_work_used(); }
 void k_work_init(struct k_work *work, k_work_handler_t handler);
-int k_work_submit(struct k_work *work); /* 1 = queued, 0 = was already pending. ISR-safe */
+int k_work_submit(struct k_work *work); /* 1 = queued, 2 = queued while its handler runs, 0 = already pending. ISR-safe */
 bool k_work_is_pending(const struct k_work *work);
 
 /* ---- timers: expiry runs in ISR context ---- */
