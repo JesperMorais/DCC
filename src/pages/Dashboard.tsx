@@ -58,10 +58,10 @@ export default function DashboardPage({ state }: { state: Dashboard }) {
           sub={`${stats.attempts} finished ${stats.attempts === 1 ? "attempt" : "attempts"}`}
         />
         <StatTile
-          icon="clock"
-          label="Median solve time"
-          value={fmtMinutes(stats.medianMinutes)}
-          sub={stats.hintsPerSolve === null ? "Target ≈ 10 min" : `${stats.hintsPerSolve.toFixed(1)} hints per solve`}
+          icon="check"
+          label="Days practised"
+          value={String(stats.practiceDays)}
+          sub={stats.hintsPerSolve === null ? "Steady beats fast" : `${stats.hintsPerSolve.toFixed(1)} hints per solve`}
         />
       </div>
 
@@ -308,7 +308,8 @@ function RatingCard({ stats, level, lang }: { stats: Dashboard["stats"]; level: 
           </div>
         )}
         <p className="mt-3 text-xs leading-relaxed text-muted">
-          Challenges are picked just above this number. Clean, fast solves push it up; hints and giving up pull it back.
+          Challenges are picked just above this number. Solving without help pushes it up; leaning on hints keeps it steady, so you
+          practise at this level until it sticks. Speed doesn't count.
         </p>
       </div>
     </section>

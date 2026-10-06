@@ -51,7 +51,8 @@ export interface Milestone {
 
 export interface Project {
   title: string;
-  estHours: number;
+  /** Honest range for a learner arriving from the tree: [low, high] hours. A bare number means [n, n]. */
+  estHours: [number, number];
   /** Suggested folder name for the learner's copy. */
   folder: string;
   /** false: the learner writes the tests (the last, least scaffolded project). */
@@ -79,6 +80,8 @@ export interface PathNode extends PathNodeMeta {
 
 export interface LoadedPath extends Omit<PathDef, "nodes" | "language"> {
   language: Lang;
+  /** paths/<id>/before.md: what the learner should know before starting this tree (prerequisites, with links). */
+  before: string | null;
   nodes: PathNode[];
 }
 
@@ -149,7 +152,7 @@ export function loadPaths(dir = PATHS_DIR): { paths: LoadedPath[]; labs: Challen
       }
       return { ...n, lesson: readIf(path.join(ndir, "lesson.md")), quiz, labId, project: loadProject(path.join(ndir, "project"), `${def.id}/${n.id}`, language) };
     });
-    paths.push({ ...def, language, nodes });
+    paths.push({ ...def, language, nodes, before: readIf(path.join(pdir, "before.md")) });
   }
   return { paths, labs };
 }
@@ -158,9 +161,10 @@ function loadProject(dir: string, where: string, language: Lang): Project | null
   const text = readIf(path.join(dir, "project.json"));
   if (!text) return null;
   try {
-    const meta = JSON.parse(text) as Omit<Project, "brief" | "review" | "starterDir" | "language">;
+    const meta = JSON.parse(text) as Omit<Project, "brief" | "review" | "starterDir" | "language" | "estHours"> & { estHours: number | [number, number] };
     return {
       ...meta,
+      estHours: Array.isArray(meta.estHours) ? meta.estHours : [meta.estHours, meta.estHours],
       language,
       testsGiven: meta.testsGiven ?? true,
       verify: meta.verify ?? "auto",

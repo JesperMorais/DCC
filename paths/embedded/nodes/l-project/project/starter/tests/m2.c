@@ -1,4 +1,6 @@
 /* Milestone 2: the event loop. FIFO in, one CSV row per period out. */
+#include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -146,6 +148,38 @@ static void survives_a_writer_reconnecting(void) {
     kill_daemon();
 }
 
+/* Writers connect, send one sample and leave, as fast as they can. Each one
+ * must find a reader: open() fails with ENXIO while nobody has the FIFO open
+ * for reading, and write() fails with EPIPE if the last reader left after the
+ * writer connected. Any moment without a reader is a gap that a few thousand
+ * writers in a row will find. */
+static void writers_never_find_the_fifo_unread(void) {
+    write_conf(50, NULL);
+    fake_temp("iio", "20000", "0.001", NULL);
+    start_daemon();
+    if (!CHECK(wait_ready(2000))) return;
+    int sent = 0, enxio = 0, epipe = 0;
+    long until = now_ms() + 500;
+    while (sent < 3000 && now_ms() < until) {
+        int fd = open("sensor.fifo", O_WRONLY | O_NONBLOCK | O_CLOEXEC);
+        if (fd < 0) {
+            if (errno == ENXIO) enxio++;
+            continue;
+        }
+        ssize_t n = write(fd, "1\n", 2);
+        if (n == 2) sent++;
+        else if (n < 0 && errno == EPIPE) epipe++;
+        close(fd);
+    }
+    bool gap = !CHECKM(enxio == 0, "%d of the writers found nobody reading sensor.fifo (open failed with ENXIO)", enxio);
+    gap |= !CHECKM(epipe == 0, "%d of the writers got EPIPE: the last reader of sensor.fifo left while they were connected", epipe);
+    if (gap) return;
+    CHECKM(WAIT_UNTIL(total_count(rows, load_csv("logs/sensord.csv", rows, MAX_ROWS)) == sent, 1500),
+           "%d samples were sent, the log counted %d", sent, total_count(rows, load_csv("logs/sensord.csv", rows, MAX_ROWS)));
+    CHECKM(daemon_alive(), "sensord should still run");
+    kill_daemon();
+}
+
 static void no_busy_loop_after_the_writer_leaves(void) {
     write_conf(100, NULL);
     fake_temp("iio", "20000", "0.001", NULL);
@@ -208,6 +242,7 @@ void m2_tests(void) {
     RUN(a_line_split_across_writes);
     RUN(garbage_lines_are_skipped);
     RUN(survives_a_writer_reconnecting);
+    RUN(writers_never_find_the_fifo_unread);
     RUN(no_busy_loop_after_the_writer_leaves);
     RUN(temp_column_empty_when_the_channel_breaks);
     RUN(appends_to_an_existing_log);

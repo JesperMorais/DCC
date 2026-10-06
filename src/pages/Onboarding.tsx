@@ -53,7 +53,8 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
         <h1 className="text-3xl font-semibold tracking-tight">One small coding challenge a day.</h1>
         <p className="mt-3 max-w-xl text-ink-2">
           About ten minutes each, in TypeScript, Python or C. Every challenge teaches one concept, and the difficulty adjusts to how you do.
-          Solve fast and it gets harder; struggle and it eases off. Everything runs and stays on this machine.
+          Solve cleanly and it gets harder; struggle and it stays put until it clicks. There's no prize for speed: understanding is the
+          point. Everything runs and stays on this machine.
         </p>
 
         <div className="card mt-8 p-6">

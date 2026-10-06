@@ -24,4 +24,6 @@ You'll practise arrays without mutation, objects and type aliases, strings, deci
 
 The signatures and the tests are already written, so you always know what "done" means. What goes inside the functions is up to you.
 
-**How to start:** copy the starter (the command is on this page), run `npm install` in the new folder, and read `README.md`. Then open `src/todo.ts` and start at milestone 1.
+**How to start:** copy the starter (the command is on this page), run `npm install` in the new folder, and read `README.md` (the Workshop node before this one walks through all of it). Then open `src/todo.ts` and start at milestone 1.
+
+There's no clock on this. Some milestones will click in ten minutes and one might take an evening, and both are normal. When you're stuck, that's the part that's teaching you something: shrink the step, look at the actual values, take a hint if you want one, and commit every time the tests go green.

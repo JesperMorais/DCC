@@ -1,6 +1,9 @@
 {
   "title": "UART command shell",
-  "estHours": 3,
+  "estHours": [
+    6,
+    9
+  ],
   "folder": "uart-shell",
   "testsGiven": true,
   "milestones": [
@@ -30,7 +33,7 @@
       "body": "Now make it a shell. The signatures are in `shell.h` and `commands.h`.\n\n- **`shell_split`** cuts a line into words **in place**. Separators (any run of spaces and tabs) are skipped, the end of each word becomes `\\0`, and `argv` points into the line. It returns the number of words, or -1 when there are more than `max_args`.\n- **`shell_exec`** runs one line and leaves it unmodified: it looks the first word up in the `shell_commands` table, calls that entry's handler with `argc` and `argv`, and returns what the handler returns. The cases that never reach a command:\n  - a blank line prints nothing and returns 0\n  - longer than `LINE_MAX`: `error: line too long (max 32)`\n  - more than `SHELL_MAX_ARGS` words: `error: too many arguments`\n  - no such command: `unknown command: <first word>`\n\n  Each message ends in `\\r\\n` and the result is -1.\n- **The first commands** are already in the table. You write them:\n  - `help` prints one row per table entry, in table order: the name padded with spaces to 8 characters, then its help text. Adding a row to the table is all it takes for a command to show up.\n  - `echo a   b` prints `a b`: the words after `echo`, separated by single spaces. `echo` alone prints an empty line.\n  - `stats` prints `rx dropped 8, overruns 1` with the two UART counters.\n- **`shell_init`** starts the UART and the line editor and prints `uart-shell ready\\r\\n> `.\n- **`shell_poll`** is the main loop's turn: it handles every byte waiting in the UART. A finished line runs and is followed by the prompt `> `. A too-long line prints the too-long error, then the prompt.\n\nEvery output line ends in `\\r\\n`. Then try it for real: `make run` and type `help`.\n\n**Done when** `make test-m3` is green.",
       "hints": [
         "Which part needs to know about which? Does the line editor need to know commands exist? Does help need a list of names, or can it find them out? And why does shell_exec need its own copy of the line before it splits it?",
-        "The table is a lookup by name: each row holds the name, the handler and the help text, and the handler field is a pointer whose type, cmd_fn_t, is given in shell.h. Calling through it looks like any other call. Splitting in place, into a buffer you own instead of new memory, is the no-malloc thinking from Memory without malloc.",
+        "The table is a lookup by name: each row holds the name, the handler and the help text, and the handler field is a pointer whose type, cmd_fn_t, is given in shell.h. That's the dispatch table from the function-pointer section of Superloops & state machines, and calling through it looks like any other call. Splitting in place, into a buffer you own instead of new memory, is the no-malloc thinking from Memory without malloc.",
         "Split: loop over the line. Skip separators and stop at the end. If you already have max words, report too many. Otherwise remember where this word starts, walk to its end and overwrite the separator there with a terminator. Exec: check the length, copy into a local array, split, handle the blank and too-many cases, then compare the first word with each table row and call the match. Poll: while the UART has a byte, feed it to the editor and act on ready or too long."
       ]
     },

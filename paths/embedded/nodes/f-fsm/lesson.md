@@ -90,6 +90,37 @@ if (tick_flag) { tick_flag = false; button_step(read_pin()); }
 
 The second way keeps ISRs short. The first is fine for a few instructions of FSM. In the lab, the FSM steps inside `SysTick_Handler`.
 
+### Function pointers and dispatch tables
+
+The FSM above calls `on_press()` by name, so the button code is welded to one product. Firmware usually wants "call *whatever* was registered", and C does that with a **function pointer**: a variable that holds the address of a function.
+
+```c
+typedef void (*event_fn_t)(void);   // pointer to a function: no arguments, returns nothing
+
+static void toggle_light(void) { ... }
+static void lamp_off(void)     { ... }
+
+static const event_fn_t on_event[] = {   // indexed by an enum
+    [EV_SHORT] = toggle_light,
+    [EV_LONG]  = lamp_off,
+};
+
+on_event[ev]();                     // call through the pointer
+```
+
+Read the `typedef` inside out: `(*event_fn_t)` is a pointer, and `(void)` after it says it points at a function. Without the parentheses, `void *f(void)` declares a function *returning* `void *`, which is a different thing. A function's name used without `()` is its address, so `toggle_light` goes straight into the array.
+
+That array is a **dispatch table**: data that says what to call, instead of a `switch` that grows a case for every new feature. A table of structs takes it one step further and lets you look things up by name, which is exactly how a command shell works:
+
+```c
+typedef int (*cmd_fn_t)(int argc, char *argv[]);
+typedef struct { const char *name; cmd_fn_t fn; const char *help; } cmd_t;
+```
+
+Walk the table, compare each `name` with what was typed (`strcmp`), and call the match's `fn`. Adding a command is one new row. `help` just walks the same table and prints it. Because the table is `const`, the linker puts it in flash, not RAM.
+
+Two rules keep it safe. **Never call a NULL pointer**: an unset slot is address 0, and on a Cortex-M that's a HardFault (check before calling if slots can be empty). And **the signature must match exactly**: casting a function to a different pointer type and calling it is undefined behaviour, even when it seems to work.
+
 ### Gotchas
 
 - **Debounce both edges.** Releases bounce too. A clean press followed by a bouncy release becomes a double-click.
@@ -103,6 +134,7 @@ The second way keeps ISRs short. The first is fine for a few instructions of FSM
 - **Every keypad, remote and appliance** has a debouncer like this. Many MCUs even have hardware glitch filters on their pins. They help with EMI but rarely cover 20 ms mechanical bounce.
 - **Protocol parsers** (NMEA from a GPS, AT commands to a modem, Modbus frames) are byte-driven FSMs in the same enum + switch style.
 - **USB, Bluetooth LE and TCP** are specified *as* state machines in their standards documents.
+- **Dispatch tables are everywhere:** the Cortex-M vector table is an array of function pointers the CPU indexes on every interrupt, Linux drivers fill a `struct file_operations` with them, and every debug shell (Zephyr's `shell`, U-Boot's commands) is a table of name and handler.
 - Tools like **Quantum Leaps' QP**, **SMC** and **Stateflow** generate exactly this code for safety-critical products.
 
 In the lab you'll build the debouncer plus long-press detector as an explicit FSM, stepped by `SysTick_Handler` at 1 kHz. The tests hammer it with bouncy presses, EMI glitches and long holds.

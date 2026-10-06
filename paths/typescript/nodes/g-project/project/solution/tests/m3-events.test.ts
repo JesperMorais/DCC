@@ -26,9 +26,27 @@ test("rejected actions emit rejected, not change", () => {
   const store = new Store(initial, counter);
   const events: string[] = [];
   store.on("change", () => events.push("change"));
-  store.on("rejected", ({ action, error }) => events.push(`${action.type}: ${error.message}`));
+  store.on("rejected", ({ error }) => events.push(error.message));
   store.dispatch({ type: "setStep", step: 0 });
   assert.deepEqual(events, ["setStep: step must be positive"]);
+});
+
+test("a rejected action returns false and leaves the very same state", () => {
+  const store = new Store(initial, counter);
+  store.dispatch({ type: "increment" });
+  const before = store.state;
+  assert.equal(store.dispatch({ type: "setStep", step: -1 }), false);
+  assert.equal(store.state, before);
+  assert.equal(store.dispatch({ type: "increment" }), true);
+});
+
+test("bugs in the reducer are not swallowed", () => {
+  const store = new Store(initial, counter);
+  let rejections = 0;
+  store.on("rejected", () => rejections++);
+  assert.throws(() => store.dispatch({ type: "crash" }), TypeError);
+  assert.equal(store.state, initial);
+  assert.equal(rejections, 0);
 });
 
 test("watch fires only when its key changes", () => {

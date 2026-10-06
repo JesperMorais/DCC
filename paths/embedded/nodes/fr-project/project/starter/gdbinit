@@ -1,0 +1,13 @@
+# gdbinit: settings for debugging the plant on the FreeRTOS POSIX port.
+#
+#   gdb -x gdbinit --args ./build/plant --run-ms 2000 --estop-at 1537
+#
+# The port and the board use signals as interrupts: SIGALRM is the tick (1000
+# per second), SIGUSR2 is the e-stop, SIGUSR1 wakes main() when the scheduler
+# ends. Without these lines gdb would stop on every one of them.
+handle SIGALRM nostop noprint pass
+handle SIGUSR1 nostop noprint pass
+handle SIGUSR2 nostop noprint pass
+
+# Each task is a thread named after the task: don't announce every one.
+set print thread-events off

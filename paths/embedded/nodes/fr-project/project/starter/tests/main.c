@@ -1,5 +1,6 @@
 /* main.c: the test runner. "./build/run-tests" runs every milestone,
- * "./build/run-tests m2" just one. */
+ * "./build/run-tests m2" just one, and "./build/run-tests m2 mutex" only the
+ * checks in m2 whose name contains "mutex". */
 #include <stdio.h>
 #include <string.h>
 
@@ -7,6 +8,7 @@
 #include "run.h"
 
 int check_count, check_passed, check_failed;
+const char *check_filter;
 
 static const struct {
     const char *id;
@@ -15,7 +17,8 @@ static const struct {
 
 int main(int argc, char **argv)
 {
-    const char *only = argc > 1 ? argv[1] : NULL;
+    const char *only = argc > 1 && strcmp(argv[1], "all") != 0 ? argv[1] : NULL;
+    check_filter = argc > 2 ? argv[2] : NULL;
     int ran = 0;
     for (size_t i = 0; i < sizeof milestones / sizeof milestones[0]; i++) {
         if (only && strcmp(only, milestones[i].id) != 0) continue;
@@ -26,6 +29,10 @@ int main(int argc, char **argv)
     }
     if (!ran) {
         fprintf(stderr, "unknown milestone \"%s\"\n", only);
+        return 2;
+    }
+    if (check_filter && check_count == 0) {
+        fprintf(stderr, "no check name contains \"%s\"\n", check_filter);
         return 2;
     }
     printf("1..%d\n# pass %d\n# fail %d\n", check_count, check_passed, check_failed);

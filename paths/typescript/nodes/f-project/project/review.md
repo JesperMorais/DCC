@@ -21,6 +21,8 @@ If you ever want a web page or a Discord bot for your to-dos, `todo.ts` and `sto
 return todos.map((t) => (t.id === id ? { ...t, done: true } : t));
 ```
 
+`cond ? a : b` is the **ternary** operator, an `if / else` that produces a value: "if `t.id === id`, the copy, otherwise `t` itself". `formatTodo` uses one for the box too. A plain `if / else` inside the arrow function is just as correct.
+
 `{ ...t, done: true }` is object spread, the shortcut Core TypeScript shows you. Writing out `{ id: t.id, text: t.text, done: true }` is just as correct. Marking the parameters `readonly Todo[]` makes the compiler refuse a `push` or `splice`, so a mistake shows up before you even run the tests.
 
 **2. Ids are stable, not positions.** We use "highest id + 1", not "length + 1" and not the position in the list. If you remove to-do 2 from `[1, 2, 3]`, the next one is 4, and "3" still means the same to-do it meant a minute ago. With `length + 1` you'd get a second to-do 3. With positions, `done 3` after a removal would hit the wrong item.

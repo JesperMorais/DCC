@@ -360,7 +360,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {active && <Timer clock={clock} targetMin={Math.max(10, view.estMinutes)} onToggle={() => setPaused(!paused)} />}
+          {/* Skill-tree labs are for learning, not racing: no clock. */}
+          {active && !view.pathNode && <Timer clock={clock} targetMin={Math.max(10, view.estMinutes)} onToggle={() => setPaused(!paused)} />}
           {active && (
             <>
               <div className="relative">
@@ -708,14 +709,14 @@ function Timer({ clock, targetMin, onToggle }: { clock: Clock; targetMin: number
           cy="10"
           r={r}
           fill="none"
-          stroke={over ? "var(--warn)" : "var(--accent)"}
+          stroke={over ? "var(--border-strong)" : "var(--accent)"} /* past the estimate: calm, not a warning */
           strokeWidth="2.5"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - frac)}
           strokeLinecap="round"
         />
       </svg>
-      <span className={clock.pausedAt ? "text-muted" : over ? "text-warn" : "text-ink-2"}>{fmtClock(elapsed)}</span>
+      <span className={clock.pausedAt ? "text-muted" : "text-ink-2"}>{fmtClock(elapsed)}</span>
       <button
         className="btn btn-ghost h-7 w-7 justify-center p-0"
         onClick={onToggle}

@@ -40,6 +40,8 @@ test("undo emits change, and watchers see the value go back", () => {
   const counts: number[] = [];
   store.watch("count", (next) => counts.push(next));
   store.dispatch({ type: "increment" });
+  store.update({ label: "taps" }); // another field: the count watcher stays quiet
+  store.undo();
   store.undo();
   assert.deepEqual(counts, [1, 0]);
 });

@@ -20,6 +20,15 @@ void check_show(const char *label, const char *s);   /* prints s with \r, \n, \b
     do { long long g_ = (long long)(got), w_ = (long long)(want); \
          if (g_ != w_) check_fail(__FILE__, __LINE__, "%s is %lld, expected %lld", #got, g_, w_); } while (0)
 
+/* Like CHECK_INT, but prints enum values by name: names[] lists them in order. */
+#define CHECK_ENUM(got, want, names) CHECK_ENUM_(got, want, names, #got)
+#define CHECK_ENUM_(got, want, names, text) \
+    do { long long g_ = (long long)(got), w_ = (long long)(want); \
+         long long n_ = (long long)(sizeof(names) / sizeof(names[0])); \
+         if (g_ != w_) check_fail(__FILE__, __LINE__, "%s is %s (%lld), expected %s (%lld)", text, \
+                                  g_ >= 0 && g_ < n_ ? names[g_] : "?", g_, \
+                                  w_ >= 0 && w_ < n_ ? names[w_] : "?", w_); } while (0)
+
 #define CHECK_HEX(got, want) \
     do { unsigned long g_ = (unsigned long)(got), w_ = (unsigned long)(want); \
          if (g_ != w_) check_fail(__FILE__, __LINE__, "%s is 0x%08lX, expected 0x%08lX", #got, g_, w_); } while (0)

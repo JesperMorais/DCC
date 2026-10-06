@@ -1,7 +1,13 @@
-/* The harness's runner and main (given). ./build/tests runs everything,
- * ./build/tests m2 runs one milestone. */
+/* The harness's runner and main (given).
+ *   ./build/tests                 runs everything
+ *   ./build/tests m2              runs one milestone
+ *   ./build/tests backspace       runs the tests whose name contains "backspace"
+ *   ./build/tests m2 backspace    both: m2's tests whose name contains it
+ * Words after the milestone are joined by spaces, so the quotes are optional:
+ *   ./build/tests backspace on an empty */
 #include <signal.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -14,6 +20,7 @@ void suite_m3(void);
 void suite_m4(void);
 
 static int n_run, n_pass, n_fail;
+static const char *name_filter;   /* run only the tests whose name contains this */
 static int failed;   /* in the child: how many checks failed? */
 
 void check_fail(const char *file, int line, const char *fmt, ...) {
@@ -51,6 +58,7 @@ void check_show(const char *label, const char *s) {
 }
 
 void check_run(void (*fn)(void), const char *name) {
+    if (name_filter && !strstr(name, name_filter)) return;
     n_run++;
     fflush(stdout);
     pid_t pid = fork();
@@ -77,14 +85,32 @@ void check_run(void (*fn)(void), const char *name) {
     printf("not ok %d - %s\n", n_run, name);
 }
 
+static bool is_milestone(const char *s) {
+    return s[0] == 'm' && s[1] >= '1' && s[1] <= '9' && s[2] == '\0';
+}
+
 int main(int argc, char *argv[]) {
-    const char *only = argc > 1 ? argv[1] : NULL;
+    const char *only = NULL;
+    static char words[256];   /* the other arguments, joined by spaces */
+    for (int i = 1; i < argc; i++) {
+        if (is_milestone(argv[i])) {
+            only = argv[i];
+            continue;
+        }
+        if (words[0]) strncat(words, " ", sizeof words - strlen(words) - 1);
+        strncat(words, argv[i], sizeof words - strlen(words) - 1);
+    }
+    if (words[0]) name_filter = words;
     if (!only || strcmp(only, "m1") == 0) suite_m1();
     if (!only || strcmp(only, "m2") == 0) suite_m2();
     if (!only || strcmp(only, "m3") == 0) suite_m3();
     if (!only || strcmp(only, "m4") == 0) suite_m4();
     if (n_run == 0) {
-        fprintf(stderr, "unknown milestone \"%s\" (try m1 to m4)\n", only);
+        if (name_filter)
+            fprintf(stderr, "no test name contains \"%s\"%s%s (run ./build/tests to see every name)\n",
+                    name_filter, only ? " in " : "", only ? only : "");
+        else
+            fprintf(stderr, "unknown milestone \"%s\" (try m1 to m4)\n", only);
         return 2;
     }
     printf("1..%d\n# pass %d\n# fail %d\n", n_run, n_pass, n_fail);

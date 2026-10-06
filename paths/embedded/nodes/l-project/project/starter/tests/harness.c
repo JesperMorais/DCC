@@ -20,6 +20,7 @@
 
 int check_pass_, check_fail_, check_num_;
 bool check_ok_;
+const char *check_only_;
 
 static char sensord_path[PATH_MAX];
 static char home_dir[PATH_MAX];

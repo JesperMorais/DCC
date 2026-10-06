@@ -15,9 +15,12 @@ export interface StoreEvents<S, A> {
 
 /** Thrown by reducers for actions that make no sense in the current state. */
 export class InvalidActionError extends Error {
-  constructor(reason: string) {
-    super(reason);
+  readonly action: { type: string };
+
+  constructor(action: { type: string }, reason: string) {
+    super(`${action.type}: ${reason}`);
     this.name = "InvalidActionError";
+    this.action = action;
   }
 }
 
@@ -69,6 +72,11 @@ export class Store<S extends object, A extends { type: string }> {
     if (prev === undefined) return false;
     this.#set(prev, { kind: "undo" });
     return true;
+  }
+
+  /** The milestone-1 API, kept so its tests still pass: now just a view on the change event. */
+  subscribe(listener: (state: Readonly<S>) => void): () => void {
+    return this.on("change", ({ next }) => listener(next));
   }
 
   on<K extends keyof StoreEvents<S, A>>(event: K, listener: Listener<StoreEvents<S, A>[K]>): () => void {

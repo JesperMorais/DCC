@@ -1,0 +1,64 @@
+[
+  {
+    "type": "single",
+    "q": "The overlay has two `vnd,wobble-hum` nodes. A colleague's driver keeps the current position in `static bool up;` at the top of the file instead of in `struct wobble_data`. What goes wrong?",
+    "options": [
+      "Nothing: `static` variables are per instance in Zephyr drivers",
+      "The build fails because drivers can't have file-scope variables",
+      "Both devices share one `up`, so reading the room sensor changes what the cellar sensor returns next",
+      "Only the first instance gets created"
+    ],
+    "answer": 2,
+    "explain": "The instance macro runs once per node and gives each its own `wobble_data_0`, `wobble_data_1`, ... reached through `dev->data`. A file-scope `static` exists once for the whole driver, so every instance reads and writes the same variable: one sensor's fetch moves the other's wobble. The build is happy either way, and both instances are still created. Per-instance state goes in data; per-instance settings go in config."
+  },
+  {
+    "type": "single",
+    "q": "Your driver compiles, but the app fails to link with this, and gcc also warned `'wobble_init' defined but not used`. The node is in `zephyr.dts` with `compatible = \"vnd,wobble-hum\"`. What's the most likely cause?",
+    "code": "src/main.c:25:(.text.main+0x2): undefined reference to `__device_dts_ord_18'",
+    "options": [
+      "`CONFIG_SENSOR` is missing from `prj.conf`",
+      "`DT_DRV_COMPAT` doesn't match the compatible (for example `vnd_wobble_humm`), so `DT_INST_FOREACH_STATUS_OKAY` found no nodes and no device was defined",
+      "The init function returned `-EINVAL`",
+      "`DEVICE_DT_GET` needs the node's label in quotes"
+    ],
+    "answer": 1,
+    "explain": "`__device_dts_ord_18` is the device a driver would have defined for node 18. The node exists (otherwise `DEVICE_DT_GET` wouldn't compile), so no driver claimed it. The unused-function warning says why: the instance macro was never expanded, which is what happens when `DT_DRV_COMPAT` names a compatible no enabled node has. A failed init doesn't affect linking, it makes `device_is_ready()` false at runtime. `DEVICE_DT_GET` takes a node identifier, not a string."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these belong in the driver's **config** struct rather than its **data** struct?",
+    "options": [
+      "`center_mp`, from `DT_INST_PROP(inst, center_millipercent)`",
+      "The last fetched sample",
+      "The I2C address from the node's `reg`",
+      "A spinlock that guards fetch and get",
+      "The number of fetches so far"
+    ],
+    "answer": [0, 2],
+    "explain": "Config is `const`, filled at compile time from the devicetree, so it holds what describes the hardware: properties like the center value or a bus address. Data holds anything that changes while the program runs: the last sample, counters, and locks (a lock is written every time it's taken, so it can't live in `const` memory)."
+  },
+  {
+    "type": "single",
+    "q": "A temperature driver measured -1.250 °C. Which `struct sensor_value` should `channel_get` return?",
+    "options": [
+      "`val1 = -1, val2 = 250000`",
+      "`val1 = -1, val2 = -250000`",
+      "`val1 = -2, val2 = 750000`",
+      "`val1 = -1250, val2 = 0`"
+    ],
+    "answer": 1,
+    "explain": "A `sensor_value` is whole units plus millionths, and both parts carry the same sign, so -1.25 is -1 plus -0.25: `{-1, -250000}`. `{-1, 250000}` would read as -0.75. The floor-style `{-2, 750000}` is a different convention that Zephyr doesn't use, and `val1` is in the channel's base unit (°C), not millidegrees. `sensor_value_from_milli(val, -1250)` gets it right for you."
+  },
+  {
+    "type": "single",
+    "q": "One node has an impossible setting (a humidity center of 120 %). What should the driver do so that the app fails safely?",
+    "options": [
+      "Return `-EINVAL` from init, so the device exists but `device_is_ready()` is false and a careful app skips it",
+      "Call `k_panic()` in init",
+      "Return 0 from init and clamp every sample to 100 % in fetch",
+      "Leave the node out of `DT_INST_FOREACH_STATUS_OKAY` with an `#if`"
+    ],
+    "answer": 0,
+    "explain": "Init's return value is exactly this channel: a negative errno marks the device as not ready, the rest of the system boots normally, and consumers that check `device_is_ready()` (as they should) report it instead of using it. Panicking takes down every other device for one bad sensor. Clamping hides a configuration bug behind plausible-looking data. Excluding the node at compile time turns a clear runtime message into a confusing link error in the consumer."
+  }
+]

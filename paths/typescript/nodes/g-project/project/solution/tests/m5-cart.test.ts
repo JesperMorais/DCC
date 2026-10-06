@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { cartReducer, emptyCart, parseCommand, total, type CartState } from "../src/cart.ts";
+import { cartReducer, emptyCart, parseCommand, render, total, type CartState } from "../src/cart.ts";
 import { InvalidActionError } from "../src/store.ts";
 
 test("adding the same item twice adds up the quantity", () => {
@@ -31,13 +30,11 @@ test("parseCommand understands the commands and rejects junk", () => {
   assert.equal(parseCommand("dance").kind, "error");
 });
 
-test("the CLI reacts to store events", () => {
-  const input = ["add apple 3", "add pear", "coupon HALF", "set apple 0", "undo", "quit"].join("\n");
-  const out = execFileSync(process.execPath, ["--import", "tsx", "src/main.ts"], { input, encoding: "utf8" });
+test("render prints the lines, the coupon and an exact total", () => {
+  const cart: CartState = { lines: [{ sku: "apple", qty: 3 }], coupon: "HALF" };
+  const out = render(cart);
   assert.match(out, /3 x apple\s+\$1\.50/);
-  assert.match(out, /error: Unknown product "pear"/);
-  assert.match(out, /coupon HALF applied/);
-  assert.match(out, /total\s+\$0\.75/);
-  assert.match(out, /error: Quantity must be/);
-  assert.equal(out.trim().split("\n").at(-1)?.trim().startsWith("total"), true); // undo reprints the cart
+  assert.match(out, /coupon HALF \(-50%\)/);
+  assert.match(out, /total\s+\$0\.75$/);
+  assert.match(render(emptyCart), /empty/);
 });

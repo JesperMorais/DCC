@@ -187,5 +187,5 @@ export const finishTitle = (f: FinishResult) =>
 
 export const conceptCardCopy = (v: ChallengeView) =>
   v.newTopics.includes(v.topics[0])
-    ? { title: `New topic for you: ${v.topics[0]}`, sub: "Free 2-minute lesson. Most people solve faster after it." }
+    ? { title: `New topic for you: ${v.topics[0]}`, sub: "Free 2-minute lesson. Most people find the challenge clearer after it." }
     : { title: "Refresher: the concept behind this", sub: "A 2-minute lesson on the idea this challenge practises. Free, no score cost." };

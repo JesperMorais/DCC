@@ -5,12 +5,22 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/main.ts",
-    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
+    "test": "tsc --noEmit && node --import tsx --test \"tests/**/*.test.ts\"",
+    "test:one": "tsc --noEmit && node --import tsx --test --test-name-pattern",
+    "test:m1": "tsc --noEmit && node --import tsx --test \"tests/m1-*.test.ts\"",
+    "test:m2": "tsc --noEmit && node --import tsx --test \"tests/m2-*.test.ts\"",
+    "test:m3": "tsc --noEmit && node --import tsx --test \"tests/m3-*.test.ts\"",
+    "test:m4": "tsc --noEmit && node --import tsx --test \"tests/m4-*.test.ts\"",
+    "test:m5": "tsc --noEmit && node --import tsx --test \"tests/m5-*.test.ts\"",
+    "test:m6": "tsc --noEmit && node --import tsx --test \"tests/m6-*.test.ts\"",
     "check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",
     "tsx": "^4.23.15",
     "typescript": "~5.9"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

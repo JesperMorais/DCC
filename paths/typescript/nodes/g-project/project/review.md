@@ -9,10 +9,10 @@ src/bus.ts     EventBus<E>: knows nothing about stores
 src/store.ts   Store<S, A>, its event map, InvalidActionError
 src/cart.ts    catalog, CartState, CartAction, cartReducer, total, parseCommand, render
 src/main.ts    wiring only: create the store, subscribe printers, read lines
-tests/         one file per milestone, plus a tiny counter domain used to test the store
+tests/         one file per milestone, plus the boss lab's player and a tiny counter domain
 ```
 
-The dependency arrows only point one way: `main → cart → store → bus`. The store tests use a counter, not the cart, which is the easiest way to prove the store is really generic.
+The dependency arrows only point one way: `main → cart → store → bus`. The store tests use the player and a counter, not the cart, which is the easiest way to prove the store is really generic.
 
 ## Key types
 
@@ -49,4 +49,15 @@ Smaller choices: `update` bypasses the reducer, so it can't validate. That's fin
 
 ## Testing types
 
+Milestone 1 checks exact types with `Expect<Equal<typeof volume, number>>`: stricter than assigning to a `number` variable, which would also accept `any` or a narrower type such as the literal `50`.
+
+
 Each test file ends with a function that is never called, full of `// @ts-expect-error` lines. They're tests too: if someone loosens `select` to take any `string`, `npm run check` fails with an unused directive. Write one *positive* line next to the negatives (for example, a `select("count")` assigned to a `number`), so you know the API isn't simply rejecting everything.
+
+## Tests that changed
+
+Milestone 3 broke a promise from milestone 1: a rejected action stopped throwing out of `dispatch`. Our milestone 1 tests sidestep it by testing the reducer's throw directly, and by using a reducer that throws a plain `Error` (a bug, which still propagates) for the "state stays as it was" check. If you changed your m1 test instead, that's just as good. What matters is that the test moved *before* the code did.
+
+## Pure core, thin shell
+
+Milestone 5 is the whole cart as pure functions and milestone 6 is a few dozen lines of wiring. That split is why the CLI tests can be so few: they only check that the wiring is right, while every rule is tested where it's cheap to test. We read lines with `for await` over the readline interface, so `quit` is just leaving the loop and nothing piped in after it is ever read.

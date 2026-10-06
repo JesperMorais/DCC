@@ -1,0 +1,55 @@
+[
+  {
+    "type": "single",
+    "q": "You move the project from the POSIX port to an STM32F4 (Cortex-M4F). What changes in the kernel part of the build?",
+    "options": [
+      "Nothing: the kernel is portable, so port.c is the same everywhere",
+      "tasks.c and queue.c are replaced with the STM32 versions from the vendor",
+      "FreeRTOSConfig.h moves into the kernel's include/ directory",
+      "The port directory: portable/GCC/ARM_CM4F instead of ThirdParty/GCC/Posix, for both port.c and the include path. tasks.c, queue.c, list.c, timers.c and the heap stay the same"
+    ],
+    "answer": 3,
+    "explain": "A FreeRTOS build is the portable kernel files, **one port** (context switch, tick and critical sections for one CPU and compiler), one heap_N.c and your config. Only the port is CPU-specific, so only that directory changes. The port isn't the same everywhere: the POSIX one fakes interrupts with signals, the Cortex-M one writes registers. There are no vendor versions of tasks.c, and FreeRTOSConfig.h always stays in your project, found through your include path."
+  },
+  {
+    "type": "single",
+    "q": "You set `INCLUDE_xTaskDelayUntil` to 0 and run `make build`. What do you see?",
+    "options": [
+      "A compile error in tasks.c",
+      "It builds, and xTaskDelayUntil behaves like vTaskDelay at run time",
+      "Every file compiles, then the linker reports `undefined reference to 'xTaskDelayUntil'` in the object file of the task that calls it",
+      "A configASSERT failure when the sensor task first runs"
+    ],
+    "answer": 2,
+    "explain": "`task.h` still **declares** the function, so your file compiles. The INCLUDE_ switch only removes the **definition** from tasks.c, so the linker (`ld`, then `collect2: error`) can't find it. The message names your function and line (`in function 'sensor_task'`), which is where it's called, not where the problem is: the fix is the config switch. Nothing changes silently at run time, and nothing asserts, because the program never gets built."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these are true on the FreeRTOS POSIX port but **not** on a Cortex-M microcontroller?",
+    "options": [
+      "Each task runs on its own pthread, but the port lets only one run at a time",
+      "The tick interrupt is a SIGALRM signal sent to the running task's thread",
+      "vTaskEndScheduler() makes vTaskStartScheduler() return, so main() can exit",
+      "An ISR must only call FromISR APIs",
+      "A higher-priority task that becomes ready preempts the running one"
+    ],
+    "answer": [
+      0,
+      1,
+      2
+    ],
+    "explain": "Threads, the SIGALRM tick and a scheduler that can end are how the port imitates hardware on Linux. On a Cortex-M, tasks share one CPU with swapped stacks, the tick is SysTick, and vTaskStartScheduler() never returns. The FromISR rule and preemption are **FreeRTOS** rules, so they hold on both. That's the point of testing on the POSIX port: your task logic behaves the same."
+  },
+  {
+    "type": "single",
+    "q": "The plant prints `configASSERT failed at third_party/FreeRTOS-Kernel/queue.c:1520` and aborts. What do you do first?",
+    "options": [
+      "Run the same command under gdb, type `bt` when it stops on SIGABRT, and read down to the first frame in src/: that's the call that passed the kernel a bad argument",
+      "Report a bug in FreeRTOS: the assert is in the kernel",
+      "Delete the configASSERT definition from FreeRTOSConfig.h so the run can continue",
+      "Add printf calls in every task to see which one runs last"
+    ],
+    "answer": 0,
+    "explain": "A kernel assert almost always means **your** code passed it something wrong: here, `xQueueReceive (xQueue=0x0, ...)` called from `log_task`, because the queue was never created. The backtrace shows exactly that. Removing the assert turns a clear stop into a crash or silent corruption later. And printf from several tasks can hang the POSIX port, as well as being much slower than one `bt`."
+  }
+]

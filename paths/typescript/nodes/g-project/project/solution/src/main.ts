@@ -20,7 +20,9 @@ const prompt = () => {
 console.log("typed-store cart. Commands: add <item> [qty], remove <item>, set <item> <qty>, coupon <code>, clear, undo, show, quit");
 prompt();
 
-rl.on("line", (line) => {
+// `for await` reads one line at a time; leaving the loop closes the interface,
+// so lines piped in after "quit" are never read.
+loop: for await (const line of rl) {
   const cmd = parseCommand(line);
   switch (cmd.kind) {
     case "action":
@@ -33,11 +35,11 @@ rl.on("line", (line) => {
       console.log(render(store.state));
       break;
     case "quit":
-      rl.close();
-      return;
+      break loop;
     case "error":
       console.log(`error: ${cmd.message}`);
       break;
   }
   prompt();
-});
+}
+rl.close();

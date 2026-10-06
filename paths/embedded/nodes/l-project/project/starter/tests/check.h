@@ -4,6 +4,8 @@
  *   RUN(my_test);          prints "ok 1 - my_test" or "not ok 1 - my_test"
  *   return check_summary(); prints "# pass N" and "# fail N"
  *
+ * `tests/run m2 reconnect` runs only the m2 tests whose name contains "reconnect".
+ *
  * CHECK and CHECKM are expressions that return whether the check held, so a
  * test can bail out early:  if (!CHECK(p != NULL)) return;
  */
@@ -13,9 +15,11 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 extern int check_pass_, check_fail_, check_num_;
 extern bool check_ok_;
+extern const char *check_only_; /* run only tests whose name contains this (NULL = all) */
 
 static inline bool check_(bool ok, const char *file, int line, const char *expr, const char *fmt, ...) {
     if (ok) return true;
@@ -38,6 +42,7 @@ static inline bool check_(bool ok, const char *file, int line, const char *expr,
 
 #define RUN(fn)                                                              \
     do {                                                                     \
+        if (check_only_ && !strstr(#fn, check_only_)) break;                 \
         check_ok_ = true;                                                    \
         test_begin();                                                        \
         fn();                                                                \

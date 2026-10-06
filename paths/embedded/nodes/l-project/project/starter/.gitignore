@@ -1,2 +1,8 @@
 sensord
 tests/run
+*.o
+# what you make while trying it by hand
+logs/
+iio/
+*.fifo
+*.sock

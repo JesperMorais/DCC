@@ -14,6 +14,10 @@ static line_event_t feed(line_t *l, const char *s, size_t n) {
 }
 #define FEED(l, lit) feed(l, lit, sizeof(lit) - 1)
 
+/* line_event_t's values by name, so a failure says LINE_NONE rather than 0. */
+static const char *const event_names[] = { "LINE_NONE", "LINE_READY", "LINE_TOO_LONG" };
+#define CHECK_EVENT(got, want) CHECK_ENUM_(got, want, event_names, #got)
+
 static void fresh(line_t *l) {
     sim_reset();
     line_init(l);
@@ -22,7 +26,7 @@ static void fresh(line_t *l) {
 static void ready_on_cr(void) {
     line_t l;
     fresh(&l);
-    CHECK_INT(FEED(&l, "led on\r"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "led on\r"), LINE_READY);
     CHECK_STR(line_get(&l), "led on");
 }
 
@@ -36,7 +40,7 @@ static void echoes_what_you_type(void) {
 static void ready_on_lf(void) {
     line_t l;
     fresh(&l);
-    CHECK_INT(FEED(&l, "gpio get 3\n"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "gpio get 3\n"), LINE_READY);
     CHECK_STR(line_get(&l), "gpio get 3");
     CHECK_STR(sim_tx(), "gpio get 3\r\n");
 }
@@ -44,12 +48,12 @@ static void ready_on_lf(void) {
 static void crlf_is_one_enter(void) {
     line_t l;
     fresh(&l);
-    CHECK_INT(FEED(&l, "a\r"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "a\r"), LINE_READY);
     CHECK_STR(line_get(&l), "a");
-    CHECK_INT(line_feed(&l, '\n'), LINE_NONE);
-    CHECK_INT(FEED(&l, "b\r"), LINE_READY);
+    CHECK_EVENT(line_feed(&l, '\n'), LINE_NONE);
+    CHECK_EVENT(FEED(&l, "b\r"), LINE_READY);
     CHECK_STR(line_get(&l), "b");
-    CHECK_INT(FEED(&l, "\r"), LINE_READY);   /* but two CRs are two Enters */
+    CHECK_EVENT(FEED(&l, "\r"), LINE_READY);   /* but two CRs are two Enters */
     CHECK_STR(line_get(&l), "");
     CHECK_STR(sim_tx(), "a\r\nb\r\n\r\n");
 }
@@ -57,18 +61,18 @@ static void crlf_is_one_enter(void) {
 static void backspace_edits(void) {
     line_t l;
     fresh(&l);
-    CHECK_INT(FEED(&l, "lex\x7f" "d\r"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "lex\x7f" "d\r"), LINE_READY);
     CHECK_STR(line_get(&l), "led");
     CHECK_STR(sim_tx(), "lex\b \bd\r\n");
     sim_tx_clear();
-    CHECK_INT(FEED(&l, "ab\bc\r"), LINE_READY);   /* '\b' works too */
+    CHECK_EVENT(FEED(&l, "ab\bc\r"), LINE_READY);   /* '\b' works too */
     CHECK_STR(line_get(&l), "ac");
 }
 
 static void backspace_on_empty_line(void) {
     line_t l;
     fresh(&l);
-    CHECK_INT(FEED(&l, "\x7f\x7fhi\r"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "\x7f\x7fhi\r"), LINE_READY);
     CHECK_STR(line_get(&l), "hi");
     CHECK_STR(sim_tx(), "hi\r\n");
 }
@@ -76,7 +80,7 @@ static void backspace_on_empty_line(void) {
 static void ignores_other_control_bytes(void) {
     line_t l;
     fresh(&l);
-    CHECK_INT(FEED(&l, "\tl\x1b" "e\x01\xc3" "d\r"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "\tl\x1b" "e\x01\xc3" "d\r"), LINE_READY);
     CHECK_STR(line_get(&l), "led");
     CHECK_STR(sim_tx(), "led\r\n");
 }
@@ -89,7 +93,7 @@ static void accepts_line_max(void) {
     in[LINE_MAX] = '\r';
     memset(want, 'x', LINE_MAX);
     want[LINE_MAX] = '\0';
-    CHECK_INT(feed(&l, in, LINE_MAX + 1), LINE_READY);
+    CHECK_EVENT(feed(&l, in, LINE_MAX + 1), LINE_READY);
     CHECK_STR(line_get(&l), want);
 }
 
@@ -101,9 +105,9 @@ static void too_long_is_thrown_away(void) {
     in[LINE_MAX + 4] = '\r';
     memset(echo, 'x', LINE_MAX);
     memcpy(echo + LINE_MAX, "\r\n", 3);
-    CHECK_INT(feed(&l, in, LINE_MAX + 5), LINE_TOO_LONG);
+    CHECK_EVENT(feed(&l, in, LINE_MAX + 5), LINE_TOO_LONG);
     CHECK_STR(sim_tx(), echo);   /* the extra characters aren't echoed */
-    CHECK_INT(FEED(&l, "ok\r"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "ok\r"), LINE_READY);
     CHECK_STR(line_get(&l), "ok");
 }
 
@@ -115,13 +119,13 @@ static void backspace_doesnt_rescue_overflow(void) {
     in[LINE_MAX + 1] = 0x7f;
     in[LINE_MAX + 2] = 0x7f;
     in[LINE_MAX + 3] = '\n';
-    CHECK_INT(feed(&l, in, LINE_MAX + 4), LINE_TOO_LONG);
+    CHECK_EVENT(feed(&l, in, LINE_MAX + 4), LINE_TOO_LONG);
 }
 
 static void empty_line_is_ready(void) {
     line_t l;
     fresh(&l);
-    CHECK_INT(FEED(&l, "\r"), LINE_READY);
+    CHECK_EVENT(FEED(&l, "\r"), LINE_READY);
     CHECK_STR(line_get(&l), "");
     CHECK_STR(sim_tx(), "\r\n");
 }

@@ -30,14 +30,14 @@ function assertNever(value: never): never {
   throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }
 
-function checkQty(qty: number): void {
-  if (!Number.isInteger(qty) || qty < 1) throw new InvalidActionError(`Quantity must be a whole number of at least 1, got ${qty}`);
+function checkQty(action: CartAction & { qty: number }): void {
+  if (!Number.isInteger(action.qty) || action.qty < 1) throw new InvalidActionError(action, `Quantity must be a whole number of at least 1, got ${action.qty}`);
 }
 
 export function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "add": {
-      checkQty(action.qty);
+      checkQty(action);
       const existing = state.lines.find((l) => l.sku === action.sku);
       const lines = existing
         ? state.lines.map((l) => (l === existing ? { ...l, qty: l.qty + action.qty } : l))
@@ -45,15 +45,15 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       return { ...state, lines };
     }
     case "remove":
-      if (!state.lines.some((l) => l.sku === action.sku)) throw new InvalidActionError(`${action.sku} is not in the cart`);
+      if (!state.lines.some((l) => l.sku === action.sku)) throw new InvalidActionError(action, `${action.sku} is not in the cart`);
       return { ...state, lines: state.lines.filter((l) => l.sku !== action.sku) };
     case "setQty":
-      checkQty(action.qty);
-      if (!state.lines.some((l) => l.sku === action.sku)) throw new InvalidActionError(`${action.sku} is not in the cart`);
+      checkQty(action);
+      if (!state.lines.some((l) => l.sku === action.sku)) throw new InvalidActionError(action, `${action.sku} is not in the cart`);
       return { ...state, lines: state.lines.map((l) => (l.sku === action.sku ? { ...l, qty: action.qty } : l)) };
     case "applyCoupon": {
       const code = action.code.toUpperCase();
-      if (!(code in COUPONS)) throw new InvalidActionError(`Unknown coupon ${action.code}`);
+      if (!(code in COUPONS)) throw new InvalidActionError(action, `Unknown coupon ${action.code}`);
       return { ...state, coupon: code };
     }
     case "clear":

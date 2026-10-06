@@ -19,7 +19,7 @@ Each command is a plain function from data to `string[]`:
 export function report(txs: readonly Transaction[], month: string, rules: readonly Rule[]): string[]
 ```
 
-It never touches `console` or `fs`, so it's easy to reason about (and to unit-test, should you want to). `main.ts` reads the files, prints warnings, calls a command and prints what comes back. Errors that should end the program (`cannot read`, bad month, bad `n`) are thrown as a small `CliError` class and turned into a message and exit code 1 in exactly one place. The trade-off: a throw is a hidden exit path. The alternative is to return a union like `Invocation | { error: string }`, which we do use for argument parsing, where the caller narrows with `"error" in result`. Both are fine; pick one style per layer.
+It never touches `console` or `fs`, so it's easy to reason about and to unit-test, the same way `tests/mine.test.ts` tests `parseRow`. `main.ts` reads the files, prints warnings, calls a command and prints what comes back. Errors that should end the program (`cannot read`, bad month, bad `n`) are thrown as a small `CliError` class and turned into a message and exit code 1 in exactly one place. The trade-off: a throw is a hidden exit path. The alternative is to return a union like `Invocation | { error: string }`, which we do use for argument parsing, where the caller narrows with `"error" in result`. Both are fine; pick one style per layer.
 
 ## Decision 2: a bad row is a value, not an exception
 
@@ -41,6 +41,9 @@ Throwing on the first bad row would stop at one warning. Returning it as data le
 - **Sorting safely:** `filter` already returns a new array, so sorting its result doesn't reorder the caller's data. Sorting the input directly would.
 - **First match wins:** `rules.find(r => r.keywords.some(k => text.includes(k)))?.category ?? "other"`. Order matters, which is why rules are an array and not a `Record`.
 - **Flags:** a `Record<Command, number>` of how many positionals each command takes keeps the "wrong number of arguments" check to one line, and adding a command forces you to add its entry.
+- **Type predicates:** `(r): r is BadRow => "reason" in r` tells `filter` what it proved, so the result is `BadRow[]` and not `Row[]`. Without it, a `for...of` loop that pushes into two arrays narrows just as well.
+- **`class CliError extends Error {}`:** an empty subclass is enough to tell planned exits from bugs. `main` catches only `e instanceof CliError` and rethrows anything else, so a real bug still crashes with a stack trace instead of looking like a user error.
+- **The `!` in `checkMonth(arg!)` and `month!`:** a non-null assertion, "I know this isn't `undefined`". It's safe only because the arity check already guarantees a second positional for `report`. The compiler takes your word for it without checking, so use it sparingly and only right next to the check that justifies it; an `if` that narrows is the safer habit.
 - **Optional flags:** `Flags` has `rules?` and `month?`, so "not given" is `undefined`, not an empty string, and the compiler makes you handle it.
 
 Where would it go next? Reading several CSV files at once, a `--csv` output mode for the report, or budgets per category in the rules file ("groceries: ica, coop | 3000") with a warning when a month goes over.

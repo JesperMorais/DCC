@@ -13,4 +13,6 @@ That's the whole Zephyr branch in one image, plus the parts the labs couldn't gi
 
 The milestones say what must work and how you'll know. The design is yours. The tests are a ztest suite that builds your code into its own image and talks to it through the standard sensor API and your shell command, so any sensible structure passes.
 
-**How to start:** copy the starter (the command is on this page), open its `README.md` and do the one-time setup first. That's 30 to 45 minutes, mostly downloading. Then `make run`, and on to milestone 1.
+**How to start:** copy the starter (the command is on this page), open its `README.md` and do the one-time setup first (the Workshop lesson walks through it). Then `make run`, and on to milestone 1.
+
+Setup can eat an evening, and the first devicetree error can eat another. That isn't you being slow; it's what Zephyr work actually looks like, and every error you read to the end is one you'll recognise for good. Take one milestone, then one test, at a time, commit each time it goes green, and take a hint the moment you're going in circles.

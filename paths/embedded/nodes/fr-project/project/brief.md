@@ -13,4 +13,6 @@ You'll build the controller in four steps:
 
 This is the whole FreeRTOS branch in one program. The data types and the kernel configuration are given; the tasks, their priorities and the structure are yours. The tests run your program with scenarios like "press the e-stop at tick 1537" and check what it printed and what the board measured, so any sound design passes.
 
-**How to start:** copy the starter (the command is on this page) and run `make build`. The first build clones the kernel into `third_party/`. Read `README.md`, especially the section on what's different on the POSIX port, then `src/hw.h` like a datasheet. Then start milestone 1 and check it with `make test-m1`.
+**How to start:** copy the starter (the command is on this page) and run `make build`. The first build fetches the kernel into `third_party/`. Read `README.md`, especially the section on what's different on the POSIX port and the one on where to start, then `src/hw.h` like a datasheet. The workshop before this project walks through the same Makefile, config and gdb session. Then start milestone 1 and check it with `make test-m1`.
+
+**How to approach it.** This is the first time the kernel isn't a friendly simulator, so expect a few sessions where the program hangs, aborts or says nothing at all. That is the project doing its job: each of those is a real FreeRTOS bug you'll recognise on a real board later. Take one milestone at a time, commit when it goes green, and treat gdb and the hints as ordinary tools, not as a last resort.

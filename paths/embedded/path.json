@@ -216,14 +216,26 @@
       ]
     },
     {
-      "id": "f-project",
+      "id": "f-workshop",
       "section": "fundamentals",
       "row": 8,
       "col": 1.7,
+      "kind": "lesson",
+      "title": "Workshop: C on your own machine",
+      "requires": [
+        "f-boss"
+      ],
+      "covers": []
+    },
+    {
+      "id": "f-project",
+      "section": "fundamentals",
+      "row": 8,
+      "col": 3.4,
       "kind": "project",
       "title": "Project: UART command shell",
       "requires": [
-        "f-boss"
+        "f-workshop"
       ],
       "covers": [
         "bit manipulation",
@@ -326,14 +338,27 @@
       ]
     },
     {
-      "id": "fr-project",
+      "id": "fr-workshop",
       "section": "freertos",
       "row": 17.6,
+      "col": -3,
+      "kind": "lesson",
+      "title": "Workshop: a real FreeRTOS build",
+      "requires": [
+        "fr-boss"
+      ],
+      "covers": []
+    },
+    {
+      "id": "fr-project",
+      "section": "freertos",
+      "row": 18.6,
       "col": -3,
       "kind": "project",
       "title": "Project: real FreeRTOS on Linux",
       "requires": [
-        "fr-boss"
+        "fr-workshop",
+        "f-project"
       ],
       "covers": []
     },
@@ -426,14 +451,39 @@
       ]
     },
     {
-      "id": "z-project",
+      "id": "z-workshop",
       "section": "zephyr",
       "row": 17.6,
+      "col": 0,
+      "kind": "lesson",
+      "title": "Workshop: a real Zephyr build",
+      "requires": [
+        "z-boss"
+      ],
+      "covers": []
+    },
+    {
+      "id": "z-driver",
+      "section": "zephyr",
+      "row": 18.6,
+      "col": 0,
+      "kind": "lesson",
+      "title": "Writing a Zephyr driver",
+      "requires": [
+        "z-workshop"
+      ],
+      "covers": []
+    },
+    {
+      "id": "z-project",
+      "section": "zephyr",
+      "row": 19.6,
       "col": 0,
       "kind": "project",
       "title": "Project: Zephyr on native_sim",
       "requires": [
-        "z-boss"
+        "z-driver",
+        "f-project"
       ],
       "covers": []
     },
@@ -541,21 +591,29 @@
       ]
     },
     {
-      "id": "l-project",
+      "id": "l-daemon",
       "section": "linux",
       "row": 18.6,
+      "col": 3,
+      "kind": "lab",
+      "title": "Daemon plumbing: signals, sockets & FIFOs",
+      "requires": [
+        "l-boss"
+      ],
+      "covers": []
+    },
+    {
+      "id": "l-project",
+      "section": "linux",
+      "row": 19.6,
       "col": 3,
       "kind": "project",
       "title": "Project: sensor logging daemon",
       "requires": [
-        "l-boss"
+        "l-daemon",
+        "f-project"
       ],
-      "covers": [
-        "parsing",
-        "strings",
-        "pointers",
-        "buffers"
-      ]
+      "covers": []
     }
   ]
 }

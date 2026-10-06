@@ -71,7 +71,8 @@ export default function SettingsPage({ state, onChange }: { state: Dashboard; on
             you'd solve it cleanly. Afterwards your rating moves by how much better or worse you did than that.
           </p>
           <ul>
-            <li>Solving counts most. Each hint takes about 12% off that attempt's score, and going well past ~10 minutes takes off a little more.</li>
+            <li>Solving counts most. Hints scale the score down: if you needed every hint on a hard challenge, your rating stays where it is, so you keep practising at this level until it sticks.</li>
+            <li>Time doesn't count. Take as long as you need; a very slow solve only marks the topic as worth practising in the skill tree.</li>
             <li>Giving up counts as 0, and the challenge comes back in a week.</li>
             <li>Only your first attempt at a challenge is rated. Practising it again is free.</li>
             <li>Your first five results move your rating more, so it finds your level quickly.</li>

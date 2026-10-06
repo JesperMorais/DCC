@@ -59,6 +59,7 @@ Once stopping, a timeout of **0** turns `epoll_wait` into "what's ready right no
 ### Gotchas
 
 - **EOF looks like "ready".** When the writer closes a pipe, the read end reports `EPOLLHUP` (plus `EPOLLIN` while unread data remains), and `read()` returns 0, **forever**. If you don't `EPOLL_CTL_DEL` the fd, a level-triggered loop spins at 100 % CPU. Handle `EPOLLHUP`/`EPOLLERR` as well as `EPOLLIN`, and let the handler's `read()` discover the EOF.
+- **A FIFO (a named pipe) adds a twist.** Its EOF comes when the *last* writer closes, and the next writer may connect a moment later. Closing your read end and reopening it leaves a gap with no reader at all: a writer that opens with `O_NONBLOCK` in that gap gets `ENXIO`, and one that was already connected gets `EPIPE` (or is killed by SIGPIPE) on its next write. Open the new read end first, then close the old one. Daemon plumbing: signals, sockets & FIFOs covers this in full.
 - **Regular files can't be watched.** `epoll_ctl` returns `EPERM` for them, because they're always ready.
 - **Registrations belong to the open file, not the fd number.** `close()` only removes the registration if no other fd (a `dup`, or a copy in a forked child) still refers to the same open file. Otherwise epoll keeps reporting events for an fd number you've closed, and that number may already belong to something else. `EPOLL_CTL_DEL` before you close.
 - **Ownership.** The loop owns its epoll fd and its eventfd and must close them. The fds it watches belong to the caller.

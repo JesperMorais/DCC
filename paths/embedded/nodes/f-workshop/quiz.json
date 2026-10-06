@@ -1,0 +1,71 @@
+[
+  {
+    "type": "single",
+    "q": "You moved a helper into a new file, `src/parse.c`, with its prototype in `src/parse.h`, and `shell.c` includes `parse.h`. Now `make` prints this. What's the fix?",
+    "code": "/usr/bin/x86_64-linux-gnu-ld.bfd: /tmp/ccQ3r1xA.o: in function `shell_exec':\n/home/you/code/uart-shell/src/shell.c:42:(.text+0x91): undefined reference to `parse_number'\ncollect2: error: ld returned 1 exit status",
+    "options": [
+      "Add `src/parse.c` to the list of source files in the Makefile",
+      "Add `#include \"parse.h\"` to `shell.c`",
+      "Remove `-Werror` from `CFLAGS`",
+      "Mark `parse_number` as `static` in `parse.c`"
+    ],
+    "answer": 0,
+    "explain": "`ld` and `collect2` mean the **linker** is complaining, so compiling went fine: `shell.c` saw the declaration. What's missing is the body, because `parse.c` was never compiled and linked; the Makefile's file list doesn't name it. A missing `#include` gives a *compiler* error instead (`implicit declaration of function`). `-Werror` has nothing to do with it, since this isn't a warning. And `static` would make `parse_number` private to `parse.c`, which is exactly what stops other files from linking to it."
+  },
+  {
+    "type": "single",
+    "q": "The build stops with these lines. What do you need to fix?",
+    "code": "src/uart.c: In function ‘uart_rx_isr’:\nsrc/uart.c:10:14: error: unused variable ‘sr’ [-Werror=unused-variable]\n   10 |     uint32_t sr = hal_uart()->SR;\n      |              ^~\ncc1: all warnings being treated as errors\nmake: *** [Makefile:24: build/uart-shell] Error 1",
+    "options": [
+      "Only line 10 of `uart.c`: `sr` is read but never used",
+      "Three things: the unused variable, a gcc (`cc1`) failure and a Makefile error on line 24",
+      "The Makefile, because line 24 has an error",
+      "Nothing in the code: delete `-Werror` and it builds"
+    ],
+    "answer": 0,
+    "explain": "There's one problem, on the first `error:` line. `cc1: all warnings being treated as errors` is gcc explaining that the error was a warning promoted by `-Werror`, and `make: ***` is make reporting that the recipe on Makefile line 24 failed *because* gcc did. Deleting `-Werror` hides the message but keeps the bug: here, an ISR that reads the status register and then ignores it, which is probably not what you meant."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these belong in a header file that several `.c` files include? Select all that apply.",
+    "options": [
+      "`bool rb_put(ringbuf_t *rb, uint8_t byte);`",
+      "`typedef struct { uint32_t head, tail; } ring_t;`",
+      "`static int is_space(char c) { return c == ' '; }`",
+      "`uint8_t rx_storage[64];`",
+      "`extern const shell_cmd_t shell_commands[];`"
+    ],
+    "answer": [
+      0,
+      1,
+      4
+    ],
+    "explain": "A header holds **declarations**: prototypes, types and `extern` promises that something exists somewhere. Every file can include them without clashing. `uint8_t rx_storage[64];` *defines* storage, so two files including it each get one and the linker reports `multiple definition of 'rx_storage'` (put `extern uint8_t rx_storage[64];` in the header and the definition in one `.c`). A `static` helper is private by design, so it lives in the one `.c` file that uses it; in a header, every includer would get its own copy and an unused-function warning."
+  },
+  {
+    "type": "single",
+    "q": "A test fails with this AddressSanitizer report (shadow bytes cut). Where do you look first?",
+    "code": "ERROR: AddressSanitizer: stack-buffer-overflow on address 0x730d04af0084 ...\nWRITE of size 1 at 0x730d04af0084 thread T0\n    #0 0x5dfd747ecb28 in rb_put src/ringbuf.c:21\n    #1 0x5dfd747f1160 in ring_wraps_around tests/test_m1.c:64\n    #2 0x5dfd747eff54 in check_run tests/check.c:65\n    [128, 132) 's' (line 58) <== Memory access at offset 132 overflows this variable",
+    "options": [
+      "`src/ringbuf.c` line 21: the write in `rb_put`, one byte past the 4-byte array `s`",
+      "`tests/test_m1.c` line 64: the test passes a buffer that's too small",
+      "`tests/check.c` line 65: the harness crashed",
+      "The address `0x730d04af0084`: look it up in the memory map"
+    ],
+    "answer": 0,
+    "explain": "Frame `#0` is where the bad write happened, and it's your code: `rb_put` stored a byte at offset 132 of a variable that spans 128 to 132, so one past the end of `s`. That's the classic off-by-one in a wrap-around. Frame `#1` is useful context (which test, with which ring), but a 4-slot ring over a 4-byte array is valid; the ring must never write a fifth byte. `check.c` just runs tests, and the raw addresses change on every run."
+  },
+  {
+    "type": "order",
+    "q": "`make test-m2` shows four failing tests. Put a calm way through it in order.",
+    "items": [
+      "Read the `#` lines above the first `not ok` and open the test at that `file:line`",
+      "Rerun just that test by name, e.g. `make test T=backspace`",
+      "Look at the actual values with `fprintf(stderr, ...)` or `make debug`",
+      "Change one thing and rerun that test until it says `ok`",
+      "Run `make test-m2` again to see what's left",
+      "Commit when the milestone is green"
+    ],
+    "explain": "One test at a time, starting with the first: later failures are often the same bug showing up again, and they may vanish with the first fix. Rerunning only that test keeps the output short enough to read. Looking at the real values beats guessing, and changing one thing at a time tells you what actually fixed it. Once the whole milestone is green, a commit gives you a safe point to return to."
+  }
+]

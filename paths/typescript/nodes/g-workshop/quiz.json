@@ -1,0 +1,54 @@
+[
+  {
+    "type": "single",
+    "q": "This type-level test has passed `npm run check` for weeks. Then someone loosens `select` to accept any `string`. What happens?",
+    "code": "function typeChecks(player: Store<PlayerState, PlayerAction>) {\n  // @ts-expect-error not a key of PlayerState\n  player.selct(\"colour\");\n}\nvoid typeChecks;",
+    "options": [
+      "`npm run check` fails with \"Unused '@ts-expect-error' directive\"",
+      "Nothing: the check still passes, because `selct` is a typo and that is an error too",
+      "The test fails at runtime when `npm test` calls `typeChecks`",
+      "tsc reports that `colour` is not a key of PlayerState"
+    ],
+    "answer": 1,
+    "explain": "`@ts-expect-error` accepts **any** error on the next line. The misspelled `selct` doesn't exist, so the line always fails to compile, whatever `select` accepts, and the test checks nothing. That's why you write the line without the directive first and read tsc's message: here it would have said `Property 'selct' does not exist… Did you mean 'select'?`, not the error you meant. It never runs at runtime: `typeChecks` is never called."
+  },
+  {
+    "type": "multi",
+    "q": "You're testing \"a listener that unsubscribes is never called again\". Which of these are good ways to check it? Select all that apply.",
+    "options": [
+      "Have the listener push into an array, emit after unsubscribing, and `assert.deepEqual` the array with what it held before",
+      "Have the listener increment a counter and assert the counter didn't change after the last emit",
+      "Wrap the emit in `assert.doesNotThrow`",
+      "Assert that `bus.emit(...)` returns `undefined`"
+    ],
+    "answer": [
+      0,
+      1
+    ],
+    "explain": "To test a callback, make it **record** its calls, then compare the record. An array or a counter both show \"not called\". `doesNotThrow` passes whether or not the listener ran, and `emit` returns `undefined` either way, so neither says anything about the listener."
+  },
+  {
+    "type": "single",
+    "q": "Which line correctly ports the boss lab's `expect(() => player.dispatch({ type: \"pause\" })).toThrow(\"pause: Nothing is playing\")`?",
+    "options": [
+      "`assert.throws(() => player.dispatch({ type: \"pause\" }), { message: \"pause: Nothing is playing\" })`",
+      "`assert.throws(player.dispatch({ type: \"pause\" }), { message: \"pause: Nothing is playing\" })`",
+      "`assert.equal(player.dispatch({ type: \"pause\" }), \"pause: Nothing is playing\")`",
+      "`assert.deepEqual(() => player.dispatch({ type: \"pause\" }), new InvalidActionError(...))`"
+    ],
+    "answer": 0,
+    "explain": "`assert.throws` needs a **function** it can call inside its own try/catch, and the second argument can be an error class or an object of properties the error must have. Without the `() =>`, `dispatch` runs (and throws) before `assert.throws` is even called, so the test crashes instead of passing. `equal` and `deepEqual` compare values; they don't catch anything."
+  },
+  {
+    "type": "order",
+    "q": "Put the steps of adding one new test in a good order.",
+    "items": [
+      "Write the test's name as a sentence about one behaviour",
+      "Arrange, act and assert in the test body",
+      "Run it and watch it fail (or break the code on purpose)",
+      "Make it pass with the smallest change",
+      "Commit when everything is green"
+    ],
+    "explain": "The name first keeps the test to one behaviour. Seeing it fail proves it can notice a bug; a test you've only seen green might check nothing. Then the smallest change that passes, and a commit, so the next step starts from a known-good version. None of this is about speed: one small, checked step at a time is the method."
+  }
+]

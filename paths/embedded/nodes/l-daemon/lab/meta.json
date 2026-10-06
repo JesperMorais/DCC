@@ -1,0 +1,11 @@
+{
+  "title": "Daemon plumbing: a FIFO, a signalfd and a socket in one loop",
+  "profile": "linux",
+  "estMinutes": 22,
+  "topics": ["FIFOs", "signalfd", "sigprocmask", "UNIX sockets", "epoll", "exit codes", "resource cleanup"],
+  "hints": [
+    "`plumb_open` in order: `sigprocmask(SIG_BLOCK, …)` for SIGTERM, SIGINT and SIGHUP, then `signalfd(-1, &set, SFD_NONBLOCK | SFD_CLOEXEC)` and `epoll_create1`. For the FIFO, `lstat` the path: missing means `mkfifo(path, 0660)`, a FIFO is fine, anything else is `-EEXIST`. Open it `O_RDONLY | O_NONBLOCK` so `open` doesn't wait for a writer. For the socket, `lstat` again: `S_ISSOCK` means a leftover, so `unlink` it; anything else is `-EEXIST`. Then `socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0)`, `bind` to a `struct sockaddr_un`, `listen`. Register all three. On any failure, close what you opened (start the fds at -1) and return `-errno`.",
+    "`plumb_run` is the l-epoll loop with a tag in `data.u64`: `epoll_wait(ep, evs, n, stopping ? 0 : -1)`, and return 0 when a timeout-0 wait comes back empty. Signal: `read` `struct signalfd_siginfo` records until `EAGAIN`; `ssi_signo == SIGHUP` counts a hup, SIGTERM or SIGINT sets `stopping`. Listener: `accept` until `EAGAIN`, `write` the reply line, `close`. FIFO: `read` until `EAGAIN`, counting `'\\n'` bytes.",
+    "When the FIFO's `read` returns 0, the last writer has left and that read end will report EOF forever. Open a **new** read end (same flags) and `EPOLL_CTL_ADD` it, and only then `EPOLL_CTL_DEL` and `close` the old one. A new read end doesn't report EOF until a writer has come and gone again. `plumb_close`: close the listener, `unlink` the socket path (only if you created it), close the FIFO, signalfd and epoll fds. `plumb_main`: `argc != 3` → usage on stderr, return 2; `plumb_open` fails → message on stderr, return 1; otherwise run, close, return 0."
+  ]
+}

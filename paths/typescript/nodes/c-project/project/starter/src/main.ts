@@ -7,7 +7,8 @@
 // The milestones in the app describe each command's exact output. Split the work
 // into modules as you see fit (the README suggests a layout).
 
-// The data types are in ./types.ts.
+// The data types are in ./types.ts. A good first step is parseRow in ./csv.ts, with its
+// unit test in tests/mine.test.ts (`npm run test:mine`).
 
 const args = process.argv.slice(2);
 

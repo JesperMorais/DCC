@@ -12,7 +12,6 @@ export const START_RATING: Record<Experience, number> = {
 };
 
 const DAY = 86_400_000;
-const TARGET_MINUTES = 10;
 
 /** Time spent paused (ms), including a pause that is still running. */
 export const pausedMs = (a: Attempt, now = Date.now()) =>
@@ -28,17 +27,16 @@ export const ratingFor = (data: Data, lang: Lang) => data.profile?.languages[lan
 export const expectedScore = (rating: number, difficulty: number) => 1 / (1 + 10 ** ((difficulty - rating) / 400));
 
 /**
- * How well did it go, 0..1. Solving counts for a lot; hints and running long take it down towards `floor`.
+ * How well did it go, 0..1. Solving counts for a lot; hints take it down towards `floor`.
  * Using every hint lands exactly on the floor. With the floor at Elo's expectation (see applyResult),
  * a solve you needed all the help for leaves the rating where it is: you're not ready to move on yet.
+ * Time doesn't count: taking longer to understand something isn't worse. (A very slow solve still
+ * marks the topic as "needs practice" in weakness.ts, which is the right signal for it.)
  */
 export function performanceScore(a: Attempt, c: Challenge, floor = 0.5): number {
   if (a.status !== "solved") return 0;
-  const minutes = codingMinutes(a);
-  const overtime = Math.max(0, minutes - Math.max(TARGET_MINUTES, c.estMinutes));
-  const timePenalty = Math.min(0.2, (overtime / 20) * 0.2);
   const hintShare = c.hints.length ? Math.min(c.hints.length, a.hintsUsed) / c.hints.length : 0;
-  return Math.max(floor, 1 - hintShare * (1 - floor) - timePenalty);
+  return Math.max(floor, 1 - hintShare * (1 - floor));
 }
 
 function kFactor(ratedCount: number) {
@@ -287,6 +285,7 @@ export function dashboard(data: Data, everything: Challenge[], lang: Lang) {
       medianMinutes: solveMinutes.length ? solveMinutes.sort((a, b) => a - b)[Math.floor(solveMinutes.length / 2)] : null,
       hintsPerSolve: solved.length ? solved.reduce((s, a) => s + a.hintsUsed, 0) / solved.length : null,
       solvedToday: allSolvedDays.has(todayStr),
+      practiceDays: allSolvedDays.size,
       solvedTodayHere: solved.some((a) => a.date === todayStr),
     },
     daily: daily && {

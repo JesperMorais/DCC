@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, type PathView } from "../api";
 import { Mascot, TessLoading } from "../components/Mascot";
-import { Icon, type IconName } from "../ui";
+import { Icon, Markdown, type IconName } from "../ui";
 
 type Node = PathView["nodes"][number];
 
@@ -95,6 +95,15 @@ export default function PathPage() {
         </div>
       </header>
 
+      {view.before && (
+        <details className="card mb-4 p-4 text-sm" open={!view.xp}>
+          <summary className="flex cursor-pointer items-center gap-2 font-semibold text-ink">
+            <Icon name="flag" size={15} /> Before you start
+          </summary>
+          <Markdown source={view.before} className="mt-3" />
+        </details>
+      )}
+
       {weak.length > 0 && (
         <div className="card mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-warn/40 p-4 text-sm">
           <span className="inline-flex items-center gap-2 font-semibold text-warn">
@@ -152,8 +161,10 @@ export default function PathPage() {
                 const src = byId.get(r)!;
                 const lit = src.status === "done";
                 const my = (a.y + b.y) / 2;
-                if (n.kind === "project")
-                  // A side quest: a short dashed spur from the boss (beside it, or below it at the end of a branch).
+                // Projects also require the tree's earlier project; only draw their local spur, not a line across the map.
+                if (n.kind === "project" && r !== n.requires[0]) return null;
+                if (Math.abs(a.y - b.y) < 1 || n.kind === "project")
+                  // A side step: a short dashed spur (beside the boss, or straight below it at the end of a branch).
                   return (
                     <path
                       key={`${r}-${n.id}`}
@@ -261,7 +272,7 @@ export default function PathPage() {
               <div className="text-sm font-semibold text-ink">{hover.title}</div>
               <div className="mt-1 text-muted">
                 {hover.kind === "project"
-                  ? `Optional project · your own editor · ~${Math.round(hover.estMinutes / 60)} h`
+                  ? `Project · your own editor · ${hover.estHours?.[0]}–${hover.estHours?.[1]} h over several sittings`
                   : `${hover.kind === "boss" ? "Boss lab" : hover.kind === "lesson" ? "Lesson + quiz" : "Lesson + quiz + lab"} · ~${hover.estMinutes} min · ${hover.xp} XP`}
               </div>
               {hover.status === "locked" && (

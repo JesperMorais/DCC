@@ -38,5 +38,18 @@
     ],
     "answer": [0, 1, 2, 4],
     "explain": "The tick *is* the timing source, so you still need SysTick or a timer. The FSM turns \"wait 20 ms\" into \"count 20 ticks\". Everything else is the reason firmware engineers draw state diagrams before writing code: non-blocking composition, forced handling of every state and input pair, deterministic tests and no unrepresentable states. N booleans have 2^N combinations, while an enum has exactly the states you named."
+  },
+  {
+    "type": "single",
+    "q": "A shell keeps its commands in a table. `led blink` was added in a hurry and its handler isn't written yet. What happens when someone types `led`?",
+    "code": "typedef int (*cmd_fn_t)(int argc, char *argv[]);\ntypedef struct { const char *name; cmd_fn_t fn; } cmd_t;\n\nstatic const cmd_t cmds[] = {\n    { \"help\", cmd_help },\n    { \"led\",  NULL },          /* TODO */\n};\n\n/* the dispatcher, after finding the row whose name matches: */\nreturn cmds[i].fn(argc, argv);",
+    "options": [
+      "The call jumps to address 0: on a Cortex-M that's a HardFault, so the board locks up or resets",
+      "Nothing: calling a NULL function pointer is skipped",
+      "The compiler refuses to build it, because `NULL` isn't a function",
+      "It calls the next row's handler instead"
+    ],
+    "answer": 0,
+    "explain": "A function pointer is just an address, and `NULL` is a perfectly valid value to store in one, so it compiles. Calling it means jumping to address 0. On a Cortex-M that's the initial stack pointer value, not code, and the jump to an even address leaves Thumb state, so the core takes a **HardFault**. On a PC it's a segfault. C never skips the call or falls through to another row. The fix is to leave the row out until it's written, or to check `fn != NULL` in the dispatcher if empty slots are allowed."
   }
 ]

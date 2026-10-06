@@ -18,7 +18,7 @@ export function counter(state: Counter, action: CounterAction): Counter {
     case "reset":
       return { ...state, count: 0 };
     case "setStep":
-      if (action.step <= 0) throw new InvalidActionError("step must be positive");
+      if (action.step <= 0) throw new InvalidActionError(action, "step must be positive");
       return { ...state, step: action.step };
     case "noop":
       return state;

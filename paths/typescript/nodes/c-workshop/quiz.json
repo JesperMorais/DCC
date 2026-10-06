@@ -1,0 +1,60 @@
+[
+  {
+    "type": "order",
+    "q": "You're starting `parseLine`. Put the steps in a sensible order.",
+    "items": [
+      "Write the signature with a body that throws \"not implemented\"",
+      "Write one test for one good line",
+      "Run that test and watch it fail",
+      "Write the smallest body that makes it pass",
+      "Rerun: green",
+      "Commit, then add the next test (a bad line)"
+    ],
+    "explain": "Signature first, so the test has something to call. Seeing the test fail first proves it actually tests something: a test that's green before you've written the body is checking nothing. Then the smallest body, a green run, a commit you can return to, and only then the next case. Each loop is small, so when something breaks you know it was the last thing you changed."
+  },
+  {
+    "type": "single",
+    "q": "This test fails. Which line did **your code** produce?",
+    "code": "AssertionError: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   'Spending in 2026-9',\n-   'Spending in 2026-09',\n    'rent             8500.00'\n  ]",
+    "options": [
+      "`Spending in 2026-9`: the `+` line is the actual value",
+      "`Spending in 2026-09`: the `-` line is what you printed",
+      "Both: the diff shows two lines because you printed the header twice",
+      "`rent             8500.00`: the unmarked line is the wrong one"
+    ],
+    "answer": 0,
+    "explain": "The header says it: `+ actual - expected`. `+` is what your code produced, `-` is what the test wanted, and unmarked lines matched. So the month lost its leading zero somewhere. Probably it went through `Number` and back. Two marked lines mean one line differs, not that anything was printed twice."
+  },
+  {
+    "type": "single",
+    "q": "The CLI's stdout is checked by the tests. You want to see what `totals` holds halfway through `report`. What do you add?",
+    "options": [
+      "`console.error(\"totals\", totals)`: it goes to stderr, so stdout stays as the test expects",
+      "`console.log(\"totals\", totals)`: it's the normal way to print",
+      "`process.exit(0)` right after printing, so the rest doesn't run",
+      "Nothing: you can't debug a program that's under test"
+    ],
+    "answer": 0,
+    "explain": "`console.log` writes to stdout, so your debug line becomes an extra line in the output and the test now fails for a new reason. `console.error` goes to stderr: you see it in the terminal and stdout is untouched (a test that checks stderr is empty will stay red until you remove it). `process.exit(0)` would cut the output short and report success."
+  },
+  {
+    "type": "single",
+    "q": "Which split between `throw` and returning a value fits a CLI that reads a bank export?",
+    "options": [
+      "Return a bad CSV line as a value (`Transaction | BadRow`); throw when the file can't be read, and catch it once in `main`",
+      "Throw on every bad CSV line and catch each one where it's parsed",
+      "Return `null` for a missing file and check for it in every command",
+      "Throw for both, and let the program crash with a stack trace"
+    ],
+    "answer": 0,
+    "explain": "A bad row is expected data: returning it lets the caller collect *every* problem, warn about each one and keep going, and narrowing with `\"reason\" in row` keeps it type-safe. A missing file ends the program, so a throw that's caught in one place in `main` (message to stderr, `process.exitCode = 1`) is simplest. Threading `null` through every command spreads that check everywhere, and a raw stack trace is a crash, not an error message."
+  },
+  {
+    "type": "single",
+    "q": "No rule matches the description. What does this return?",
+    "code": "const rules = [{ category: \"groceries\", keywords: [\"ica\"] }];\nconst text = \"spotify\";\nrules.find((r) => r.keywords.some((k) => text.includes(k)))?.category ?? \"other\";",
+    "options": ["`\"other\"`", "`undefined`", "It throws: cannot read `category` of undefined", "`\"groceries\"`"],
+    "answer": 0,
+    "explain": "`some` asks \"does any keyword appear?\" and gets `false`, so `find` finds no rule and returns `undefined`. `?.category` sees `undefined` and stops, giving `undefined` instead of crashing (a plain `.category` would throw). Then `??` replaces `undefined` with `\"other\"`."
+  }
+]

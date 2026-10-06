@@ -32,9 +32,10 @@ Then, from another terminal: `echo 42 > sensor.fifo`, `tail -f logs/sensord.csv`
 ## Test it
 
 ```sh
-make test-m1        # one milestone
-make test           # everything
-make CFLAGS="-g -O1 -fsanitize=address,undefined" test   # with sanitizers
+make test-m1                    # one milestone
+make test-m2 T=reconnect        # only the m2 tests whose name contains "reconnect"
+make test                       # everything
+make clean && make CFLAGS="-g -O1 -fsanitize=address,undefined" test   # with sanitizers
 ```
 
 The build always uses `-std=gnu17 -Wall -Wextra -Werror -D_GNU_SOURCE`, so a warning is an error.
@@ -58,3 +59,70 @@ The design carries over almost unchanged; mostly the paths move:
 - `tests/`: `m1.c` … `m5.c` (one per milestone), `harness.c` (starts sensord, reads its files), `check.h` (the tiny TAP helper) and `run.c` (the runner).
 
 The structure is yours to design. If you want a starting point, think about which parts of the program could be tested without a running daemon at all.
+
+## If you want a start
+
+Entirely optional: one layout that works. Each file has one job, and the ones marked *no I/O* can be tried out from a tiny test program of your own.
+
+```
+src/main.c        argv → --once or the daemon; turns results into exit codes
+src/config.c/.h   load and validate the config into a struct (no daemon needed)
+src/channel.c/.h  read the IIO-style temperature directory
+src/stream.c/.h   bytes in → lines → samples → the period's count/min/mean/max (no I/O)
+src/csvlog.c/.h   open the log, append a row, rotate (m4)
+src/daemon.c/.h   the epoll loop: setup, one handler per fd, shutdown
+src/control.c/.h  the control socket's clients (m5)
+```
+
+And a `main.c` that only dispatches, so the real work lives in functions:
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+/* Both return the exit code: 0 when it worked, 1 when it didn't. */
+static int run_once(const char *config_path) {
+    /* m1: load the config, read the channel, print temp=…, return 0 */
+    (void)config_path;
+    return 1;
+}
+
+static int run_daemon(const char *config_path) {
+    /* m2: set up the fds, loop until told to stop, clean up */
+    (void)config_path;
+    return 1;
+}
+
+int main(int argc, char **argv) {
+    if (argc == 3 && strcmp(argv[1], "--once") == 0) return run_once(argv[2]);
+    if (argc == 2 && argv[1][0] != '-') return run_daemon(argv[1]);
+    fprintf(stderr, "usage: sensord [--once] <config>\n");
+    return 2;
+}
+```
+
+Before milestone 2, draw the file descriptors on paper: what each one is, who opens it, who closes it, and what wakes it up.
+
+## When you're stuck
+
+1. **Read the first failing test only.** Later failures are often the same bug. The lines above `not ok` say what went wrong:
+
+   ```
+   #   tests/m2.c:174: failed: enxio == 0
+   #   534 of the writers found nobody reading sensor.fifo (open failed with ENXIO)
+   not ok 9 - writers_never_find_the_fifo_unread
+   ```
+
+   The first line is the file and line of the check and the expression that was false. Open `tests/m2.c` at that line and read the test from the top: it's a short story of what the test did to sensord (wrote a config, started it, wrote to the FIFO, sent a signal) and what it expected. The second line is the explanation, usually "got this, expected that". If sensord printed anything to stderr, it's shown there too, under `sensord's stderr:`.
+2. **Run just that milestone** (`make test-m2`), or one test by name (`make test-m2 T=writers_never`).
+3. **Look at the value.** `fprintf(stderr, ...)` anything you're unsure of: stderr is shown under a failing test, and stdout only matters for `--once`. Or replay the test by hand in two terminals (see Build and run). For an fd problem, watch the syscalls:
+
+   ```sh
+   strace -f -e trace=desc ./sensord sensord.conf
+   ```
+
+   Every `read`, `write`, `epoll_wait` and `openat` appears with its result, for example `read(5, "", 4096) = 0` (EOF) or `= -1 ENXIO`. The same `read(...) = 0` scrolling by forever is an EOF spin. `ls -l /proc/$(pgrep -n sensord)/fd` lists every open fd (`anon_inode:[eventpoll]`, `[signalfd]`, `[timerfd]`, your FIFO and log): compare it before and after ten clients to find a leak. For a crash, `gdb --args ./sensord sensord.conf`, then `run`, and `bt` when it stops. strace and gdb don't mix with the sanitizers, so `make clean && make build` first.
+4. **Make the step smaller.** In milestone 2, first make rows appear with count 0. Then count bytes from the FIFO. Then lines, then numbers, then EOF. Run the tests after each step.
+5. **Take a hint.** Hints are a tool, not a failure. They point at the lesson to reread.
+6. **Commit when green.** `git init` once, then `git add -A && git commit -m "m2 green"` after each milestone, so you can always get back to a working version.
+7. **Walk away for ten minutes.** Seriously. Most bugs are found on the way back.

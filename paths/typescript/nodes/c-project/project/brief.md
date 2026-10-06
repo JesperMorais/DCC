@@ -12,4 +12,6 @@ Bank exports are not tidy. Some rows have a comma in the amount, a date the bank
 
 This is the Core section put to work: interfaces for the data, a union for "a row that worked or a row that didn't" and narrowing to tell them apart, `reduce` and filter/sort/map pipelines to get from rows to totals, a `Map` or `Record` for grouping, regular expressions and string parsing for the CSV and the rules, and optional properties for the flags. The data types are given; the functions are yours to design. The tests run your CLI as a real program and only check what it prints, so any sensible structure passes.
 
-**How to start:** copy the starter (the command is on this page), run `npm install`, read the `README.md`, and start at milestone 1. Each milestone spells out the exact output, and `npm run test:m1` (and so on) tells you when you're there.
+**How to start:** copy the starter (the command is on this page), run `npm install`, read the `README.md`, and start at milestone 1. Each milestone spells out the exact output, and `npm run test:m1` (and so on) tells you when you're there. If the empty `main.ts` feels like a wall, the Workshop node just before this project shows how to get from functions to a program, one tested piece at a time.
+
+This is the first project where nobody hands you the functions, so expect to sit with a red test for a while. That's not a sign you're doing it wrong; it's the part where you learn the most. Build one small piece, check it, commit it, and let the rest wait.

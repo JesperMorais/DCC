@@ -6,6 +6,8 @@
 #   make run              build and run it (Ctrl-C stops it)
 #   make test             build and run every milestone's tests
 #   make test-m1          ... only milestone 1 (m2, m3, m4, m5 likewise)
+#   make test-m2 TEST=m2_driver::test_ramp_steps_and_wraps
+#                         ... only that test (suite::test, * works as a wildcard)
 #   make twister          run the test suite through Twister instead
 #   make clean            delete every build directory
 #
@@ -18,6 +20,9 @@ BOARD ?= native_sim
 # native_sim builds with the host gcc, no Zephyr SDK needed.
 ZEPHYR_TOOLCHAIN_VARIANT ?= host
 export ZEPHYR_TOOLCHAIN_VARIANT
+# Optional: run only these tests, e.g. TEST=m2_driver::* (see "make test-m2").
+TEST ?=
+RUN_ARGS := $(if $(TEST),-test=$(TEST))
 MILESTONES := m1 m2 m3 m4 m5
 TEST_TARGETS := $(addprefix test-,$(MILESTONES))
 
@@ -35,11 +40,11 @@ run: build
 
 test: check-env
 	$(WEST) build -b $(BOARD) -d build/tests-all tests -- -DMILESTONE=all
-	$(WEST) build -d build/tests-all -t run
+	build/tests-all/zephyr/zephyr.exe $(RUN_ARGS)
 
 $(TEST_TARGETS): test-%: check-env
 	$(WEST) build -b $(BOARD) -d build/tests-$* tests -- -DMILESTONE=$*
-	$(WEST) build -d build/tests-$* -t run
+	build/tests-$*/zephyr/zephyr.exe $(RUN_ARGS)
 
 twister: check-env
 	$(WEST) twister -T tests -p $(BOARD) -O build/twister

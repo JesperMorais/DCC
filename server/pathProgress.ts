@@ -87,7 +87,8 @@ export function pathView(data: Data, path: LoadedPath, labs: Map<string, Challen
       quizPassed: !!np?.quizPassed,
       labSolved: !!np?.labSolved,
       hasLab: !!n.labId,
-      estMinutes: n.project ? n.project.estHours * 60 : 6 + (lab?.estMinutes ?? 2),
+      estMinutes: n.project ? n.project.estHours[1] * 60 : 6 + (lab?.estMinutes ?? 2),
+      estHours: n.project?.estHours ?? null,
       ready: !!(n.lesson || n.project),
     };
   });
@@ -97,6 +98,7 @@ export function pathView(data: Data, path: LoadedPath, labs: Map<string, Challen
     title: path.title,
     tagline: path.tagline,
     language: path.language,
+    before: path.before,
     gate: path.gate ?? null,
     gateDone,
     branch: p.branch ?? null,
@@ -146,7 +148,7 @@ export function nodeView(data: Data, path: LoadedPath, node: PathNode, labs: Map
       testsGiven: node.project.testsGiven,
       brief: node.project.brief,
       // C projects build with make; the README says what to run first.
-      starterCommand: `cp -r "${node.project.starterDir}" ~/code/${node.project.folder} && cd ~/code/${node.project.folder}${node.project.language === "typescript" ? " && npm install" : ""}`,
+      starterCommand: `mkdir -p ~/code && cp -r "${node.project.starterDir}" ~/code/${node.project.folder} && cd ~/code/${node.project.folder}${node.project.language === "typescript" ? " && npm install" : ""}`,
       milestones: node.project.milestones.map((m) => ({ ...m, doneAt: np.milestones?.[m.id] ?? null })),
       // The write-up is a reward for finishing, not something to read instead of thinking.
       review: np.completedAt ? node.project.review : null,

@@ -25,7 +25,7 @@ export function ProjectView({ pathId, nodeId, project, color, onChange }: { path
   return (
     <>
       <div className="mt-5 grid grid-cols-3 gap-2 text-xs">
-        <Chip icon="clock" label={`~${project.estHours} h in your own editor`} />
+        <Chip icon="clock" label={`${project.estHours[0]}–${project.estHours[1]} h, over several sittings`} />
         <Chip icon="flag" label={`${done} / ${project.milestones.length} milestones`} good={done === project.milestones.length} />
         <Chip icon="code" label={project.testsGiven ? "Tests given" : "You write the tests"} />
       </div>
@@ -34,12 +34,35 @@ export function ProjectView({ pathId, nodeId, project, color, onChange }: { path
         <Markdown source={project.brief} />
       </article>
 
+      <section className="mt-8 rounded-xl border border-line bg-surface-2 p-4 text-sm text-ink-2">
+        <div className="mb-2 flex items-center gap-2 font-semibold text-ink">
+          <Icon name="bulb" size={15} /> How to work on a project
+        </div>
+        <ul className="ml-5 list-disc space-y-1">
+          <li>
+            <b className="text-ink">Slow is fine.</b> This takes several sittings. Speed isn't measured here; nothing is.
+          </li>
+          <li>
+            <b className="text-ink">Getting stuck is the work, not a sign you're behind.</b> Read the failing test's message first; it usually says exactly
+            what's wrong.
+          </li>
+          <li>
+            <b className="text-ink">One small step, then check.</b> Make one test pass, run it, then the next. Commit with git each time a milestone goes
+            green, so you can always go back.
+          </li>
+          <li>
+            <b className="text-ink">Hints are a tool, not a failure.</b> They nudge your thinking and never give you code. The README's "When you're
+            stuck" section has the tools.
+          </li>
+        </ul>
+      </section>
+
       <section className="mt-8">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
           <Icon name="terminal" size={18} /> Get the starter
         </h2>
         <div className="card p-4">
-          <p className="text-sm text-ink-2">Copy the starter folder somewhere of your own, install, and open it in your editor. The README inside says how to run and test it.</p>
+          <p className="text-sm text-ink-2">Run this in a terminal to copy the starter into <code>~/code</code>, then open that folder in your editor. Its README says how to build, run and test it, and what to do when you're stuck.</p>
           <div className="mt-3 flex items-stretch gap-2">
             <code className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-line bg-surface-2 px-3 py-2 font-mono text-[12px] whitespace-nowrap">{project.starterCommand}</code>
             <button

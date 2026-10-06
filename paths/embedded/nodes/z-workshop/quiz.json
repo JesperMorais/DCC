@@ -1,0 +1,66 @@
+[
+  {
+    "type": "order",
+    "q": "A fresh terminal, and `make build` fails with a wall of errors. Put the checks in the order that finds the cause fastest.",
+    "items": [
+      "Is the venv active (`(.venv)` in the prompt)?",
+      "Does `west --version` answer?",
+      "Does `echo $ZEPHYR_BASE` print the workspace's `zephyr/` folder?",
+      "Does `cmake --version` say 3.20 or newer?",
+      "Does the `hello_world` smoke test build and print `Hello World!`?",
+      "Does the project build after deleting `build/`?"
+    ],
+    "explain": "Each check depends on the ones before it: west lives in the venv, west needs `ZEPHYR_BASE` to find Zephyr from outside the workspace, CMake runs the build west starts, and `hello_world` proves the whole chain on code you didn't write. Only when all of that works is it worth suspecting your project, and then a stale build directory is the most common cause. Starting from the bottom means reading a hundred lines of CMake output that are all symptoms of one missing `source ... activate`."
+  },
+  {
+    "type": "single",
+    "q": "Your `prj.conf` says `CONFIG_GREET_COUNT=50` and the build stops with this. What happened?",
+    "code": "warning: user value 50 on the int symbol GREET_COUNT (defined at .../hello/Kconfig:3)\nignored due to being outside the active range ([1, 10]) -- falling back on defaults\n\nerror: Aborting due to Kconfig warnings",
+    "options": [
+      "`GREET_COUNT` doesn't exist, so Kconfig ignored the line",
+      "50 is outside the `range 1 10` declared in the app's `Kconfig`, so Kconfig refused it and Zephyr turns that warning into an error",
+      "The C code's loop overflowed at compile time",
+      "`prj.conf` values must be in hex"
+    ],
+    "answer": 1,
+    "explain": "The message names the symbol, the file and line that define it, the value you asked for and the allowed range. Zephyr treats Kconfig warnings like this as fatal (`Aborting due to Kconfig warnings`), which is good: the alternative is a build that silently uses the default. A misspelled symbol is also fatal, but its message says the symbol is undefined. The C compiler never ran: Kconfig is resolved before any C is compiled."
+  },
+  {
+    "type": "single",
+    "q": "You add a brand-new `app.overlay` and run `west build` in the same build directory as before. The log has no `Found devicetree overlay` line, and `build/zephyr/zephyr.dts` doesn't contain your node. What do you do?",
+    "options": [
+      "Rename it to `boards/native_sim.overlay`; `app.overlay` only works on real boards",
+      "Add `#include \"app.overlay\"` to `main.c`",
+      "Rebuild pristine (`west build -p always ...` or delete `build/`): CMake decided which overlay files exist when it first configured that directory",
+      "Run `west update` to refresh the devicetree"
+    ],
+    "answer": 2,
+    "explain": "CMake looks for `app.overlay` (and `boards/<board>.overlay`) when it first configures a build directory and keeps that answer in its cache. Editing an overlay it already knows is picked up; adding a new file isn't. A pristine build starts the configuration over. `app.overlay` works for every board, `native_sim` included, overlays aren't C, and `west update` only fetches repositories."
+  },
+  {
+    "type": "single",
+    "q": "Your overlay's node has `compatible = \"gpio-led\";` and the build fails with this. What's the quickest way to confirm the cause?",
+    "code": "error: 'DT_N_S_alarm_leds_S_led_alarm_P_gpios_IDX_0_VAL_pin' undeclared here (not in a function);\ndid you mean 'DT_N_S_leds_S_led_0_P_gpios_IDX_0_VAL_pin'?",
+    "options": [
+      "Open `build/zephyr/zephyr.dts`, find the node and compare its `compatible` with the board's working LED node",
+      "Read `devicetree.h` from the top until the macro shows up",
+      "Run `west update`",
+      "Switch to `native_sim/native/64`"
+    ],
+    "answer": 0,
+    "explain": "The macro name decodes to node `/alarm_leds/led_alarm`, property `gpios`, cell `pin`. The node exists but its property macros don't, which happens when no binding matches the node's `compatible` and so nothing says what `gpios` is. `zephyr.dts` is the merged tree, with a comment on each line saying which file it came from, so you can see `\"gpio-led\"` next to the board's `\"gpio-leds\"`. Reading Zephyr's headers, updating the workspace or changing the board doesn't touch the cause."
+  },
+  {
+    "type": "multi",
+    "q": "A ztest run ends with this. Which statements are true?",
+    "code": "    Assertion failed at .../src/test_math.c:17: workshop_test_average_of_two_values: (got not equal to 15)\naverage(10, 20) should be 15, got 20\n FAIL - test_average_of_two_values in 0.000 seconds\n...\nSUITE FAIL -  50.00% [workshop]: pass = 1, fail = 1, skip = 0, total = 2\nPROJECT EXECUTION FAILED",
+    "options": [
+      "The failing check is on line 17 of the test file, and the function returned 20",
+      "`zephyr.exe -test=workshop::test_average_of_two_values` reruns only this test",
+      "Both tests in the suite failed",
+      "The build failed, so no test ran"
+    ],
+    "answer": [0, 1],
+    "explain": "The assertion line gives the file and line, the brackets give the comparison, and the message (written by the test's author) gives the expected and actual values. The summary says 1 passed and 1 failed out of 2. `-test=suite::test` is a native_sim option for ztest images, handy while you fix one thing. The tests ran: a build failure never gets as far as `START` and `FAIL` lines."
+  }
+]

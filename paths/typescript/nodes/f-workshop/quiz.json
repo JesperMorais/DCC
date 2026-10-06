@@ -1,0 +1,59 @@
+[
+  {
+    "type": "single",
+    "q": "A test fails with this diff. What did **your function** return for `id`?",
+    "code": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    done: false,\n+   id: 3,\n-   id: 5,\n    text: 'c'\n  }",
+    "options": ["`3`", "`5`", "Both: the test ran twice", "Neither: `done` is the problem"],
+    "answer": 0,
+    "explain": "`+` lines are the **actual** value, what your code produced; `-` lines are what the test **expected**. So you returned `3` and the test wanted `5`. Lines with no sign (`done`, `text`) matched, so they're not the problem. Read the test's input next to see why 5 is right."
+  },
+  {
+    "type": "single",
+    "q": "Which line of this stack trace should you open first?",
+    "code": "test at tests/m1.test.ts:1:476\n  ...\n    at TestContext.<anonymous> (/home/you/code/todo-cli/tests/m1.test.ts:19:10)\n    at Test.runInAsyncScope (node:async_hooks:214:14)\n    at Test.run (node:internal/test_runner/test:1047:25)",
+    "options": [
+      "`tests/m1.test.ts:19:10`",
+      "`tests/m1.test.ts:1:476`",
+      "`node:internal/test_runner/test:1047:25`",
+      "`node:async_hooks:214:14`"
+    ],
+    "answer": 0,
+    "explain": "The `at` frame that points into **your project's files** is the one that matters: line 19 of the test is the assertion that failed, and its input is right above it. The `test at …:1:476` header can point at the wrong line (line 1 here). Lines starting with `node:` are Node's own machinery, which you never need to read."
+  },
+  {
+    "type": "single",
+    "q": "You run `npm run test:m1` and see `error TS2322: Type 'string' is not assignable to type 'number'`, and no test results at all. What happened?",
+    "options": [
+      "The script type-checks first (`tsc --noEmit && …`), found a type error, and stopped before running the tests",
+      "Every test crashed because of the string",
+      "`npm install` didn't finish, so the tests are missing",
+      "The tests passed but printed a warning"
+    ],
+    "answer": 0,
+    "explain": "`&&` means \"only run the next command if this one succeeded\". `tsc --noEmit` failed, so the tests never started. That's deliberate: `tsx` runs code without checking types, so without this step the wrong type could fail somewhere confusing or pass by luck. Fix the line the error points at (file:line:column) and run again."
+  },
+  {
+    "type": "multi",
+    "q": "Which of these belong in your project's git history? Select all that apply.",
+    "options": [
+      "`src/todo.ts`",
+      "`node_modules/`",
+      "`package.json`",
+      "`tests/m1.test.ts`"
+    ],
+    "answer": [0, 2, 3],
+    "explain": "Commit what you wrote and what describes the project: source, tests and `package.json`. `node_modules/` is thousands of downloaded files that `npm install` recreates from `package.json` at any time, so it goes in `.gitignore`. Commit each time a milestone goes green, and you can always get back to a working version."
+  },
+  {
+    "type": "order",
+    "q": "A milestone's tests are red and you're not sure why. Put a calm debugging loop in order.",
+    "items": [
+      "Read the first failing test only: its name, the + actual / - expected diff, and its line in the test file",
+      "Run just that test with --test-name-pattern",
+      "Print the value you're unsure about with console.error",
+      "Make one small change and run the test again",
+      "When it's green, commit"
+    ],
+    "explain": "One failure at a time, one change at a time. Reading the first failure tells you what's wrong; running only that test keeps the output short; printing the value shows you what your code really sees instead of what you assume. Small steps mean that when something changes, you know which edit did it. Committing on green gives you a safe point to come back to."
+  }
+]

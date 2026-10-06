@@ -1,0 +1,58 @@
+[
+  {
+    "type": "single",
+    "q": "A sensor process reconnects to the daemon's FIFO in a loop. Now and then it fails with `ENXIO` on `open`, or with `EPIPE` on `write`. The daemon handles EOF like this. What's wrong?",
+    "code": "if (read(d->fifo, buf, sizeof buf) == 0) {      /* the last writer left */\n    epoll_ctl(d->ep, EPOLL_CTL_DEL, d->fifo, NULL);\n    close(d->fifo);\n    d->fifo = open(path, O_RDONLY | O_NONBLOCK);\n    epoll_ctl(d->ep, EPOLL_CTL_ADD, d->fifo, &ev);\n}",
+    "options": [
+      "Between `close` and `open` nobody reads the FIFO. Open the new read end first, then close the old one",
+      "The read end must be opened without `O_NONBLOCK`",
+      "EOF should be ignored: the next writer will make the fd readable again",
+      "`EPOLL_CTL_DEL` must come after `close`"
+    ],
+    "answer": 0,
+    "explain": "For a few microseconds the FIFO has **no reader**. A non-blocking writer that opens in that gap gets `ENXIO`, and one that connected just before gets `EPIPE` on its next write. Opening the new read end first closes the gap, and a fresh read end doesn't report EOF until a writer has come and gone. A blocking open would hang the daemon until a writer appears. Ignoring EOF spins the loop at 100 % CPU, because EOF stays readable forever. And `EPOLL_CTL_DEL` belongs *before* `close`, as it is here."
+  },
+  {
+    "type": "single",
+    "q": "A daemon's `main` does: load the config (40 ms), create the epoll set, then `sigprocmask` + `signalfd` for SIGHUP and SIGTERM. Now and then, `systemctl reload` right after a start kills it. Why?",
+    "options": [
+      "signalfd only reports signals sent after it was created",
+      "During the first 40 ms SIGHUP isn't blocked yet, so its default action (terminate) runs",
+      "systemd sends SIGKILL on reload",
+      "Two SIGHUPs arrived and the second one is fatal"
+    ],
+    "answer": 1,
+    "explain": "Until `sigprocmask` blocks it, SIGHUP has its **default action, which terminates the process**. Block the signals first thing in `main`, before anything slow and before creating threads. A signal that arrives after it's blocked waits as pending, and the signalfd reports it even if it came before the signalfd existed. systemd's reload sends SIGHUP, not SIGKILL. And a second SIGHUP is no more fatal than the first: while one is pending, more of the same just merge into it."
+  },
+  {
+    "type": "number",
+    "q": "Signals SIGHUP, SIGHUP, SIGHUP and SIGTERM are sent to a daemon that blocks all of them, before its loop gets to the signalfd. How many `struct signalfd_siginfo` records does it read in total?",
+    "answer": 2,
+    "tolerance": 0,
+    "explain": "Standard signals don't queue: each one is either pending or not. The three SIGHUPs collapse into **one** record, plus one for SIGTERM, so **2**. That's why SIGHUP should mean \"reload the config\", never \"count this\". (Real-time signals, `SIGRTMIN` and up, do queue.)"
+  },
+  {
+    "type": "multi",
+    "q": "At startup, the daemon finds something at its socket path `/run/plumbd.sock`. When should it `unlink` the path and bind?",
+    "options": [
+      "When `lstat` says it's a socket (a leftover from a crash or a SIGKILL)",
+      "When it's a regular file: it's in the way, and `bind` would fail",
+      "When it's a symlink to a socket",
+      "When the path doesn't exist yet (just bind, nothing to unlink)"
+    ],
+    "answer": [0],
+    "explain": "Only a socket file is a leftover worth replacing: `bind` fails with `EADDRINUSE` while it's there, and a crashed daemon can't clean up. A regular file is someone's data, perhaps a config at a path you got from a typo, so refuse to start and name the path. `lstat` doesn't follow symlinks, so a symlink shows up as a symlink and is refused as well. And when nothing is there, there's nothing to unlink: just bind."
+  },
+  {
+    "type": "single",
+    "q": "A shell script feeding the daemon's FIFO dies with exit status **141** whenever the daemon restarts. What happened?",
+    "options": [
+      "The daemon sent it SIGTERM",
+      "It wrote to the FIFO after the last reader closed, and SIGPIPE's default action killed it",
+      "The FIFO filled up and the write timed out",
+      "`open` failed with `ENXIO`"
+    ],
+    "answer": 1,
+    "explain": "A status above 128 is 128 + the signal number, and 141 − 128 = 13 is **SIGPIPE**. Writing to a pipe or FIFO with no reader raises SIGPIPE, which terminates by default. Ignore it (`trap '' PIPE` in a shell, `signal(SIGPIPE, SIG_IGN)` in C) and the write fails with `EPIPE` instead, which a program can handle. SIGTERM would be 143. A full FIFO just blocks or gives `EAGAIN`, and `ENXIO` is an `open` error, not a death."
+  }
+]

@@ -9,3 +9,5 @@ It all runs on your PC. The hardware sits behind a three-function HAL, and a sim
 This is the Fundamentals section put to work: bit masks and fields on `volatile` registers, base-plus-offset register access, a lock-free single-producer single-consumer ring buffer fed by an ISR, overflow and overrun counting, a state machine with an `enum` and a `switch`, and fixed buffers with no `malloc` anywhere. The signatures and the tests are given; the code in between is yours.
 
 **How to start:** copy the starter (the command is on this page), run `make` to check it builds, read the `README.md`, and start at milestone 1. `make test-m1` (and so on) tells you when each milestone is done, and `make run` lets you type at your shell as it grows.
+
+There's no clock on this. A firmware engineer's real skill isn't typing C quickly. It's staying calm in front of a failing test, reading it, changing one thing and checking again. Expect to be stuck several times: that's where the learning happens, and the README's "When you're stuck" section is there for exactly those moments.

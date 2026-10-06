@@ -8,10 +8,12 @@ on a PC is `src/hal_host.c`. The milestones (in the app) say what each part must
 ## Build, run, test
 
 ```sh
-make            # builds build/uart-shell and build/tests
-make run        # type at the shell. Ctrl-C or Ctrl-D quits
-make test-m1    # one milestone's tests (m1 to m4)
-make test       # all of them
+make                         # builds build/uart-shell and build/tests
+make run                     # type at the shell. Ctrl-C or Ctrl-D quits
+make test-m1                 # one milestone's tests (m1 to m4)
+make test                    # all of them
+make test T=backspace        # only the tests whose name contains "backspace"
+make debug T="m2 backspace"  # run that test under gdb (see "When you're stuck")
 ```
 
 `make run` puts your terminal in raw mode, so every key you press goes to the
@@ -31,6 +33,56 @@ If your gcc has no sanitizers, use `make SANITIZE= test`.
 
 Later milestones build on earlier ones: the m3 tests type into the UART, so
 they need your m1 and m2 code to work.
+
+The build uses `-Werror`, so every warning stops it. You'll see the warning
+marked `error: ... [-Werror=unused-variable]` and then the line
+`cc1: all warnings being treated as errors`. That last line is not a second
+problem, just gcc saying why a warning broke the build. Fix the warning above
+it. They're on purpose: in C, most warnings are a bug that hasn't happened yet.
+
+## When you're stuck
+
+The node *Workshop: C on your own machine* walks through each of these tools
+with real output from this project.
+
+1. **Read the first failing test only.** Each test prints its findings and
+   *then* its verdict, so the `#` lines belong to the `not ok` line below them:
+
+   ```
+   #   tests/test_m2.c:128: FEED(&l, "\r") is LINE_NONE (0), expected LINE_READY (1)
+   #   tests/test_m2.c:130: sim_tx() is not what we expected
+   #     got       ""
+   #     expected  "\r\n"
+   not ok 11 - m2: Enter on an empty line gives an empty line
+   ```
+
+   `file:line` is the check that failed: open it, the test's input is right
+   there. `X is A, expected B` means your code returned A. Strings show `got`
+   and `expected` with `\r`, `\n` and `\b` made visible, and enum values are
+   printed by name. Fix that one, rerun, and only then look at the next. Later
+   failures are often the same bug again.
+   If the line says `exited with status 1: see the sanitizer report above`,
+   scroll up: the report's first `#0 ... in function file.c:line` (ASan) or
+   `file.c:line: runtime error:` (UBSan) is where your code went wrong.
+   `timed out after 2 s` almost always means a loop that never ends.
+2. **Run just that milestone** (`make test-m2`), or one test by name:
+   `make test T="empty line"` or `./build/tests m2 backspace`. Any part of the
+   name after `not ok N -` works.
+3. **Look at the value.** Put `fprintf(stderr, "len=%u state=%d\n", l->len, l->state);`
+   where you're unsure (with `#include <stdio.h>` at the top). stderr shows up in the test output but the tests never
+   check it. (Don't use `out_printf` for this: that goes to the simulated UART
+   and the tests do check it.) For a closer look, `make debug T="m2 backspace"`
+   starts gdb on that test: `break line_feed`, `run`, then `bt` (who called
+   me?), `print *l`, `next`, `finish`. Pick a name that matches one test.
+   Variables shown as `<optimized out>`? `make clean && make OPT=-O0`.
+4. **Make the step smaller.** One function, one test, one line at a time. A
+   ring that can't `put` one byte and `get` it back won't survive the ISR test.
+5. **Take a hint.** Hints are a tool, not a failure. They point at the lesson to
+   reread.
+6. **Commit when green.** `git init` once (there's a `.gitignore` for `build/`),
+   then `git add -A && git commit -m "m2 green"` after each milestone, so you can
+   always get back to a working version. `git diff` shows what you changed since.
+7. **Walk away for ten minutes.** Seriously. Most bugs are found on the way back.
 
 ## Files
 

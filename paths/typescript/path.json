@@ -191,14 +191,26 @@
       "covers": []
     },
     {
-      "id": "f-project",
+      "id": "f-workshop",
       "section": "fundamentals",
       "row": 5,
       "col": 1.7,
+      "kind": "lesson",
+      "title": "Workshop: your own machine",
+      "requires": [
+        "f-boss"
+      ],
+      "covers": []
+    },
+    {
+      "id": "f-project",
+      "section": "fundamentals",
+      "row": 5,
+      "col": 3.4,
       "kind": "project",
       "title": "Project: terminal to-do list",
       "requires": [
-        "f-boss"
+        "f-workshop"
       ],
       "covers": [
         "arrays",
@@ -312,14 +324,27 @@
       "covers": []
     },
     {
-      "id": "c-project",
+      "id": "c-workshop",
       "section": "core",
       "row": 9.4,
       "col": 1.7,
+      "kind": "lesson",
+      "title": "Workshop: from functions to a program",
+      "requires": [
+        "c-boss"
+      ],
+      "covers": []
+    },
+    {
+      "id": "c-project",
+      "section": "core",
+      "row": 9.4,
+      "col": 3.4,
       "kind": "project",
       "title": "Project: expense tracker CLI",
       "requires": [
-        "c-boss"
+        "c-workshop",
+        "f-project"
       ],
       "covers": [
         "interfaces",
@@ -428,14 +453,27 @@
       "covers": []
     },
     {
-      "id": "g-project",
+      "id": "g-workshop",
       "section": "generics",
       "row": 13.8,
       "col": 1.7,
+      "kind": "lesson",
+      "title": "Workshop: writing your own tests",
+      "requires": [
+        "g-boss"
+      ],
+      "covers": []
+    },
+    {
+      "id": "g-project",
+      "section": "generics",
+      "row": 13.8,
+      "col": 3.4,
       "kind": "project",
       "title": "Project: typed event bus & store",
       "requires": [
-        "g-boss"
+        "g-workshop",
+        "c-project"
       ],
       "covers": [
         "generics",

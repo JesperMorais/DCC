@@ -19,6 +19,12 @@
  * FromISR APIs are allowed (calling hw_pump_set() or hw_read_level() from it
  * aborts with a message). portYIELD_FROM_ISR() switches to the woken task
  * before the handler returns, the same way the port's own tick ISR does.
+ *
+ * The same goes for the kernel's task-only API. The Makefile links the plant
+ * with -Wl,--wrap=<function> for each one listed at the end of this file, so
+ * a call such as xTaskNotify() reaches __wrap_xTaskGenericNotify() here first.
+ * In a task it goes straight on to the real kernel function; in the ISR it
+ * aborts and names the FromISR API to use instead.
  */
 #include "hw.h"
 
@@ -29,7 +35,9 @@
 #include <unistd.h>
 
 #include "FreeRTOS.h"
+#include "queue.h"
 #include "task.h"
+#include "timers.h"
 
 #define LEVEL_START     400
 #define LEVEL_MAX       1000
@@ -197,4 +205,97 @@ void vApplicationTickHook(void)
             kill(getpid(), SIGUSR2); /* pending until the running task unblocks signals */
         }
     }
+}
+
+/* Task-only kernel functions, checked against the ISR (see the top of this
+ * file). The names are the kernel's real entry points: xQueueSend() and
+ * xSemaphoreGive() are macros for xQueueGenericSend(), and so on. */
+static void task_only(const char *what, const char *instead)
+{
+    if (in_isr) {
+        fprintf(stderr, "hw: %s called from an ISR: only FromISR APIs are allowed there (%s)\n", what, instead);
+        abort();
+    }
+}
+
+#define NO_WAITING "an ISR must never wait: wake a task and let it wait"
+
+BaseType_t __real_xQueueGenericSend(QueueHandle_t q, const void *item, TickType_t wait, BaseType_t pos);
+BaseType_t __wrap_xQueueGenericSend(QueueHandle_t q, const void *item, TickType_t wait, BaseType_t pos)
+{
+    task_only("xQueueSend() or xSemaphoreGive()", "use xQueueSendFromISR() or xSemaphoreGiveFromISR()");
+    return __real_xQueueGenericSend(q, item, wait, pos);
+}
+
+BaseType_t __real_xQueueReceive(QueueHandle_t q, void *item, TickType_t wait);
+BaseType_t __wrap_xQueueReceive(QueueHandle_t q, void *item, TickType_t wait)
+{
+    task_only("xQueueReceive()", "use xQueueReceiveFromISR()");
+    return __real_xQueueReceive(q, item, wait);
+}
+
+BaseType_t __real_xQueueSemaphoreTake(QueueHandle_t q, TickType_t wait);
+BaseType_t __wrap_xQueueSemaphoreTake(QueueHandle_t q, TickType_t wait)
+{
+    task_only("xSemaphoreTake()", "use xSemaphoreTakeFromISR() for a binary semaphore; a mutex can't be taken in an ISR at all");
+    return __real_xQueueSemaphoreTake(q, wait);
+}
+
+#if configUSE_TASK_NOTIFICATIONS == 1
+BaseType_t __real_xTaskGenericNotify(TaskHandle_t task, UBaseType_t index, uint32_t value, eNotifyAction action,
+                                     uint32_t *previous);
+BaseType_t __wrap_xTaskGenericNotify(TaskHandle_t task, UBaseType_t index, uint32_t value, eNotifyAction action,
+                                     uint32_t *previous)
+{
+    task_only("xTaskNotify() or xTaskNotifyGive()", "use xTaskNotifyFromISR() or vTaskNotifyGiveFromISR()");
+    return __real_xTaskGenericNotify(task, index, value, action, previous);
+}
+
+BaseType_t __real_xTaskGenericNotifyWait(UBaseType_t index, uint32_t clear_on_entry, uint32_t clear_on_exit,
+                                         uint32_t *value, TickType_t wait);
+BaseType_t __wrap_xTaskGenericNotifyWait(UBaseType_t index, uint32_t clear_on_entry, uint32_t clear_on_exit,
+                                         uint32_t *value, TickType_t wait)
+{
+    task_only("xTaskNotifyWait()", NO_WAITING);
+    return __real_xTaskGenericNotifyWait(index, clear_on_entry, clear_on_exit, value, wait);
+}
+
+uint32_t __real_ulTaskGenericNotifyTake(UBaseType_t index, BaseType_t clear, TickType_t wait);
+uint32_t __wrap_ulTaskGenericNotifyTake(UBaseType_t index, BaseType_t clear, TickType_t wait)
+{
+    task_only("ulTaskNotifyTake()", NO_WAITING);
+    return __real_ulTaskGenericNotifyTake(index, clear, wait);
+}
+#endif
+
+void __real_vTaskDelay(TickType_t ticks);
+void __wrap_vTaskDelay(TickType_t ticks)
+{
+    task_only("vTaskDelay()", NO_WAITING);
+    __real_vTaskDelay(ticks);
+}
+
+TickType_t __real_xTaskGetTickCount(void);
+TickType_t __wrap_xTaskGetTickCount(void)
+{
+    task_only("xTaskGetTickCount()", "use xTaskGetTickCountFromISR()");
+    return __real_xTaskGetTickCount();
+}
+
+#if configUSE_TIMERS == 1
+BaseType_t __real_xTimerGenericCommandFromTask(TimerHandle_t timer, BaseType_t command, TickType_t value,
+                                               BaseType_t *woken, TickType_t wait);
+BaseType_t __wrap_xTimerGenericCommandFromTask(TimerHandle_t timer, BaseType_t command, TickType_t value,
+                                               BaseType_t *woken, TickType_t wait)
+{
+    task_only("xTimerStart(), xTimerStop() or xTimerReset()", "use the timer's ...FromISR() version");
+    return __real_xTimerGenericCommandFromTask(timer, command, value, woken, wait);
+}
+#endif
+
+void __real_vPortEnterCritical(void);
+void __wrap_vPortEnterCritical(void)
+{
+    task_only("taskENTER_CRITICAL()", "use taskENTER_CRITICAL_FROM_ISR()");
+    __real_vPortEnterCritical();
 }
