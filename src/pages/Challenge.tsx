@@ -472,7 +472,12 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                 {(!view.newTopics.includes(view.topics[0]) || conceptSeen) && <ConceptCard view={view} onOpen={openConcept} tess={voice !== "off"} />}
               </>
             )}
-            {tab === "concept" && <LessonContent source={view.learn} />}
+            {tab === "concept" && (
+              <>
+                <LessonContent source={view.learn} />
+                {view.learnMore.length > 0 && <LearnMore items={view.learnMore} active={!!active} />}
+              </>
+            )}
             {tab === "tests" && (
               <>
                 <p className="mb-3 text-sm text-ink-2">
@@ -636,6 +641,33 @@ function ConceptCard({ view, onOpen, tess, top = false }: { view: ChallengeView;
       </span>
       <Icon name="chevron" size={16} className="text-muted" />
     </button>
+  );
+}
+
+/** Links from a challenge's Concept tab to the skill-tree nodes that teach its topics in depth. */
+function LearnMore({ items, active }: { items: ChallengeView["learnMore"]; active: boolean }) {
+  return (
+    <div className="mt-8 border-t border-line pt-5">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <Icon name="book" size={15} /> Still fuzzy? Learn more in the skill tree
+      </h3>
+      <p className="mt-1 text-xs text-muted">
+        {active
+          ? "A full lesson with a quiz and a lab. Your clock pauses while you're there and your code is saved, so come back whenever you're ready."
+          : "A full lesson with a quiz and a lab."}
+      </p>
+      <div className="mt-3 flex flex-col gap-2">
+        {items.map((n) => (
+          <Link key={`${n.path}/${n.node}`} to={`/paths/${n.path}/${n.node}`} className="flex items-center gap-3 rounded-xl border border-line p-3 hover:bg-surface-2">
+            <span className="flex-1">
+              <span className="block text-sm font-medium text-ink">{n.title}</span>
+              <span className="block text-xs text-muted">Covers {n.topics.join(", ")}</span>
+            </span>
+            <Icon name="chevron" size={16} className="text-muted" />
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

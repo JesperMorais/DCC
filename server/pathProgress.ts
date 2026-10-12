@@ -2,7 +2,7 @@
 import type { Challenge } from "./challenges.ts";
 import { gradeQuestion, publicQuiz, XP, type LoadedPath, type PathNode } from "./paths.ts";
 import type { Data, NodeProgress, PathProgress } from "./store.ts";
-import { CLEAN_SOLVES_TO_CLEAR, weaknesses } from "./weakness.ts";
+import { cameFrom, CLEAN_SOLVES_TO_CLEAR, weaknesses } from "./weakness.ts";
 
 export type NodeStatus = "locked" | "available" | "in-progress" | "done";
 
@@ -30,13 +30,17 @@ export function progressOf(data: Data, pathId: string): PathProgress {
 
 const blank = (): NodeProgress => ({ quizPassed: false, quizAttempts: 0, quizFirstTry: false, labSolved: false, labHints: null, stars: 0, xp: 0 });
 
-/** `weak`: a daily showed this node's topic is shaky, so it opens early even if its prerequisites aren't done. */
-export function nodeStatus(p: PathProgress, node: PathNode, weak = false): NodeStatus {
+/**
+ * `early`: opens even if its prerequisites aren't done, because a daily showed its topic is shaky or an open
+ * challenge's "Learn more" points here. A node once started stays open.
+ */
+export function nodeStatus(p: PathProgress, node: PathNode, early = false): NodeStatus {
   const np = p.nodes[node.id];
   if (np?.completedAt) return "done";
-  const unlocked = weak || node.requires.every((r) => p.nodes[r]?.completedAt);
+  const started = !!np && (np.quizAttempts > 0 || np.labSolved || Object.keys(np.milestones ?? {}).length > 0);
+  const unlocked = early || started || node.requires.every((r) => p.nodes[r]?.completedAt);
   if (!unlocked) return "locked";
-  return np && (np.quizAttempts > 0 || np.labSolved || Object.keys(np.milestones ?? {}).length) ? "in-progress" : "available";
+  return started ? "in-progress" : "available";
 }
 
 /** Marks the node complete once all its parts are done; returns what changed. */
@@ -80,7 +84,7 @@ export function pathView(data: Data, path: LoadedPath, labs: Map<string, Challen
       row: n.row,
       col: n.col,
       requires: n.requires,
-      status: nodeStatus(p, n, !!w),
+      status: nodeStatus(p, n, !!w || !!cameFrom(data, path, n, challenges)),
       weak: w,
       stars: np?.stars ?? 0,
       xp: XP[n.kind],
@@ -119,6 +123,7 @@ export function nodeView(data: Data, path: LoadedPath, node: PathNode, labs: Map
   const p = progressOf(data, path.id);
   const np = p.nodes[node.id] ?? blank();
   const weak = weaknesses(data, path, challenges).get(node.id) ?? null;
+  const from = cameFrom(data, path, node, challenges);
   const lab = node.labId ? labs.get(node.labId) : undefined;
   const idx = path.nodes.findIndex((n) => n.id === node.id);
   const nextNodes = path.nodes.filter((n) => n.requires.includes(node.id)).map((n) => ({ id: n.id, title: n.title, status: nodeStatus(p, n) }));
@@ -130,7 +135,9 @@ export function nodeView(data: Data, path: LoadedPath, node: PathNode, labs: Map
     kind: node.kind,
     language: path.language,
     section: path.sections.find((s) => s.id === node.section)!,
-    status: nodeStatus(p, node, !!weak),
+    status: nodeStatus(p, node, !!weak || !!from),
+    /** The unfinished challenge that sent the learner here; its clock is paused while they read. */
+    from,
     weak: weak && { ...weak, cleanSolvesToClear: CLEAN_SOLVES_TO_CLEAR },
     lesson: node.lesson ?? "_This lesson is still being written._",
     quiz: publicQuiz(node.quiz, `${path.id}:${node.id}`),

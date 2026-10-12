@@ -52,6 +52,8 @@ export interface ChallengeView {
   newTopics: string[];
   profile: "c" | "embedded" | "linux";
   pathNode: { path: string; node: string } | null;
+  /** Skill-tree nodes that teach this challenge's topics. */
+  learnMore: { path: string; node: string; title: string; topics: string[] }[];
 }
 
 export interface LibraryItem {

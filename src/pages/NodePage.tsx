@@ -88,6 +88,19 @@ export default function NodePage() {
         <Mascot mood={done ? "happy" : node.kind === "boss" ? "cheer" : "read"} size={86} animated hat={hat} className="shrink-0 text-ink-2" />
       </header>
 
+      {node.from && (
+        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-xl border border-accent/40 bg-accent-soft p-4 text-sm">
+          <Icon name="pause" size={16} className="text-accent" />
+          <p className="min-w-0 flex-1 text-ink-2">
+            You came here from {node.from.isDaily ? "today's daily" : ""} <span className="font-medium text-ink">“{node.from.title}”</span>. Its clock is paused and your
+            code is saved. Take your time.
+          </p>
+          <button className="btn btn-primary h-8 text-xs" onClick={() => navigate(`/solve/${node.from!.id}`)}>
+            Back to the challenge <Icon name="chevron" size={12} />
+          </button>
+        </div>
+      )}
+
       {node.weak && (
         <div className="mt-5 rounded-xl border border-warn/40 bg-warn-soft p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold text-warn">

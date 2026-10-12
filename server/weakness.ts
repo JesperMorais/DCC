@@ -91,3 +91,34 @@ export function focusFor(data: Data, paths: LoadedPath[], challenges: Challenge[
 }
 
 export type Focus = ReturnType<typeof focusFor>[number];
+
+/** "Learn more": the skill-tree nodes that teach a challenge's topics, one per topic, in the challenge's topic order. */
+export function learnMoreFor(paths: LoadedPath[], c: Challenge) {
+  if (c.bank === "path") return [];
+  const out: { path: string; node: string; title: string; topics: string[] }[] = [];
+  for (const topic of c.topics) {
+    for (const p of paths.filter((p) => p.language === c.language)) {
+      // The first lesson that covers it, in tree order. Bosses and projects test a topic; they don't teach it.
+      const node = p.nodes.find((n) => (n.kind === "lab" || n.kind === "lesson") && n.covers?.includes(topic));
+      if (!node) continue;
+      const seen = out.find((x) => x.path === p.id && x.node === node.id);
+      if (seen) seen.topics.push(topic);
+      else out.push({ path: p.id, node: node.id, title: node.title, topics: [topic] });
+      break;
+    }
+  }
+  return out;
+}
+
+/** The unfinished challenge whose "Learn more" points at this node, so the node opens early and offers the way back. */
+export function cameFrom(data: Data, path: LoadedPath, node: PathNode, challenges: Challenge[]) {
+  const byId = new Map(challenges.map((c) => [c.id, c]));
+  const open = data.attempts
+    .filter((a) => a.status === "in-progress" && byId.get(a.challengeId)?.language === path.language)
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  for (const a of open) {
+    const c = byId.get(a.challengeId)!;
+    if (learnMoreFor([path], c).some((x) => x.path === path.id && x.node === node.id)) return { id: c.id, title: c.title, isDaily: a.isDaily };
+  }
+  return null;
+}

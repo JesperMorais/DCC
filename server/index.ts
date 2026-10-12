@@ -21,7 +21,7 @@ import {
 } from "./engine.ts";
 import { labSolved, nodeView, pathView, progressOf, setMilestone, submitQuiz } from "./pathProgress.ts";
 import { loadPaths } from "./paths.ts";
-import { focusFor, projectIdeas } from "./weakness.ts";
+import { focusFor, learnMoreFor, projectIdeas } from "./weakness.ts";
 import { HARNESS_DTS } from "./runner/harness.ts";
 import { runChallenge } from "./runner/index.ts";
 import { load, reset, save, today, type Attempt, type Experience } from "./store.ts";
@@ -91,6 +91,7 @@ function challengeView(c: Challenge) {
     languageStarted: rating !== null || c.bank === "path",
     profile: c.profile ?? "c",
     pathNode: c.pathNode ?? null,
+    learnMore: learnMoreFor(paths, c),
   };
 }
 
