@@ -5,11 +5,12 @@ import type { Focus, projectIdeas } from "../server/weakness.ts";
 import type { ReviewQueue } from "../server/review.ts";
 import type { RunResult } from "../server/runner/index.ts";
 import type { Attempt } from "../server/store.ts";
+import type { UpdateResult, UpdateStatus } from "../server/update.ts";
 import type { Experience, Lang } from "../shared/languages.ts";
 
 /** The dashboard plus the skill-tree nodes a rough daily pointed at and the challenges due for review. */
 export type Dashboard = EngineDashboard & { focus: Focus[]; projectIdeas: ReturnType<typeof projectIdeas>; review: ReviewQueue };
-export type { Focus, RunResult, Attempt, Experience, Lang };
+export type { Focus, RunResult, Attempt, Experience, Lang, UpdateResult, UpdateStatus };
 export type { Diagnostic, SimTrace } from "../server/runner/index.ts";
 import type { nodeView, pathView, setMilestone, submitQuiz } from "../server/pathProgress.ts";
 export type PathView = ReturnType<typeof pathView>;
@@ -137,6 +138,10 @@ export const api = {
     call<ReturnType<typeof setMilestone>>(`/paths/${path}/nodes/${node}/milestone`, { method: "POST", body: { id, done } }),
   chooseBranch: (path: string, branch: string) => call(`/paths/${path}/branch`, { method: "POST", body: { branch } }),
   harness: () => fetch("/api/harness").then((r) => r.text()),
+  version: () => call<{ commit: string | null }>("/version"),
+  checkUpdate: (force = false) => call<UpdateStatus>(`/update${force ? "?force=1" : ""}`),
+  /** Resolves with the result even when the update was refused (HTTP 409). */
+  applyUpdate: () => call<UpdateResult>("/update", { method: "POST", body: {} }).catch((e) => (e.data as UpdateResult) ?? { ok: false, error: (e as Error).message }),
 };
 
 export const isOnboarded = (s: Dashboard | { profile: null }): s is Dashboard => s.profile !== null;

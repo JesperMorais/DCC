@@ -26,6 +26,7 @@ import { focusFor, learnMoreFor, projectIdeas } from "./weakness.ts";
 import { HARNESS_DTS } from "./runner/harness.ts";
 import { runChallenge } from "./runner/index.ts";
 import { load, reset, save, today, type Attempt, type Experience } from "./store.ts";
+import { applyUpdate, checkForUpdate, currentCommit, RESTART_CODE } from "./update.ts";
 
 const PORT = Number(process.env.PORT ?? 4321);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -405,6 +406,18 @@ app.post("/api/paths/:path/nodes/:node/milestone", async (c) => {
   const r = setMilestone(data, p, node, id, !!done);
   save(data);
   return c.json(r);
+});
+
+/* ---------------- updates ---------------- */
+app.get("/api/version", async (c) => c.json({ commit: await currentCommit() }));
+
+app.get("/api/update", async (c) => c.json(await checkForUpdate(c.req.query("force") === "1")));
+
+app.post("/api/update", async (c) => {
+  const r = await applyUpdate();
+  // Answer first, then hand over to the launcher, which starts the updated server.
+  if (r.ok && r.then === "restart") setTimeout(() => process.exit(RESTART_CODE), 300);
+  return c.json(r, r.ok ? 200 : 409);
 });
 
 // Production: serve the built SPA.

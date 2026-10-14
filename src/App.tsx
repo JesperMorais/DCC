@@ -14,6 +14,7 @@ import Onboarding from "./pages/Onboarding";
 import SettingsPage from "./pages/Settings";
 import { sidebarStreakLine } from "./tess/lines";
 import { useTessVoice } from "./tess/prefs";
+import { SidebarUpdate } from "./components/Update";
 import { setTheme, useTheme } from "./theme";
 import { Icon, type IconName } from "./ui";
 
@@ -170,6 +171,7 @@ function Sidebar({ state, lang }: { state: Dashboard; lang: Lang }) {
       </div>
 
       <div className="mt-auto flex flex-col gap-3 pt-6">
+        <SidebarUpdate />
         <div className="hidden rounded-xl border border-line bg-surface-2 p-3 lg:block">
           <div className="flex items-center gap-2 text-xs text-muted">
             <Icon name="flame" size={14} style={{ color: state.stats.streak ? "var(--flame)" : undefined }} />

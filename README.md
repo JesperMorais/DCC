@@ -10,6 +10,8 @@ npm install
 npm start          # builds the UI and serves everything → http://localhost:4321
 ```
 
+**Updates:** the app checks GitHub for new commits when it starts and every 6 hours. When there's one, an **Update available** button shows in the sidebar (also under Settings → Updates). It pulls, reinstalls dependencies and rebuilds if those changed, restarts, and reloads the page. Your progress in `data/` isn't touched. It only fast-forwards: if you've changed or committed things locally, it says so and leaves the update to you.
+
 For hacking on the app itself: `npm run dev` (API on :4321 + Vite with hot reload on http://localhost:5173).
 
 ## How it works

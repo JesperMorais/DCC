@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Dashboard } from "../api";
 import { Mascot } from "../components/Mascot";
+import { UpdateSettings } from "../components/Update";
 import { setTessVoice, setConceptTips, useConceptTips, useTessVoice, type TessVoice } from "../tess/prefs";
 import { setTheme, useTheme, type ThemePref } from "../theme";
 
@@ -121,6 +122,8 @@ export default function SettingsPage({ state, onChange }: { state: Dashboard; on
           <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={tips} onChange={(e) => setConceptTips(e.target.checked)} />
         </label>
       </section>
+
+      <UpdateSettings />
 
       <section className="card mt-5 border-bad/30 p-5">
         <h2 className="text-[15px] font-semibold text-bad">Reset progress</h2>

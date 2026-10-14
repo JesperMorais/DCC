@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "concurrently -k -n api,web -c magenta,cyan \"tsx watch server/index.ts\" \"vite\"",
     "build": "vite build",
-    "start": "vite build && NODE_ENV=production tsx server/index.ts",
-    "serve": "NODE_ENV=production tsx server/index.ts",
+    "start": "vite build && NODE_ENV=production tsx scripts/launch.ts",
+    "serve": "NODE_ENV=production tsx scripts/launch.ts",
     "validate": "tsx scripts/validate-challenges.ts",
     "validate:paths": "tsx scripts/validate-paths.ts",
     "validate:projects": "tsx scripts/validate-projects.ts",
