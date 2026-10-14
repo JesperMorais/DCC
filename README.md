@@ -19,7 +19,7 @@ For hacking on the app itself: `npm run dev` (API on :4321 + Vite with hot reloa
   - **Python:** pytest-style tests with plain `assert`, rewritten so failures show expected vs received. Each test has a timeout, tracebacks point at your line, and `mypy --strict` feedback on your type hints appears as warnings.
   - **C:** `gcc -std=c17 -Wall -Wextra -pedantic` with **AddressSanitizer + UBSan** and a leak check. Each test runs in its own process, so a segfault, an out-of-bounds read, a leak or signed overflow fails that test with a plain-English explanation of the line it happened on.
 - **Adaptive difficulty (Elo), one rating per language.**
-  - **Daily pick:** slightly above your rating, and it leans towards the topics you're weakest at.
+  - **Daily pick:** a challenge you haven't done yet at your current level (only above it once your level and the ones below are used up), close to your rating, leaning towards the topics you're weakest at.
   - **What moves the rating:** solving raises it. Hints scale the gain down (a hard solve that needed every hint leaves it unchanged), and giving up pulls it down. Time doesn't count. Only your first attempt at a challenge is rated.
   - **Dailies → skill tree:** a daily that went badly (gave up, ≥2 hints, or well over the estimate) marks the tree nodes that teach its topics as "needs practice". It's a recommendation, never a block.
   - **Spaced review:** every challenge you've finished comes back to be written again from a blank editor, after 3, 7, 21, 60 and then 150 days. A solve without hints moves it to the next interval, a solve with hints moves it back one, and giving up starts it over. Reviews are unrated, and the solution stays hidden until you finish.

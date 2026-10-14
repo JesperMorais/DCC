@@ -69,8 +69,8 @@ function hash(s: string) {
 const finished = (a: Attempt) => a.status !== "in-progress";
 
 /**
- * Pick the best next challenge in a language: close to (slightly above) the learner's rating,
- * not recently seen, leaning towards topics they're weakest at.
+ * Pick the best next challenge in a language: not done yet and at the learner's level (never above
+ * while some are left), close to (slightly above) their rating, leaning towards topics they're weakest at.
  */
 export function pickChallenge(data: Data, all: Challenge[], lang: Lang, exclude: Set<string> = new Set()): Challenge | null {
   const challenges = all.filter((c) => c.language === lang && c.bank !== "path");
@@ -94,6 +94,12 @@ export function pickChallenge(data: Data, all: Challenge[], lang: Lang, exclude:
   };
 
   let pool = challenges.filter(eligible);
+  // Unsolved challenges at your level come first, then anything left below it; only reach above once both are used up.
+  const level = levelForRating(lang, rating).level;
+  const atLevel = pool.filter((c) => c.level === level);
+  const below = pool.filter((c) => c.level < level);
+  if (atLevel.length) pool = atLevel;
+  else if (below.length) pool = below;
   if (pool.length === 0) {
     // Everything done: recycle the ones touched longest ago.
     pool = challenges
