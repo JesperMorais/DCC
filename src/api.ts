@@ -2,12 +2,13 @@
 // so a change on one side is a compile error on the other.
 import type { Dashboard as EngineDashboard } from "../server/engine.ts";
 import type { Focus, projectIdeas } from "../server/weakness.ts";
+import type { ReviewQueue } from "../server/review.ts";
 import type { RunResult } from "../server/runner/index.ts";
 import type { Attempt } from "../server/store.ts";
 import type { Experience, Lang } from "../shared/languages.ts";
 
-/** The dashboard plus the skill-tree nodes a rough daily pointed at. */
-export type Dashboard = EngineDashboard & { focus: Focus[]; projectIdeas: ReturnType<typeof projectIdeas> };
+/** The dashboard plus the skill-tree nodes a rough daily pointed at and the challenges due for review. */
+export type Dashboard = EngineDashboard & { focus: Focus[]; projectIdeas: ReturnType<typeof projectIdeas>; review: ReviewQueue };
 export type { Focus, RunResult, Attempt, Experience, Lang };
 export type { Diagnostic, SimTrace } from "../server/runner/index.ts";
 import type { nodeView, pathView, setMilestone, submitQuiz } from "../server/pathProgress.ts";

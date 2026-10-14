@@ -21,6 +21,7 @@ import {
 } from "./engine.ts";
 import { labSolved, nodeView, pathView, progressOf, setMilestone, submitQuiz } from "./pathProgress.ts";
 import { loadPaths } from "./paths.ts";
+import { reviewQueue } from "./review.ts";
 import { focusFor, learnMoreFor, projectIdeas } from "./weakness.ts";
 import { HARNESS_DTS } from "./runner/harness.ts";
 import { runChallenge } from "./runner/index.ts";
@@ -81,7 +82,8 @@ function challengeView(c: Challenge) {
     tests: c.tests,
     hintCount: c.hints.length,
     hints: c.hints.slice(0, active?.hintsUsed ?? 0),
-    solution: everFinished ? c.solution : null,
+    // Hidden during a retry, so a review is recall rather than recognition. Giving up still shows it.
+    solution: everFinished && !active ? c.solution : null,
     attempt: active ?? null,
     solved: attempts.some((a) => a.status === "solved"),
     bestCode: best?.code ?? null,
@@ -103,7 +105,12 @@ app.get("/api/state", (c) => {
   const lang = langParam(c);
   const d = dashboard(data, challenges, lang);
   save(data); // dashboard may have assigned today's daily
-  return c.json({ ...d, focus: focusFor(data, paths, challenges, lang), projectIdeas: projectIdeas(data, paths, challenges, lang) });
+  return c.json({
+    ...d,
+    focus: focusFor(data, paths, challenges, lang),
+    projectIdeas: projectIdeas(data, paths, challenges, lang),
+    review: reviewQueue(data, challenges, lang),
+  });
 });
 
 function startLanguage(lang: Lang, experience: Experience) {

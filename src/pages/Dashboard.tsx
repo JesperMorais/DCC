@@ -42,6 +42,8 @@ export default function DashboardPage({ state }: { state: Dashboard }) {
 
       {state.focus.length > 0 && <FocusCard focus={state.focus} ideas={state.projectIdeas} />}
 
+      {state.review.scheduled > 0 && <ReviewCard review={state.review} />}
+
       <div className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-4">
         <StatTile
           icon="flame"
@@ -252,6 +254,62 @@ function FocusCard({ focus, ideas }: { focus: Dashboard["focus"]; ideas: Dashboa
         </Link>
       ))}
     </section>
+  );
+}
+
+const inDays = (iso: string) => {
+  const d = Math.ceil((Date.parse(iso) - Date.now()) / 86_400_000);
+  return d <= 1 ? "tomorrow" : `in ${d} days`;
+};
+
+/** Challenges you've solved before, back for another go just as they start to fade. */
+function ReviewCard({ review }: { review: Dashboard["review"] }) {
+  const shown = review.due.slice(0, 6);
+  return (
+    <section className="card mt-5 p-5">
+      <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-accent uppercase">
+        <Icon name="refresh" size={14} /> Due for review
+        {review.due.length > 0 && <span className="tabular text-muted">{review.due.length}</span>}
+      </div>
+      <p className="mt-1 text-sm text-ink-2">
+        {review.due.length > 0
+          ? "Write these again from a blank editor. Solve one without hints and it comes back later next time; need hints and it comes back sooner."
+          : `Nothing due. Next up: ${review.next!.title}, ${inDays(review.next!.dueAt)}.`}
+      </p>
+      {shown.length > 0 && (
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {shown.map((r) => (
+            <li key={r.id}>
+              <Link
+                to={`/solve/${r.id}?review`}
+                className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 transition-colors hover:border-line-strong hover:bg-surface-2"
+              >
+                <LevelBadge level={r.level} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink">{r.title}</span>
+                  <span className="block truncate text-xs text-muted">
+                    Last done {relTime(r.lastAt)} · {r.reviews === 0 ? "first review" : `review ${r.reviews + 1}`}
+                  </span>
+                </span>
+                <BoxPips box={r.box} total={review.intervals.length} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {review.due.length > shown.length && <p className="mt-2 text-xs text-muted">+{review.due.length - shown.length} more, most overdue first.</p>}
+    </section>
+  );
+}
+
+/** How far along the review schedule a challenge is: one pip per box. */
+function BoxPips({ box, total }: { box: number; total: number }) {
+  return (
+    <span className="flex shrink-0 gap-0.5" title={`Box ${box + 1} of ${total}`}>
+      {Array.from({ length: total }, (_, i) => (
+        <span key={i} className={`h-3 w-1 rounded-full ${i <= box ? "bg-accent" : "bg-line-strong"}`} />
+      ))}
+    </span>
   );
 }
 

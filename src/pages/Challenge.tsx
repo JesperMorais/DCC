@@ -1,6 +1,6 @@
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, type ChallengeView, type Clock, type FinishResult, type RunResult } from "../api";
 import { editorTheme, monaco } from "../monaco"; // configures the bundled Monaco before <Editor> mounts
 import { LangBadge, LANGUAGES, type Lang } from "../lang";
@@ -41,6 +41,9 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
   const info = LANGUAGES[lang];
   const navigate = useNavigate();
   const { theme } = useTheme();
+  // Review links open straight into a fresh attempt, so your old code isn't on screen first.
+  const [search] = useSearchParams();
+  const review = search.has("review");
 
   const [view, setView] = useState<ChallengeView | null>(null);
   const [code, setCode] = useState("");
@@ -152,7 +155,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
       try {
         let v = await api.challenge(id);
         // Start automatically unless this is a finished challenge being reviewed.
-        if (!v.attempt && (forceStart || v.solution === null)) v = await api.start(id);
+        if (!v.attempt && (forceStart || review || v.solution === null)) v = await api.start(id);
         setView(v);
         setCode(v.attempt ? (readDraft(v.attempt.id) ?? v.starter) : (v.bestCode ?? v.starter));
         setTab("task");
@@ -175,7 +178,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
         setError((e as Error).message);
       }
     },
-    [id],
+    [id, review],
   );
 
   useEffect(() => {
