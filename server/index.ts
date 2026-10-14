@@ -41,6 +41,24 @@ const byId = () => new Map(challenges.map((c) => [c.id, c]));
 
 const app = new Hono();
 
+// The API runs learner code, so only this machine's own pages may use it.
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+app.use("/api/*", async (c, next) => {
+  // DNS rebinding: a foreign hostname pointed at 127.0.0.1 still sends its own Host header.
+  if (!LOCAL_HOST.test(c.req.header("host") ?? "")) return c.json({ error: "forbidden host" }, 403);
+  // CSRF: browsers send Origin on cross-site requests and same-origin POSTs. Any other site (or a
+  // sandboxed "null" origin) may not write; requests without Origin aren't from a web page.
+  const origin = c.req.header("origin");
+  if (c.req.method !== "GET" && c.req.method !== "HEAD" && origin !== undefined) {
+    let host = "";
+    try {
+      host = new URL(origin).host;
+    } catch {}
+    if (!LOCAL_HOST.test(host)) return c.json({ error: "cross-site request blocked" }, 403);
+  }
+  await next();
+});
+
 // Challenge files are plain folders; pick up edits without restarting in dev.
 if (process.env.NODE_ENV !== "production") {
   app.use("/api/*", async (_c, next) => {
