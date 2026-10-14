@@ -1,0 +1,17 @@
+{
+  "kind": "fix",
+  "title": "Fix: every hour shows every event",
+  "level": 3,
+  "rating": 1120,
+  "topics": [
+    "lists",
+    "nested data",
+    "list comprehensions"
+  ],
+  "estMinutes": 10,
+  "hints": [
+    "After `buckets[9].append(...)`, check `buckets[0] is buckets[9]`. What does that tell you?",
+    "`[[]] * 24` doesn't make 24 lists. It makes **one** empty list and puts 24 references to it in the outer list, so appending through any index changes the same list.",
+    "Build a new inner list for every hour: `buckets: list[list[str]] = [[] for _ in range(24)]`."
+  ]
+}

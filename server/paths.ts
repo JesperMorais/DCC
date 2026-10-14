@@ -136,6 +136,7 @@ export function loadPaths(dir = PATHS_DIR): { paths: LoadedPath[]; labs: Challen
             topics: meta.topics ?? [],
             estMinutes: meta.estMinutes ?? 12,
             mode: meta.mode ?? "runtime",
+            kind: "write",
             hints: meta.hints ?? [],
             prompt: fs.readFileSync(path.join(ldir, "prompt.md"), "utf8"),
             learn: readIf(path.join(ndir, "lesson.md")) ?? "",

@@ -1,0 +1,14 @@
+{
+  "title": "Everything costs euros",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1320,
+  "topics": ["closures", "higher-order functions", "generics", "Map"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "Call the memoized function twice with the same first argument but a different second one, and count how often the real function runs.",
+    "A cache is only as good as its key. Look at what the key is built from: two calls that should get different answers must never produce the same key.",
+    "Build the key from *all* the arguments: `const key = JSON.stringify(args);`"
+  ]
+}

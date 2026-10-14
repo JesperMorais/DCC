@@ -1,0 +1,14 @@
+{
+  "title": "Reading a .env file",
+  "kind": "fix",
+  "level": 3,
+  "rating": 1120,
+  "topics": ["string parsing", "Record", "string methods"],
+  "estMinutes": 10,
+  "mode": "runtime",
+  "hints": [
+    "Simple values work. Look at what's special about the value that gets cut short: which character appears inside it?",
+    "`line.split(\"=\")` splits at **every** `=`, so `\"A=b=c\"` becomes three pieces. Destructuring `[key, value]` keeps only the first two and throws the rest away.",
+    "Collect the leftover pieces and glue them back: `const [key, ...rest] = line.split(\"=\");` then use `rest.join(\"=\")` as the value."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the path that doesn't fit",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1320,
+  "topics": ["malloc", "size computation", "strings"],
+  "estMinutes": 8,
+  "hints": [
+    "It only crashes when the function has to add a `/` itself. Count the bytes `path_join(\"logs\", \"a.txt\")` writes and compare that with what it asked `malloc` for.",
+    "The allocation covers the directory, the name and the `'\\0'`, but not the separator. Whenever `need_slash` is true, the final `memcpy` writes one byte past the end of the block.",
+    "Include the separator in the size: `malloc(dir_len + need_slash + name_len + 1)` (a `bool` is 0 or 1, so it adds exactly the byte you need)."
+  ]
+}

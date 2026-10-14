@@ -1,0 +1,13 @@
+{
+  "title": "Backwards on a tie",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1280,
+  "topics": ["sorted", "key functions", "tuple keys", "dataclasses"],
+  "estMinutes": 7,
+  "hints": [
+    "Print the sort key for each team in the reproduction. The points and goal difference are equal, so what decides the order, and in which direction?",
+    "`reverse=True` reverses the comparison of the entire tuple, so the names end up Z to A as well. Only points and goal difference should be descending.",
+    "Drop `reverse=True` and negate the numeric parts instead: `key=lambda t: (-t.points, -t.goal_difference, t.name)`."
+  ]
+}

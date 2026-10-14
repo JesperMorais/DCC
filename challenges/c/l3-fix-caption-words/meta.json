@@ -1,0 +1,13 @@
+{
+  "title": "One word short",
+  "level": 3,
+  "rating": 1060,
+  "kind": "fix",
+  "topics": ["strings", "ctype.h", "bool"],
+  "estMinutes": 8,
+  "hints": [
+    "Captions that start with a space are counted correctly. Trace `\"hi\"` by hand and watch `in_word` on the very first character.",
+    "A word is counted when a non-space character arrives while `in_word` is false. Before the first character nobody is inside a word yet, but the flag starts out saying you are, so the first word is never counted unless a space comes first.",
+    "Start outside a word: `bool in_word = false;`."
+  ]
+}

@@ -1,6 +1,6 @@
 // The adaptive part: an Elo-style skill rating per language, challenge selection and dashboard stats.
 import { LANG_IDS, LANGUAGES, LEVEL_BANDS, type Lang } from "../shared/languages.ts";
-import type { Challenge } from "./challenges.ts";
+import type { Challenge, Kind } from "./challenges.ts";
 import { today, type Attempt, type Data, type Experience } from "./store.ts";
 
 export const START_RATING: Record<Experience, number> = {
@@ -72,8 +72,8 @@ const finished = (a: Attempt) => a.status !== "in-progress";
  * Pick the best next challenge in a language: not done yet and at the learner's level (never above
  * while some are left), close to (slightly above) their rating, leaning towards topics they're weakest at.
  */
-export function pickChallenge(data: Data, all: Challenge[], lang: Lang, exclude: Set<string> = new Set()): Challenge | null {
-  const challenges = all.filter((c) => c.language === lang && c.bank !== "path");
+export function pickChallenge(data: Data, all: Challenge[], lang: Lang, exclude: Set<string> = new Set(), kind: Kind = "write"): Challenge | null {
+  const challenges = all.filter((c) => c.language === lang && c.bank !== "path" && c.kind === kind);
   const rating = ratingFor(data, lang) ?? 900;
   const target = rating + 30; // a gentle stretch
   const now = Date.now();
@@ -124,6 +124,9 @@ export function pickChallenge(data: Data, all: Challenge[], lang: Lang, exclude:
   return pool.reduce((best, c) => (cost(c) < cost(best) ? c : best));
 }
 
+/** Fridays are Fix-it Friday: the daily is a bug to find and fix. */
+export const isFixDay = (date = today()) => new Date(`${date}T12:00:00`).getDay() === 5;
+
 export function dailyChallenge(data: Data, challenges: Challenge[], lang: Lang): Challenge | null {
   const d = today();
   const existing = data.dailies[d]?.[lang];
@@ -131,7 +134,8 @@ export function dailyChallenge(data: Data, challenges: Challenge[], lang: Lang):
   if (found) return found;
   if (!data.profile?.languages[lang]) return null; // pick only once the language is started
   const inProgress = new Set(data.attempts.filter((a) => a.status === "in-progress").map((a) => a.challengeId));
-  const c = pickChallenge(data, challenges, lang, inProgress) ?? pickChallenge(data, challenges, lang);
+  const pick = (kind: Kind) => pickChallenge(data, challenges, lang, inProgress, kind) ?? pickChallenge(data, challenges, lang, new Set(), kind);
+  const c = (isFixDay(d) ? pick("fix") : null) ?? pick("write");
   if (c) data.dailies[d] = { ...data.dailies[d], [lang]: c.id };
   return c;
 }
@@ -256,7 +260,7 @@ export function dashboard(data: Data, everything: Challenge[], lang: Lang) {
   });
 
   const inProgress = data.attempts.filter((a) => a.status === "in-progress").map((a) => a.challengeId);
-  const next = dailyAttempt && dailyAttempt.status !== "in-progress" ? pickChallenge(data, challenges, lang, new Set([daily!.id, ...inProgress])) : null;
+  const next = dailyAttempt && dailyAttempt.status !== "in-progress" ? pickChallenge(data, challenges, lang, new Set([daily!.id, ...inProgress]), daily!.kind) : null;
 
   const summary = (c: Challenge | null | undefined) =>
     c && {
@@ -270,6 +274,7 @@ export function dashboard(data: Data, everything: Challenge[], lang: Lang) {
       topics: c.topics,
       estMinutes: c.estMinutes,
       mode: c.mode,
+      kind: c.kind,
     };
   const { current, best } = streaks(allSolvedDays);
 

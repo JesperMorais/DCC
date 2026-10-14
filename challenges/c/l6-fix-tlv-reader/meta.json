@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the records that come up short",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1600,
+  "topics": ["binary parsing", "byte order", "integer types"],
+  "estMinutes": 12,
+  "hints": [
+    "Collect lengths that work and lengths that fail: 4, 10, 130, 200, 300, 500. Write each one as two bytes in hex. What do the failing ones have in common in their **low** byte?",
+    "The buffer is `const char *`, and `char` is signed on this platform, so a byte like `0xC8` reads as `-56`. In `p[1] << 8 | p[2]` both bytes are promoted to `int` first; a negative `p[2]` is sign-extended to `0xFFFFFFC8`, and OR-ing that in sets all the high bits. The length comes out as 65480 and the record looks truncated.",
+    "Read the length bytes as `unsigned char` before combining them: `(uint16_t)((unsigned char)p[1] << 8 | (unsigned char)p[2])`."
+  ]
+}

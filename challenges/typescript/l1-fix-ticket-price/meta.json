@@ -1,0 +1,14 @@
+{
+  "title": "Senior ticket price",
+  "kind": "fix",
+  "level": 1,
+  "rating": 750,
+  "topics": ["if/else", "comparison"],
+  "estMinutes": 6,
+  "mode": "runtime",
+  "hints": [
+    "Try the ages right on the edge of each group: 11, 12, 64 and 65. Which one gives the wrong price?",
+    "The senior check decides who pays 7. Read it out loud: does it include someone who is exactly 65?",
+    "`>` means \"strictly bigger than\". To include 65 itself, the senior check needs `>=`."
+  ]
+}

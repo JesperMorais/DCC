@@ -73,6 +73,8 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
 
   const active = view?.attempt ?? null;
   const reviewing = !!view && !active;
+  // Bug fixes start from the bug report: the tests show once you've run the code and seen what fails.
+  const testsHidden = view?.kind === "fix" && !!active && !result && !(active.runs > 0);
   const paused = !!active && !!clock.pausedAt;
   // Only the clock's lifetime matters to the effects below, not every view update.
   const clockId = active && view ? view.id : null;
@@ -356,6 +358,11 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           ) : (
             <LevelBadge level={view.level} />
           )}
+          {view.kind === "fix" && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-warn-soft px-1.5 py-0.5 text-[11px] font-semibold text-warn">
+              <Icon name="bug" size={11} /> Bug fix
+            </span>
+          )}
           {view.isDaily && (
             <span className="hidden items-center gap-1 rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-semibold text-accent-strong sm:inline-flex">
               <Icon name="zap" size={11} /> Daily
@@ -411,7 +418,7 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
           <div className="flex shrink-0 gap-1 border-b border-line bg-surface px-3 pt-2">
             {(
               [
-                ["task", "Task", "code"],
+                ["task", view.kind === "fix" ? "Bug report" : "Task", view.kind === "fix" ? "bug" : "code"],
                 ["concept", "Concept", "book"],
                 ["tests", "Tests", "check"],
                 ...(view.solution ? [["solution", "Solution", "eye"]] : []),
@@ -443,6 +450,12 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                     <Icon name="clock" size={12} /> ~{view.estMinutes} min
                   </span>
                 </div>
+                {view.kind === "fix" && (
+                  <p className="mb-4 rounded-lg border border-line bg-surface-2 px-3.5 py-2.5 text-[13px] text-ink-2">
+                    The code in the editor has <b>one bug</b>. Read it, run it, find out why it misbehaves, and fix it. The smaller the fix, the
+                    better: no need to rewrite it.
+                  </p>
+                )}
                 {view.newTopics.includes(view.topics[0]) && !conceptSeen && <ConceptCard view={view} onOpen={openConcept} tess={voice !== "off"} top />}
                 <Markdown source={view.prompt} />
                 {view.hints.length > 0 && (
@@ -481,7 +494,14 @@ export default function ChallengePage({ onFinished }: { onFinished: () => void }
                 {view.learnMore.length > 0 && <LearnMore items={view.learnMore} active={!!active} />}
               </>
             )}
-            {tab === "tests" && (
+            {tab === "tests" && testsHidden && (
+              <div className="flex flex-col items-center gap-2 py-10 text-center">
+                <Icon name="lock" size={20} className="text-muted" />
+                <p className="font-medium">Hidden until your first run</p>
+                <p className="max-w-xs text-sm text-muted">Start from the bug report, like you would at work. Run the code as it is to see which tests fail.</p>
+              </div>
+            )}
+            {tab === "tests" && !testsHidden && (
               <>
                 <p className="mb-3 text-sm text-ink-2">
                   {lang === "typescript" && "These run against your code. They're type-checked too, so a wrong parameter or return type shows up as a type error."}
@@ -1161,8 +1181,19 @@ function FinishModal({
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-3">
+        <div className={`mt-5 grid gap-3 ${finish.fix ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
           <Metric label="Time" value={fmtMinutes(finish.minutes)} />
+          {finish.fix && (
+            <Metric
+              label="Lines changed"
+              value={String(finish.fix.changed)}
+              hint={
+                finish.fix.changed <= finish.fix.reference
+                  ? "As tight as the reference fix"
+                  : `The reference fix touches ${finish.fix.reference} line${finish.fix.reference > 1 ? "s" : ""}`
+              }
+            />
+          )}
           <Metric label="Hints used" value={String(finish.hintsUsed)} />
           {t ? (
             <Metric label="XP" value={t.completed ? `+${t.xpGained}` : "—"} />
@@ -1171,7 +1202,7 @@ function FinishModal({
           )}
         </div>
 
-        <h3 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Reference solution</h3>
+        <h3 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{finish.fix ? "Reference fix" : "Reference solution"}</h3>
         <CodeBlock code={finish.solution} className="max-h-72" />
 
         <div className="mt-6 flex justify-end gap-2">
@@ -1187,7 +1218,7 @@ function FinishModal({
   );
 }
 
-function Metric({ label, value, delta }: { label: string; value: string; delta?: number }) {
+function Metric({ label, value, delta, hint }: { label: string; value: string; delta?: number; hint?: string }) {
   return (
     <div className="rounded-xl border border-line bg-surface-2 p-3">
       <div className="text-xs text-muted">{label}</div>
@@ -1200,6 +1231,7 @@ function Metric({ label, value, delta }: { label: string; value: string; delta?:
           </span>
         )}
       </div>
+      {hint && <div className="mt-0.5 text-[11px] leading-tight text-muted">{hint}</div>}
     </div>
   );
 }

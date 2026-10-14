@@ -1,0 +1,14 @@
+{
+  "title": "Ghost customers",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1270,
+  "topics": ["type guards", "generics", "Map", "narrowing"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "Log the array *before* the `filter`. What does `Map.get` give you for an id that isn't in the map?",
+    "The type guard tells TypeScript \"after this check, the value is a `T`\", and TypeScript believes it without checking. Compare what the guard promises (`null` *and* `undefined` gone) with what its body actually tests.",
+    "Rule out both empty values: `return value !== null && value !== undefined;` (or `value != null`)."
+  ]
+}

@@ -35,6 +35,8 @@ function deepEqual(a, b) {
   if (Object.is(a, b)) return true;
   if (typeof a !== typeof b || a === null || b === null || typeof a !== "object") return false;
   if (Array.isArray(a) !== Array.isArray(b)) return false;
+  // Like Jest: undefined properties are ignored, but an array's length still counts ([x, undefined] isn't [x]).
+  if (Array.isArray(a) && a.length !== b.length) return false;
   if (a instanceof Map && b instanceof Map) {
     if (a.size !== b.size) return false;
     for (const [k, v] of a) if (!b.has(k) || !deepEqual(v, b.get(k))) return false;

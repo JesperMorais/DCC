@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { LANG_IDS, LANGUAGES, LEVEL_BANDS, type Lang } from "../shared/languages.ts";
 
 export type Mode = "runtime" | "types";
+/** "write" = build it from a starter; "fix" = find and fix the one bug in working-looking code (Fix-it Friday). */
+export type Kind = "write" | "fix";
 
 export interface ChallengeMeta {
   /** `${language}/${slug}` */
@@ -19,6 +21,7 @@ export interface ChallengeMeta {
   estMinutes: number;
   /** "types" = judged by the TypeScript compiler alone (TypeScript only). */
   mode: Mode;
+  kind: Kind;
   hints: string[];
   /** "daily" = the adaptive daily bank (default); "path" = a skill-tree lab (unrated, not picked as a daily). */
   bank?: "daily" | "path";
@@ -57,7 +60,7 @@ export function loadChallenges(dir = CHALLENGES_DIR): Challenge[] {
         if (missing.length < files.length) console.warn(`[challenges] skipping ${language}/${entry.name}: missing ${missing.join(", ")}`);
         continue;
       }
-      let meta: Omit<ChallengeMeta, "id" | "slug" | "language" | "mode"> & { mode?: Mode };
+      let meta: Omit<ChallengeMeta, "id" | "slug" | "language" | "mode" | "kind"> & { mode?: Mode; kind?: Kind };
       try {
         meta = JSON.parse(read(d, "meta.json"));
       } catch (e) {
@@ -67,6 +70,7 @@ export function loadChallenges(dir = CHALLENGES_DIR): Challenge[] {
       out.push({
         ...meta,
         mode: meta.mode ?? "runtime",
+        kind: meta.kind ?? "write",
         id: `${language}/${entry.name}`,
         slug: entry.name,
         language,
@@ -79,4 +83,22 @@ export function loadChallenges(dir = CHALLENGES_DIR): Challenge[] {
     }
   }
   return out.sort((a, b) => a.language.localeCompare(b.language) || a.rating - b.rating || a.id.localeCompare(b.id));
+}
+
+/**
+ * How many lines an edit touches: the larger of lines removed and lines added, after matching
+ * unchanged lines (longest common subsequence). Trailing whitespace and blank lines don't count.
+ */
+export function changedLines(before: string, after: string) {
+  const norm = (s: string) => s.split("\n").map((l) => l.trimEnd()).filter((l) => l !== "");
+  const a = norm(before);
+  const b = norm(after);
+  let prev = new Array<number>(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    const row = new Array<number>(b.length + 1).fill(0);
+    for (let j = 1; j <= b.length; j++) row[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], row[j - 1]);
+    prev = row;
+  }
+  const same = prev[b.length];
+  return Math.max(a.length - same, b.length - same);
 }

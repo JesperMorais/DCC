@@ -1,0 +1,14 @@
+{
+  "title": "Who is this?",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1430,
+  "topics": ["classes", "this", "callbacks", "generics"],
+  "estMinutes": 9,
+  "mode": "runtime",
+  "hints": [
+    "Calling `badge.onAdded(...)` directly works, but emitting `\"added\"` on the bus crashes. What's different about *how* the method gets called in those two cases?",
+    "`this` inside a method is decided by how the function is **called**, not where it was written. The bus calls each listener as a plain function `l(payload)`, so a method that was handed over on its own has no object in front of the dot.",
+    "Register a function that keeps the object: `bus.on(\"added\", (item) => this.onAdded(item));`"
+  ]
+}

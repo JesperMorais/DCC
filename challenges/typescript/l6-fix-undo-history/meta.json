@@ -1,0 +1,14 @@
+{
+  "title": "Undo forgets the layers",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1500,
+  "topics": ["classes", "generics", "immutability", "object spread"],
+  "estMinutes": 10,
+  "mode": "runtime",
+  "hints": [
+    "Undo works for `title` and `zoom` but not for anything inside `layers`. Inside `commit`, log `draft === this.current` and `draft.layers === this.current.layers`.",
+    "`commit` hands the recipe a *copy* to scribble on, so the snapshot pushed to `past` stays untouched. But the copy only goes one level deep: the new draft and the old snapshot still share the same `layers` array and the same layer objects.",
+    "Give the recipe a deep copy: `const draft = structuredClone(this.current);`"
+  ]
+}

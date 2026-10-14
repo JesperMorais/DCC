@@ -1,0 +1,14 @@
+{
+  "title": "Did everyone pass?",
+  "kind": "fix",
+  "level": 2,
+  "rating": 920,
+  "topics": ["for...of", "booleans", "arrays"],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Trace `everyonePassed([80, 40, 90], 50)` by hand. How many scores does the loop actually look at before the function ends?",
+    "`return` ends the whole function, not just this round of the loop. The `else` branch gives up after checking only the first score.",
+    "You can only say \"everyone passed\" after the loop has checked every score. Remove the `else` branch and let the `return true` after the loop do that job."
+  ]
+}

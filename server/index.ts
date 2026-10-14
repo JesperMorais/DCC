@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isLang, LANGUAGES, LEVEL_BANDS, type Lang } from "../shared/languages.ts";
-import { loadChallenges, type Challenge } from "./challenges.ts";
+import { changedLines, loadChallenges, type Challenge } from "./challenges.ts";
 import {
   applyResult,
   codingMinutes,
@@ -76,6 +76,7 @@ function challengeView(c: Challenge) {
     topics: c.topics,
     estMinutes: c.estMinutes,
     mode: c.mode,
+    kind: c.kind,
     prompt: c.prompt,
     learn: c.learn,
     starter: c.starter,
@@ -180,6 +181,7 @@ app.get("/api/challenges", (c) => {
         topics: ch.topics,
         estMinutes: ch.estMinutes,
         mode: ch.mode,
+        kind: ch.kind,
         status: status(ch.id),
       })),
   });
@@ -323,6 +325,8 @@ function finish(ch: Challenge, a: Attempt, status: "solved" | "gave-up", code: s
     streak: currentStreak(data),
     firstSolveToday: status === "solved" && !solvedTodayBefore,
     tree: tree && { ...tree, path: ch.pathNode!.path, node: ch.pathNode!.node },
+    // Bug fixes: how big your fix was next to the reference fix. A small, precise fix is the goal.
+    fix: ch.kind === "fix" && status === "solved" ? { changed: changedLines(ch.starter, code), reference: changedLines(ch.starter, ch.solution) } : null,
   };
 }
 

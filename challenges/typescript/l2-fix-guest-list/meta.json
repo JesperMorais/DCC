@@ -1,0 +1,14 @@
+{
+  "title": "On the guest list?",
+  "kind": "fix",
+  "level": 2,
+  "rating": 880,
+  "topics": ["arrays", "indexOf", "booleans"],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Try three names: the first guest, a later guest, and someone not on the list. Print what `guests.indexOf(name)` gives for each.",
+    "`indexOf` returns a position, and the first position is `0`. An `if` treats `0` as false and `-1` as true, which is backwards for this check.",
+    "Ask the real question: was the name found? `guests.indexOf(name) !== -1`."
+  ]
+}

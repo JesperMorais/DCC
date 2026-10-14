@@ -1,0 +1,14 @@
+{
+  "title": "Is it the weekend?",
+  "kind": "fix",
+  "level": 1,
+  "rating": 840,
+  "topics": ["strings", "booleans", "logical operators"],
+  "estMinutes": 6,
+  "mode": "runtime",
+  "hints": [
+    "Compare `isWeekend(\"sunday\")` with `isWeekend(\"Sunday\")`. Only the capital letter is different.",
+    "`===` compares strings letter by letter, and `\"S\"` is not the same letter as `\"s\"`. The function compares the day exactly as it was typed.",
+    "Make the input lowercase before comparing: `const lower = day.toLowerCase();` and compare `lower` instead of `day`."
+  ]
+}

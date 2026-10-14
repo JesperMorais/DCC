@@ -1,0 +1,16 @@
+{
+  "kind": "fix",
+  "title": "Fix: the reading challenge is a day short",
+  "level": 1,
+  "rating": 810,
+  "topics": [
+    "for loops",
+    "range"
+  ],
+  "estMinutes": 7,
+  "hints": [
+    "Add `print(day)` inside the loop and call `total_pages_read(3)`. Which days get printed?",
+    "`range(1, days)` stops **before** `days`, so the last day is never counted.",
+    "The loop should go up to and including `days`: use `range(1, days + 1)`."
+  ]
+}

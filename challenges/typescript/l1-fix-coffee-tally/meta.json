@@ -1,0 +1,14 @@
+{
+  "title": "Coffee tally",
+  "kind": "fix",
+  "level": 1,
+  "rating": 800,
+  "topics": ["strings", "numbers"],
+  "estMinutes": 6,
+  "mode": "runtime",
+  "hints": [
+    "Look at the wrong answer for 2 and 3. Does `23` remind you of anything?",
+    "Both inputs are strings. What does `+` do when it gets two strings? The function only turns the result into a number at the very end.",
+    "Turn each string into a number first, then add: `Number(morning) + Number(afternoon)`."
+  ]
+}

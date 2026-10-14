@@ -1,0 +1,13 @@
+{
+  "title": "Summer's coldest night is 0 °C",
+  "level": 2,
+  "rating": 910,
+  "kind": "fix",
+  "topics": ["arrays", "best so far", "for loops"],
+  "estMinutes": 6,
+  "hints": [
+    "Winter data works and summer data doesn't. What do all the summer readings have in common? Compare them with the value `coldest` starts at.",
+    "`coldest` starts at 0, which isn't one of the readings. If every reading is above 0, none of them is ever colder than the starting value, so 0 comes back.",
+    "Start from a real reading instead: `int coldest = readings[0];`."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Revenue that went missing",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1370,
+  "topics": ["itertools", "groupby", "grouping", "dict comprehensions"],
+  "estMinutes": 7,
+  "hints": [
+    "Print `[(day, list(g)) for day, g in groupby(orders, key=order_day)]` for the reproduction. How many groups do you get for 12 October?",
+    "`groupby` only groups *consecutive* items with the same key. Unsorted input produces several groups per day, and the dict comprehension keeps only the last one.",
+    "Sort by the same key before grouping: `groupby(sorted(orders, key=order_day), key=order_day)`."
+  ]
+}

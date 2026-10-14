@@ -1,0 +1,14 @@
+{
+  "title": "Top three scores",
+  "kind": "fix",
+  "level": 2,
+  "rating": 970,
+  "topics": ["arrays", "comparison", "functions"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "Small scores work and big ones don't. Try `[...[100, 25, 9]].sort()` on its own and look at the order you get.",
+    "Without arguments, `sort()` compares items as **text**, so `\"100\"` comes before `\"25\"` and `\"9\"` comes last. Numbers need a compare function.",
+    "Replace `.sort().reverse()` with `.sort((a, b) => b - a)`, which sorts numbers from biggest to smallest."
+  ]
+}

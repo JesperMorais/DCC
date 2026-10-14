@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the editor that stutters",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1540,
+  "topics": ["in-place", "overlapping memory", "strings"],
+  "estMinutes": 11,
+  "hints": [
+    "Inserting at the end of a line always works, and so does inserting a string longer than the rest of the line. Trace `line_insert` on `\"helo\"`, position 3, text `\"l\"`, writing down `text` after every iteration of the loop.",
+    "To make room, the loop copies each character `n` places to the right, starting from `pos` and moving **forwards**. Once `i` reaches a slot the loop already wrote to, it copies that new value instead of the original, so one character gets smeared across the gap. `line_erase` gets away with a forward loop because it moves characters left.",
+    "Shift from the end towards `pos` instead: `for (size_t i = line->len + 1; i-- > pos;)` visits `len, len - 1, ..., pos` (the terminator included) without the `size_t` ever going below zero. Or replace the loop with `memmove`."
+  ]
+}

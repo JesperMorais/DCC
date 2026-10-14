@@ -1,0 +1,14 @@
+{
+  "title": "One blip, broken forever",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1610,
+  "topics": ["promises", "async/await", "error handling", "closures", "Map"],
+  "estMinutes": 12,
+  "mode": "runtime",
+  "hints": [
+    "Make the fetcher fail once and then succeed. Call `get` twice and log `stats.fetches` and the size of `inflight` after each call. Does the second call reach the fetcher at all?",
+    "`inflight` holds the promise for a request that's still running, and the entry is supposed to go away once the request is **settled**. Follow both outcomes of `fetcher(key)`: what clears the entry when it resolves, and what clears it when it rejects?",
+    "Remove the entry however the request ends: drop `inflight.delete(key)` from the `then` callback and chain `.finally(() => inflight.delete(key))` onto the request."
+  ]
+}

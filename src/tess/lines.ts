@@ -57,6 +57,11 @@ export function greeting(s: Dashboard): Line {
       text: pick("g-risk", [`${stats.streak}-day streak. One small challenge keeps it going.`, `About ${daily?.estMinutes ?? 10} minutes keeps the streak going.`]),
     };
   if (daily?.status === "in-progress") return { mood: "think", text: "Your draft is saved. Pick up where you left off." };
+  if (daily?.kind === "fix" && daily.status === "not-started")
+    return {
+      mood: "think",
+      text: pick("g-fix", ["Fix-it Friday. Someone shipped a bug. Read their code before you touch it.", "It's Friday, so today's code is already written. It just doesn't work."]),
+    };
   if (d >= 20) return { mood: "happy", text: `Up ${d} this week. The challenges will stretch you a bit more.` };
   if (d <= -20) return { mood: "idle", text: "It's been a tougher week. The picks ease off automatically." };
   return {

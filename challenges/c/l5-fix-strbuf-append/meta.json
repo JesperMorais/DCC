@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the string builder that overflows",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1400,
+  "topics": ["realloc", "dynamic strings", "capacity"],
+  "estMinutes": 10,
+  "hints": [
+    "Lots of short appends work; one long append doesn't. Take an empty builder and append a 40-character string: what capacity does the code pick, and how many bytes does it then copy?",
+    "When the text doesn't fit, the capacity is doubled **once** (or set to 16 from empty). Nothing checks that the new capacity is actually big enough for `len + n + 1` bytes, so a long append still writes past the end of the block.",
+    "After computing `new_cap`, keep doubling until it fits: `while (new_cap < sb->len + n + 1) new_cap *= 2;`"
+  ]
+}

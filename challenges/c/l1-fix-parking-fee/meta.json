@@ -1,0 +1,13 @@
+{
+  "title": "The garage charges too much",
+  "level": 1,
+  "rating": 740,
+  "kind": "fix",
+  "topics": ["functions", "variables", "int arithmetic"],
+  "estMinutes": 5,
+  "hints": [
+    "Work out the fee for 3 hours on paper. How many of those hours should cost money? Now look at what the last line multiplies.",
+    "The check for short stays is fine. The last line charges for every hour, including the two free ones.",
+    "Take the free hours away before multiplying: `(hours - free_hours) * price_per_hour`."
+  ]
+}

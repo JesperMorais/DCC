@@ -1,0 +1,14 @@
+{
+  "title": "Uploaded nothing, instantly",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1380,
+  "topics": ["async/await", "promises", "error handling", "arrays"],
+  "estMinutes": 9,
+  "mode": "runtime",
+  "hints": [
+    "Log `report` right before the `return`. Then log it again inside the callback after `await upload(name)`. Which log appears first?",
+    "`forEach` calls your callback and ignores what it returns. An `async` callback returns a promise, so `forEach` starts every upload at once and nobody waits for any of them: the function returns its (still empty) report straight away.",
+    "Use a loop that the surrounding `async` function can pause in: replace `files.forEach(async (name) => {` with `for (const name of files) {` (and close it with `}` instead of `});`)."
+  ]
+}

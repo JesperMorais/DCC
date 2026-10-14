@@ -1,0 +1,17 @@
+{
+  "kind": "fix",
+  "title": "Fix: the search index is always empty",
+  "level": 3,
+  "rating": 1080,
+  "topics": [
+    "dicts",
+    "dict.get defaults",
+    "grouping"
+  ],
+  "estMinutes": 9,
+  "hints": [
+    "Put `print(index)` right before the `return`. Is anything ever stored in the dict?",
+    "`index.get(word, [])` hands back a **new** empty list when the word is missing, but that list is never put into `index`. The `.append` fills a list nobody keeps.",
+    "Use `index.setdefault(word, []).append(number)`: `setdefault` stores the empty list in the dict first, then returns it."
+  ]
+}

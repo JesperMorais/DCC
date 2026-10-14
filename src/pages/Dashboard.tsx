@@ -161,7 +161,15 @@ function DailyCard({ state }: { state: Dashboard }) {
       </div>
       <div className="relative flex h-full flex-col sm:pr-36">
         <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-accent uppercase">
-          <Icon name="zap" size={14} /> Today's challenge
+          {daily.kind === "fix" ? (
+            <>
+              <Icon name="bug" size={14} /> Fix-it Friday · find the bug
+            </>
+          ) : (
+            <>
+              <Icon name="zap" size={14} /> Today's challenge
+            </>
+          )}
         </div>
         <h2 className={`mt-3 text-2xl font-semibold tracking-tight ${showBubble ? "sm:pr-36" : ""}`}>{daily.title}</h2>
         {voice !== "off" && <p className="mt-1 text-sm text-ink-2 sm:hidden">{line.text}</p>}

@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the header that lost its value",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1270,
+  "topics": ["pointers", "out-parameters", "strings"],
+  "estMinutes": 9,
+  "hints": [
+    "Only headers whose value contains a `:` of its own go wrong (`Host: example.com:8080`, a URL, a time of day). Which colon does the function cut at for those?",
+    "The split point comes from `strrchr`, which finds the **last** occurrence of a character. A header name can't contain a colon but a value can, so the split has to happen at the first one.",
+    "Swap `strrchr(line, ':')` for `strchr(line, ':')`, which returns a pointer to the first `:`."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Everyone pays Swiss VAT",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1240,
+  "topics": ["closures", "functions", "for loops"],
+  "estMinutes": 8,
+  "hints": [
+    "Build calculators for two regions with very different rates and call both. Which rate does every calculator end up using?",
+    "`with_tax` reads `rate` when it's **called**, not when it's defined. By then the loop has finished and `rate` holds the last region's value, so every calculator shares it.",
+    "Capture the current value when the function is created, with a default parameter: `def with_tax(net_cents: int, rate: float = rate) -> int:`."
+  ]
+}

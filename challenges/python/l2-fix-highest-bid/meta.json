@@ -1,0 +1,17 @@
+{
+  "kind": "fix",
+  "title": "Fix: the auction picks the wrong winner",
+  "level": 2,
+  "rating": 910,
+  "topics": [
+    "strings",
+    "comparisons",
+    "list comprehensions"
+  ],
+  "estMinutes": 8,
+  "hints": [
+    "Try `\"9\" > \"120\"` in Python. Is that what you'd expect for the numbers 9 and 120?",
+    "`cleaned` is still a list of **strings**, so `max` compares them like words in a dictionary, character by character. `\"9\"` beats `\"1...\"` because `9` comes after `1`. The conversion to `int` happens too late.",
+    "Convert before comparing: `return max(int(bid) for bid in cleaned)`."
+  ]
+}

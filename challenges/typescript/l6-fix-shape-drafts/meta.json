@@ -1,0 +1,14 @@
+{
+  "title": "Drafts that forgot their shape",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1560,
+  "topics": ["utility types", "distributive conditional types", "discriminated unions", "mapped types"],
+  "estMinutes": 10,
+  "mode": "types",
+  "hints": [
+    "Hover `Draft<Shape>`, then `Draft<OfKind<Shape, \"circle\">>`. One member on its own is fine; it's the whole union that comes out wrong. Which helper does `Draft` lean on?",
+    "`Omit<T, K>` is a plain mapped type over `keyof T`, and `keyof` of a union only keeps the keys that **every** member shares. It never looks at the members one by one. `Patch` works because it splits the union first with `T extends unknown ? … : never`.",
+    "Make `Without` distribute: `type Without<T, K extends PropertyKey> = T extends unknown ? Simplify<Omit<T, K>> : never;`"
+  ]
+}

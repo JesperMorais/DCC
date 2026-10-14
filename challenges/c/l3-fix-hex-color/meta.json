@@ -1,0 +1,13 @@
+{
+  "title": "The colour picker loses its red",
+  "level": 3,
+  "rating": 1100,
+  "kind": "fix",
+  "topics": ["strings", "char arithmetic", "parsing"],
+  "estMinutes": 9,
+  "hints": [
+    "Pairs made only of digits work. Try a single letter digit: what should `'A'` be worth, and what does the helper return for it?",
+    "In the letter branch, `u - 'A'` gives 0 for `'A'`, 1 for `'B'` and so on. But hex `A` means ten, so every letter digit comes out 10 too small.",
+    "Add the ten back: `return u - 'A' + 10;`."
+  ]
+}

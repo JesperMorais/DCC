@@ -1,0 +1,13 @@
+{
+  "title": "The fridge check that always passes",
+  "level": 2,
+  "rating": 880,
+  "kind": "fix",
+  "topics": ["arrays", "for loops", "bool"],
+  "estMinutes": 7,
+  "hints": [
+    "Try `{4, 9}` with the range 0 to 8 by hand. How many times does the loop body run before the function returns?",
+    "The loop gives its answer after looking at the first reading only: one branch returns false, the other returns true. A \"yes\" is only safe after every reading has been checked.",
+    "Delete the `else { return true; }` branch so the loop keeps going; the `return true;` after the loop already handles the all-good case."
+  ]
+}

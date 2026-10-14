@@ -1,0 +1,13 @@
+{
+  "title": "Undo that undoes nothing",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1560,
+  "topics": ["mutability", "nested data", "classes"],
+  "estMinutes": 9,
+  "hints": [
+    "Undoing a new *column* works, undoing a card change doesn't. Right after `move_card`, check whether `board._history[-1]['Todo'] is board._columns['Todo']`.",
+    "`_checkpoint` saves `self._columns.copy()`, a shallow copy. The saved dict has its own keys, but its lists are the very same list objects the board keeps mutating, so the saved state changes along with the live one.",
+    "Save copies of the inner lists too. The class already has a method that builds exactly that: `self._history.append(self.snapshot())`."
+  ]
+}

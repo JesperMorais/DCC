@@ -1,0 +1,14 @@
+{
+  "title": "The edit that went back in time",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1180,
+  "topics": ["generics", "immutability", "object spread", "arrays"],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Keep a reference to the list you passed in, call `patchItemAt`, then look at your old reference again. Is it still the old data?",
+    "The function builds a new *item* correctly, but where does it put it? Assigning a variable to an array doesn't copy the array; both names point at the same one.",
+    "Make `next` a real copy of the list before writing into it: `const next = [...list];`"
+  ]
+}

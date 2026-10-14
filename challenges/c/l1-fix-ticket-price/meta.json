@@ -1,0 +1,13 @@
+{
+  "title": "Pensioner pays full price",
+  "level": 1,
+  "rating": 770,
+  "kind": "fix",
+  "topics": ["if/else", "comparison", "int"],
+  "estMinutes": 5,
+  "hints": [
+    "Try the exact ages where the price changes: 11, 12, 64, 65. Which one gives the wrong price?",
+    "The senior check uses a comparison that leaves out the age 65 itself. \"65 or older\" has to include 65.",
+    "Change `age > 65` to `age >= 65`."
+  ]
+}

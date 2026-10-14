@@ -1,0 +1,17 @@
+{
+  "kind": "fix",
+  "title": "Fix: the streak never grows",
+  "level": 2,
+  "rating": 880,
+  "topics": [
+    "for loops",
+    "variables",
+    "max by hand"
+  ],
+  "estMinutes": 7,
+  "hints": [
+    "Trace `longest_streak([True, True, False])` by hand and write down `current` and `best` after every pass through the loop.",
+    "`current` is meant to remember the streak **across** days, but it's set back to `0` at the start of every pass, so it can never get past 1.",
+    "Move `current = 0` out of the loop, next to `best = 0`, so it's set once before the loop starts."
+  ]
+}

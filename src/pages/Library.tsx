@@ -88,6 +88,7 @@ export default function LibraryPage() {
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {c.mode === "types" && <Tag>type-level</Tag>}
+                      {c.kind === "fix" && <Tag>bug fix</Tag>}
                       {c.topics.slice(0, 3).map((t) => (
                         <Tag key={t}>{t}</Tag>
                       ))}

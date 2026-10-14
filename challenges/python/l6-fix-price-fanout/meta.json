@@ -1,0 +1,13 @@
+{
+  "title": "The hammer costs 45 kr",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1500,
+  "topics": ["asyncio", "concurrency", "dataclasses"],
+  "estMinutes": 9,
+  "hints": [
+    "The quotes are all real, they're just attached to the wrong SKUs, and the mix-up follows how fast each SKU's API answers. Which step pairs results with SKUs?",
+    "`best_quotes` collects results with `asyncio.as_completed`, which yields in *finishing* order. Then `zip(skus, results)` pairs them as if they were in *input* order.",
+    "Collect the results in input order: `results = await asyncio.gather(*tasks)`."
+  ]
+}

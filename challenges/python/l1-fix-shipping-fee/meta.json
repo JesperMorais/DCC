@@ -1,0 +1,16 @@
+{
+  "kind": "fix",
+  "title": "Fix: big orders still pay shipping",
+  "level": 1,
+  "rating": 770,
+  "topics": [
+    "if/elif/else",
+    "comparisons"
+  ],
+  "estMinutes": 6,
+  "hints": [
+    "Try `shipping_fee(60.0)` by hand. Which `if` or `elif` is the first one that is `True`?",
+    "Python stops at the **first** condition that matches. `60.0 >= 20` is already true, so the check for 50 is never reached.",
+    "Check the biggest threshold first: swap the order so `>= 50` comes before `>= 20` (and swap the return values with them)."
+  ]
+}

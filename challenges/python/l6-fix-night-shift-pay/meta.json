@@ -1,0 +1,13 @@
+{
+  "title": "The night that lasted nine hours",
+  "kind": "fix",
+  "level": 6,
+  "rating": 1620,
+  "topics": ["datetime", "time zones", "dataclasses", "properties"],
+  "estMinutes": 11,
+  "hints": [
+    "Only shifts across a DST change are wrong. For the reproduction, print `shift.start.utcoffset()` and `shift.end.utcoffset()`. They differ, so is that difference reflected in `hours`?",
+    "`hours` subtracts two aware datetimes that share the same `tzinfo` object. In that case Python ignores the offsets and subtracts the wall-clock readings, so the extra (or missing) hour vanishes.",
+    "Convert both ends to UTC before subtracting: `(self.end.astimezone(UTC) - self.start.astimezone(UTC)) / timedelta(hours=1)`, with `UTC` imported from `datetime`."
+  ]
+}

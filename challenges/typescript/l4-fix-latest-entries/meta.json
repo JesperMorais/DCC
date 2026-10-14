@@ -1,0 +1,14 @@
+{
+  "title": "Show me nothing",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1220,
+  "topics": ["generics", "generic constraints", "arrays", "slice"],
+  "estMinutes": 7,
+  "mode": "runtime",
+  "hints": [
+    "Try every small `n` by hand: 2, 1, 0. Which one gives a surprising result?",
+    "The sorting is fine; look at how the last `n` items are taken. A negative start index counts from the end, but there is no negative zero for `slice`: `-0` is just `0`, the very start of the array.",
+    "Only slice when there's something to take: `return n > 0 ? sorted.slice(-n) : [];`"
+  ]
+}

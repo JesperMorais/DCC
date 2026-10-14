@@ -1,0 +1,17 @@
+{
+  "kind": "fix",
+  "title": "Fix: star ratings are rounded down",
+  "level": 1,
+  "rating": 730,
+  "topics": [
+    "arithmetic",
+    "float",
+    "integer division"
+  ],
+  "estMinutes": 5,
+  "hints": [
+    "Try `average_rating(9, 2)` by hand. 9 divided by 2 is 4.5, so where does the `.5` go?",
+    "The function divides with `//`. That's **floor division**: it throws away everything after the decimal point.",
+    "Use normal division instead: `return total_stars / review_count`."
+  ]
+}

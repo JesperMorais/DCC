@@ -3,7 +3,7 @@
 //  - the reference solution passes AND is warning-free (gcc -Wall -Wextra, mypy --strict)
 //  - the starter compiles/parses on its own but does NOT pass (so the tests test something)
 // usage: npm run validate [-- filter ...]   e.g. `-- python/ c/l3`
-import { loadChallenges, LEVEL_BANDS, type Challenge } from "../server/challenges.ts";
+import { changedLines, loadChallenges, LEVEL_BANDS, type Challenge } from "../server/challenges.ts";
 import { loadPaths } from "../server/paths.ts";
 import { runChallenge } from "../server/runner/index.ts";
 
@@ -40,7 +40,21 @@ async function check(c: Challenge): Promise<string[]> {
   if (starterErrors.length) problems.push(`starter has errors: ${starterErrors.map((e) => e.message).join("; ")}`);
   if (start.setupErrors.some((e) => /Linker error/.test(e.message))) problems.push(`starter doesn't link: ${start.setupErrors[0].message}`);
 
-  return problems.length ? problems : [`ok ${sol.tests.length} tests ${sol.durationMs}ms`];
+  let fixNote = "";
+  if (c.kind === "fix") {
+    if (c.bank === "path") problems.push(`kind "fix" is for the daily bank only`);
+    if (!/^l\d-fix-/.test(c.slug)) problems.push(`fix challenges are named l<level>-fix-<name>`);
+    // A realistic bug: the code mostly works, so some tests pass, and nothing but behaviour gives it away.
+    if (c.mode === "runtime" && !start.tests.some((t) => t.pass)) problems.push("buggy starter passes no tests — it should mostly work");
+    const starterWarnings = start.diagnostics.filter((d) => d.file === "your-code" && d.severity === "warning");
+    if (starterWarnings.length) problems.push(`buggy starter has warnings, which point at the bug: ${starterWarnings.map((w) => w.message).join("; ")}`);
+    const changed = changedLines(c.starter, c.solution);
+    if (changed === 0) problems.push("solution is identical to the starter");
+    else if (changed > 3) problems.push(`the fix touches ${changed} lines (want 1–3: the solution is the starter with only the bug fixed)`);
+    fixNote = ` · fix ${changed} line${changed > 1 ? "s" : ""}`;
+  }
+
+  return problems.length ? problems : [`ok ${sol.tests.length} tests ${sol.durationMs}ms${fixNote}`];
 }
 
 // C compiles are the slow part; run a few at a time.

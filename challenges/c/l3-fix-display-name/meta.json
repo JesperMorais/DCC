@@ -1,0 +1,13 @@
+{
+  "title": "Hello, bobinistrator",
+  "level": 3,
+  "rating": 1030,
+  "kind": "fix",
+  "topics": ["strings", "null terminator", "buffers"],
+  "estMinutes": 8,
+  "hints": [
+    "The new name is right; it's the leftovers of the old one that show up. Write out the buffer byte by byte after copying \"bob\" over \"administrator\". Where does the string end?",
+    "The loop copies the characters but never writes the `'\\0'` that ends a C string. It only looks right when the buffer happened to be all zeros already.",
+    "After the loop, terminate the copy: `dst[i] = '\\0';`."
+  ]
+}

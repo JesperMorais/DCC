@@ -1,0 +1,14 @@
+{
+  "title": "Weekly running distance",
+  "kind": "fix",
+  "level": 3,
+  "rating": 1010,
+  "topics": ["reduce", "interfaces", "numbers"],
+  "estMinutes": 6,
+  "mode": "runtime",
+  "hints": [
+    "It only crashes for one kind of week. Which input in the bug report is different from the others?",
+    "`reduce` without a starting value uses the first element as the start. An empty array has no first element, so `reduce` throws.",
+    "Give `reduce` a starting value as its second argument: `.reduce((sum, km) => sum + km, 0)`."
+  ]
+}

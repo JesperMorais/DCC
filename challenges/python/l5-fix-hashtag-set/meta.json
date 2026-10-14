@@ -1,0 +1,13 @@
+{
+  "title": "Equal but not the same",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1420,
+  "topics": ["dunder methods", "sets", "hashing", "collections.Counter"],
+  "estMinutes": 7,
+  "hints": [
+    "`Hashtag('#Python') == Hashtag('#python')` is `True`. Now compare `hash()` of the same two objects.",
+    "Sets and dicts look up the hash first and only call `__eq__` on keys with a matching hash. `__hash__` uses the raw text while `__eq__` ignores case, so equal tags end up in different buckets.",
+    "Hash the same normalised value `__eq__` compares: `return hash(self.text.casefold())`."
+  ]
+}

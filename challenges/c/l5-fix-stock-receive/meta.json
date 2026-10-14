@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the restock that never lands",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1350,
+  "topics": ["structs", "pass by pointer", "arrays of structs"],
+  "estMinutes": 9,
+  "hints": [
+    "New SKUs and shipments both work; only receiving more of a SKU the warehouse already has goes wrong. Follow the code path for that case and ask *which* `quantity` it adds to.",
+    "`StockItem item = w->items[i];` declares a new struct and copies the array element into it. `item.quantity += quantity` updates the copy, which disappears at `return`; the warehouse's own element never changes.",
+    "Work through a pointer to the element instead: `StockItem *item = &w->items[i];`, then `item->sku` and `item->quantity`."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "kind": "fix",
+  "title": "Fix: some finished tasks won't go away",
+  "level": 2,
+  "rating": 960,
+  "topics": [
+    "lists",
+    "for loops",
+    "string methods"
+  ],
+  "estMinutes": 9,
+  "hints": [
+    "Only some finished tasks survive. Look at where they are: what's just before each one in the list?",
+    "The loop removes items from the same list it's walking through. When an item is removed, everything after it shifts one place left, and the loop's next step jumps over the item that slid into the gap.",
+    "Loop over a **copy** of the list and remove from the original: `for task in list(tasks):`."
+  ]
+}

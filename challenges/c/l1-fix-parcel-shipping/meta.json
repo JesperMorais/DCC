@@ -1,0 +1,13 @@
+{
+  "title": "Heavy parcels ship cheap",
+  "level": 1,
+  "rating": 820,
+  "kind": "fix",
+  "topics": ["if/else chains", "comparison", "variables"],
+  "estMinutes": 7,
+  "hints": [
+    "Follow the code by hand for an 8000 g parcel. Write down `cost` after each `if`.",
+    "Both `if`s run for a heavy parcel: the first sets 129, then the second one is also true and overwrites it with 79. The second check should only happen when the first one was false.",
+    "Join the two checks into one chain: `} else if (grams > 1000) {`."
+  ]
+}

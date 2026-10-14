@@ -1,0 +1,13 @@
+{
+  "title": "The streak that doesn't count",
+  "level": 2,
+  "rating": 960,
+  "kind": "fix",
+  "topics": ["arrays", "for loops", "counting"],
+  "estMinutes": 9,
+  "hints": [
+    "Streaks in the middle of the week work. Try one that runs right up to the last day, e.g. `{1000, 9000, 9000}` with goal 8000, and trace `current` and `longest` by hand.",
+    "`longest` is only updated when a streak is broken by a missed day. A streak that is still going when the loop ends is never compared with `longest`.",
+    "After the loop, the running streak still needs one last comparison: `return current > longest ? current : longest;`."
+  ]
+}

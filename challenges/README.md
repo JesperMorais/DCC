@@ -85,6 +85,20 @@ Level 1 in every language assumes the learner has **never coded**, so `learn.md`
 - Each test runs in its own process with a **1.5 s** limit, so a crash only fails that one test.
 - Prefer `size_t` for lengths, `const` for inputs you don't modify, and `bool` from `<stdbool.h>`.
 
+## Bug fixes (`"kind": "fix"`, Fix-it Friday)
+
+A fix challenge hands the learner **working-looking code with one bug** and a bug report. They read the code, find the bug and fix it. Every Friday the daily is a fix challenge; on other days fix challenges are never picked as the daily (they stay in the library and in spaced review).
+
+- **Slug:** `l<level>-fix-<name>`, e.g. `c/l3-fix-word-count`. Set `"kind": "fix"` in `meta.json`. Everything else (level, rating band, topics, hints, estMinutes) works as for normal challenges.
+- **`starter`** is the buggy code: complete, idiomatic-looking, compiles **warning-free** and passes **some** of the tests (the validator checks this). Exactly **one** bug, and it must be one a real person writes: off-by-one, `<` vs `<=`, integer division, a missing `break`, mutating the caller's data, a forgotten `await`, `sizeof` on a pointer, a shadowed variable, a missing null terminator… Don't leave `TODO`s or comments that point at the bug.
+- **`solution`** is the starter with the bug fixed and **nothing else changed**. The validator reports how many lines the fix touches; keep it at 1–3.
+- **`prompt.md`** is a bug report: a short story (who noticed what), **what the code is supposed to do** (the spec, with 2–3 input → output examples), and one concrete reproduction: "`f(x)` returns `y`, expected `z`". It describes the symptom, never the cause or the line.
+- **`learn.md`** teaches the concept area the bug lives in (how loop bounds work, how C strings end, how `await` works) and one debugging technique (trace by hand with a small input, print intermediate values, check the boundaries). It must **not** say which line is wrong.
+- **`topics`** name the concept area, never the bug ("loops", not "off-by-one"): they're shown on the task page. Reuse topic names from the language's existing challenges where they fit.
+- **Hints:** 1) where to look or what to observe ("try it on a list with one item"), 2) which part of the code is wrong and why, 3) nearly the fix.
+- **Tests** are hidden until the first run, so the bug report has to be enough to start.
+- Level difficulty comes from the code and the bug: a level 1 fix is a 10-line function with an obvious symptom; a level 6 fix is a realistic 40–80 line piece of code where the bug is subtle (an edge case, aliasing, a race-free-looking async ordering, undefined behaviour).
+
 ## Reference examples
 
 - TypeScript: `typescript/l1-hello-greeting`, `typescript/l6-my-pick`

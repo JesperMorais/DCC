@@ -1,0 +1,14 @@
+{
+  "title": "Cheapest first",
+  "kind": "fix",
+  "level": 3,
+  "rating": 1070,
+  "topics": ["interfaces", "immutability", "arrays"],
+  "estMinutes": 8,
+  "mode": "runtime",
+  "hints": [
+    "The sorted result is right. Log the `catalog` array before and after calling `cheapestFirst` and compare.",
+    "`sort` doesn't make a new array: it rearranges the one you call it on and returns that same array. Here that's the caller's `products`.",
+    "Sort a copy instead: `[...products].sort(...)`."
+  ]
+}

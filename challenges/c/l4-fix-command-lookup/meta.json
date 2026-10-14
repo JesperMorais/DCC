@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the shell that knows no commands",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1220,
+  "topics": ["pointers", "strings", "lookup tables"],
+  "estMinutes": 8,
+  "hints": [
+    "The function works when the test passes a string literal like `\"stop\"` and fails when the same text sits in a `char` array. What is different about those two, as far as a pointer is concerned?",
+    "`c->name == name` compares two **addresses**, not the characters they point at. Two identical literals in one file usually share one address, so the literal case happens to work; a buffer filled at runtime lives somewhere else.",
+    "Compare the contents with `strcmp(c->name, name) == 0` (and `#include <string.h>`)."
+  ]
+}

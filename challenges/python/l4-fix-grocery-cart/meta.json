@@ -1,0 +1,13 @@
+{
+  "title": "Whose groceries are these?",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1170,
+  "topics": ["classes", "mutability", "dataclasses"],
+  "estMinutes": 6,
+  "hints": [
+    "Create two carts, add something to one, and print `vars(cart)` for each. Where are the cart lines actually stored?",
+    "`lines` is declared in the class body, so it's a class attribute: one list shared by every `GroceryCart`. `self.lines.append(...)` mutates that shared list.",
+    "Delete the class-level `lines` and create the list per cart in `__init__`: `self.lines: list[CartLine] = []`."
+  ]
+}

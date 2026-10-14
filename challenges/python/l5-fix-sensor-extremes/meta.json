@@ -1,0 +1,13 @@
+{
+  "title": "The high temperature vanished",
+  "kind": "fix",
+  "level": 5,
+  "rating": 1320,
+  "topics": ["generator expressions", "iterators", "dataclasses"],
+  "estMinutes": 6,
+  "hints": [
+    "`low` is always right and `high` is always `None`. What does `max` see that `min` didn't? Print `list(present)` right before the `max` call.",
+    "`present` is a generator expression: a one-shot iterator. `min` reads it to the end, so `max` gets an empty stream and falls back to its default.",
+    "Make `present` a list instead of a generator: swap the round brackets for square ones, `[r for r in readings if r is not None]`."
+  ]
+}

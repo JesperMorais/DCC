@@ -37,6 +37,8 @@ export interface ChallengeView {
   topics: string[];
   estMinutes: number;
   mode: "runtime" | "types";
+  /** "fix" = a bug-fix challenge (Fix-it Friday). */
+  kind: "write" | "fix";
   prompt: string;
   learn: string;
   starter: string;
@@ -67,6 +69,7 @@ export interface LibraryItem {
   topics: string[];
   estMinutes: number;
   mode: "runtime" | "types";
+  kind: "write" | "fix";
   status: "new" | "in-progress" | "solved" | "gave-up";
 }
 
@@ -92,6 +95,8 @@ export interface FinishResult {
   streak: number;
   firstSolveToday: boolean;
   tree: { completed: boolean; xpGained: number; unlocked: string[]; path: string; node: string } | null;
+  /** Bug fixes: lines your fix touched, and how many the reference fix touches. */
+  fix: { changed: number; reference: number } | null;
   result?: RunResult;
 }
 

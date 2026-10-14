@@ -1,0 +1,17 @@
+{
+  "kind": "fix",
+  "title": "Fix: unsubscribed readers still get the newsletter",
+  "level": 3,
+  "rating": 1030,
+  "topics": [
+    "sets",
+    "string methods",
+    "filtering"
+  ],
+  "estMinutes": 8,
+  "hints": [
+    "The bug only shows up for some addresses. Compare one that gets removed properly with `Ana@Example.com`. What's different about it?",
+    "Each sign-up is turned into a `key` with `.strip().lower()`, but the addresses in `unsubscribed` only get `.strip()`. A lowercase key is never `in` a set that still holds capital letters.",
+    "Normalise both sides the same way: `{email.strip().lower() for email in unsubscribes}`."
+  ]
+}

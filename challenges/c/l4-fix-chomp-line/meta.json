@@ -1,0 +1,13 @@
+{
+  "title": "Fix: the line ends that won't go away",
+  "kind": "fix",
+  "level": 4,
+  "rating": 1180,
+  "topics": ["pointers", "pointer arithmetic", "strings"],
+  "estMinutes": 7,
+  "hints": [
+    "Trace `chomp_line` by hand on `\"ok \"` (length 3). Where does `end` point before the loop starts, and what character is under it?",
+    "`end` starts at `line + strlen(line)`, which is the `'\\0'`, not the last real character. The loop asks whether the terminator is whitespace, so it never moves. It should be looking at the character *just before* `end`.",
+    "Test `end[-1]` (the same as `*(end - 1)`) in the loop condition: `while (end > line && isspace((unsigned char)end[-1]))`. Everything else can stay."
+  ]
+}
